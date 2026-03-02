@@ -1,5 +1,6 @@
-import { Trophy, Medal, Star, Crown } from "lucide-react";
+import { Trophy, Medal, Crown } from "lucide-react";
 import { useScrollAnimation } from "@/hooks/use-scroll-animation";
+import { IslamicDivider, EightPointStar } from "@/components/IslamicPatterns";
 
 const students = [
   { name: "أحمد محمد", score: 980 },
@@ -62,13 +63,22 @@ const TopThreeCard = ({
       className={`relative flex flex-col items-center gap-4 p-6 md:p-8 rounded-2xl border-2 ${config.border} ${config.bg} ${config.shadow} ${config.size} ${config.order} transition-all duration-700 hover:-translate-y-2 hover:shadow-xl ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"}`}
       style={{ transitionDelay: config.delay }}
     >
+      {/* Islamic arch decoration at top */}
+      <svg className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-10 text-primary/10" viewBox="0 0 100 60" fill="none">
+        <path d="M5 60 L5 30 Q5 5 50 5 Q95 5 95 30 L95 60" stroke="currentColor" strokeWidth="2" />
+      </svg>
       {/* Rank badge */}
       <div className={`absolute -top-3 px-4 py-1 rounded-full text-xs font-bold ${config.badgeBg}`}>
         {config.badge}
       </div>
-      {/* Avatar circle */}
-      <div className={`w-20 h-20 rounded-full ${config.bg} border-2 ${config.border} flex items-center justify-center`}>
-        {config.icon}
+      {/* Avatar circle with star ornament */}
+      <div className="relative">
+        <div className={`w-20 h-20 rounded-full ${config.bg} border-2 ${config.border} flex items-center justify-center`}>
+          {config.icon}
+        </div>
+        <div className="absolute -bottom-1 -right-1 opacity-30">
+          <EightPointStar size={14} className="text-primary" />
+        </div>
       </div>
       <h3 className="text-lg font-bold text-foreground">{student.name}</h3>
       <div className="flex items-baseline gap-1">
@@ -83,8 +93,13 @@ const LeaderboardSection = () => {
   const { ref, isVisible } = useScrollAnimation();
 
   return (
-    <section id="leaderboard" className="py-24">
-      <div className="container mx-auto px-4 max-w-4xl" ref={ref}>
+    <section id="leaderboard" className="py-24 relative overflow-hidden">
+      {/* Corner ornaments */}
+      <EightPointStar size={50} className="absolute top-12 right-12 text-primary/5 animate-spin-slow" />
+      <EightPointStar size={35} className="absolute bottom-12 left-12 text-primary/5 animate-spin-slow" style={{ animationDirection: "reverse" }} />
+
+      <div className="container mx-auto px-4 max-w-4xl relative z-10" ref={ref}>
+        <IslamicDivider className="mb-8" />
         <h2
           className={`text-3xl md:text-4xl font-bold text-center mb-4 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
         >
