@@ -20,9 +20,8 @@ const Navbar = () => {
   return (
     <nav className="fixed top-0 right-0 left-0 z-50 bg-background/90 backdrop-blur-md border-b border-border">
       <div className="container mx-auto flex items-center justify-between h-16 px-4">
-        <div className="flex items-center gap-3">
-          <img src="/logo.png" alt="شعار الساعي" className="h-10 w-10 rounded-lg object-contain" />
-          <span className="text-lg font-bold text-foreground">الساعي</span>
+        <div className="flex items-center">
+          <img src="/logo.png" alt="شعار الساعي" className="h-14 w-14 rounded-lg object-contain" />
         </div>
 
         <div className="hidden md:flex items-center gap-6">
