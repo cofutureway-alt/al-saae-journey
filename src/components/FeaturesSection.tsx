@@ -1,6 +1,7 @@
 import { BookOpen, ClipboardCheck, Users, Video, Award, Clock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useScrollAnimation } from "@/hooks/use-scroll-animation";
+import { IslamicDivider, EightPointStar } from "@/components/IslamicPatterns";
 
 const features = [
   { icon: Video, title: "دروس مباشرة", desc: "حضور دروس مباشرة مع المعلم والتفاعل المستمر" },
@@ -15,8 +16,19 @@ const FeaturesSection = () => {
   const { ref, isVisible } = useScrollAnimation();
 
   return (
-    <section id="features" className="py-24 bg-secondary/30">
-      <div className="container mx-auto px-4" ref={ref}>
+    <section id="features" className="py-24 bg-secondary/30 relative overflow-hidden">
+      {/* Subtle Islamic pattern overlay */}
+      <div className="absolute inset-0 opacity-[0.02] dark:opacity-[0.04]" style={{
+        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60' fill='none'%3E%3Cg stroke='%23000' stroke-width='0.4'%3E%3Cpolygon points='30,8 42,14 46,27 42,40 30,46 18,40 14,27 18,14'/%3E%3C/g%3E%3C/svg%3E")`,
+        backgroundRepeat: "repeat",
+      }} />
+
+      {/* Corner ornaments */}
+      <EightPointStar size={60} className="absolute top-8 right-8 text-primary/5 animate-spin-slow" />
+      <EightPointStar size={45} className="absolute bottom-8 left-8 text-primary/5 animate-spin-slow" style={{ animationDirection: "reverse" }} />
+
+      <div className="container mx-auto px-4 relative z-10" ref={ref}>
+        <IslamicDivider className="mb-8" />
         <h2 className={`text-3xl md:text-4xl font-bold text-center mb-4 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
           مميزات المنصة
         </h2>
@@ -27,10 +39,14 @@ const FeaturesSection = () => {
           {features.map((f, i) => (
             <Card
               key={f.title}
-              className={`group hover:shadow-lg hover:-translate-y-1 transition-all duration-500 cursor-default ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
+              className={`group hover:shadow-lg hover:-translate-y-1 transition-all duration-500 cursor-default relative overflow-hidden ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
               style={{ transitionDelay: `${150 + i * 100}ms` }}
             >
-              <CardContent className="p-6 flex flex-col items-center text-center gap-4">
+              {/* Card corner ornament */}
+              <div className="absolute top-2 left-2 opacity-[0.06]">
+                <EightPointStar size={30} className="text-primary" />
+              </div>
+              <CardContent className="p-6 flex flex-col items-center text-center gap-4 relative z-10">
                 <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
                   <f.icon size={28} className="text-primary" />
                 </div>
