@@ -112,7 +112,7 @@ const LeaderboardSection = () => {
         </p>
 
         {/* Top 3 podium */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 items-end">
+        <div className="grid grid-cols-3 gap-3 md:gap-6 mb-8 items-end">
           {students.slice(0, 3).map((s, i) => (
             <TopThreeCard key={s.name} student={s} rank={i + 1} isVisible={isVisible} />
           ))}
