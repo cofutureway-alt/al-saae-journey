@@ -1,4 +1,4 @@
-import { BookOpen, Clock, Users, ArrowLeft, Star, Layers, Feather, BookMarked, Moon as MoonIcon, Heart } from "lucide-react";
+import { BookOpen, Clock, Users, ArrowLeft, Layers, Feather, BookMarked, Moon as MoonIcon, Heart } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useScrollAnimation } from "@/hooks/use-scroll-animation";
@@ -16,6 +16,8 @@ const courses = [
     color: "from-emerald-500/10 to-teal-500/10 dark:from-emerald-500/20 dark:to-teal-500/20",
     iconBg: "bg-emerald-500/10",
     iconColor: "text-emerald-600 dark:text-emerald-400",
+    image: "https://images.unsplash.com/photo-1609599006353-e629aaabfeae?w=400&h=250&fit=crop",
+    avatars: ["أ", "م", "ع", "ف"],
   },
   {
     title: "الفقه الإسلامي",
@@ -28,6 +30,8 @@ const courses = [
     color: "from-blue-500/10 to-indigo-500/10 dark:from-blue-500/20 dark:to-indigo-500/20",
     iconBg: "bg-blue-500/10",
     iconColor: "text-blue-600 dark:text-blue-400",
+    image: "https://images.unsplash.com/photo-1585036156171-384164a8c159?w=400&h=250&fit=crop",
+    avatars: ["ن", "ر", "ح"],
   },
   {
     title: "العقيدة الإسلامية",
@@ -40,6 +44,8 @@ const courses = [
     color: "from-amber-500/10 to-orange-500/10 dark:from-amber-500/20 dark:to-orange-500/20",
     iconBg: "bg-amber-500/10",
     iconColor: "text-amber-600 dark:text-amber-400",
+    image: "https://images.unsplash.com/photo-1542816417-0983c9c9ad53?w=400&h=250&fit=crop",
+    avatars: ["س", "خ", "ب", "ت"],
   },
   {
     title: "السيرة النبوية",
@@ -52,6 +58,8 @@ const courses = [
     color: "from-rose-500/10 to-pink-500/10 dark:from-rose-500/20 dark:to-pink-500/20",
     iconBg: "bg-rose-500/10",
     iconColor: "text-rose-600 dark:text-rose-400",
+    image: "https://images.unsplash.com/photo-1564769625905-50e93615e769?w=400&h=250&fit=crop",
+    avatars: ["ي", "ل", "ج"],
   },
   {
     title: "تفسير القرآن",
@@ -64,6 +72,8 @@ const courses = [
     color: "from-violet-500/10 to-purple-500/10 dark:from-violet-500/20 dark:to-purple-500/20",
     iconBg: "bg-violet-500/10",
     iconColor: "text-violet-600 dark:text-violet-400",
+    image: "https://images.unsplash.com/photo-1584286595398-a59511e0649f?w=400&h=250&fit=crop",
+    avatars: ["ز", "ق", "و", "د"],
   },
   {
     title: "الحديث النبوي",
@@ -76,6 +86,8 @@ const courses = [
     color: "from-cyan-500/10 to-sky-500/10 dark:from-cyan-500/20 dark:to-sky-500/20",
     iconBg: "bg-cyan-500/10",
     iconColor: "text-cyan-600 dark:text-cyan-400",
+    image: "https://images.unsplash.com/photo-1466442929976-97f336a657be?w=400&h=250&fit=crop",
+    avatars: ["ش", "ك"],
   },
 ];
 
@@ -124,28 +136,33 @@ const CoursesSection = () => {
               {/* Gradient top band */}
               <div className={`h-1.5 bg-gradient-to-l ${course.color}`} />
               
+              {/* Course Image */}
+              <div className="relative h-40 overflow-hidden">
+                <img src={course.image} alt={course.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                <span className={`absolute top-3 right-3 text-[11px] font-bold px-3 py-1 rounded-full ${getLevelBadge(course.level)} backdrop-blur-sm`}>
+                  {course.level}
+                </span>
+              </div>
+
               {/* Card corner ornament */}
-              <div className="absolute top-4 left-3 opacity-[0.05] group-hover:opacity-[0.1] transition-opacity">
+              <div className="absolute top-44 left-3 opacity-[0.05] group-hover:opacity-[0.1] transition-opacity">
                 <EightPointStar size={40} className="text-primary" />
               </div>
 
-              <CardContent className="p-6 relative z-10">
-                {/* Header: Icon + Level badge */}
-                <div className="flex items-start justify-between mb-5">
-                  <div className={`w-14 h-14 rounded-2xl ${course.iconBg} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
-                    <course.icon size={26} className={course.iconColor} />
+              <CardContent className="p-5 relative z-10">
+                {/* Icon + Title */}
+                <div className="flex items-center gap-3 mb-3">
+                  <div className={`w-10 h-10 rounded-xl ${course.iconBg} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300`}>
+                    <course.icon size={20} className={course.iconColor} />
                   </div>
-                  <span className={`text-[11px] font-bold px-3 py-1 rounded-full ${getLevelBadge(course.level)}`}>
-                    {course.level}
-                  </span>
+                  <h3 className="text-lg font-bold text-foreground">{course.title}</h3>
                 </div>
 
-                {/* Title & Description */}
-                <h3 className="text-lg font-bold mb-2 text-foreground">{course.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed mb-5 line-clamp-2">{course.desc}</p>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-4 line-clamp-2">{course.desc}</p>
 
                 {/* Stats row */}
-                <div className="flex items-center gap-4 text-xs text-muted-foreground mb-5 border-t border-border pt-4">
+                <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4 border-t border-border pt-4">
                   <div className="flex items-center gap-1.5">
                     <BookOpen size={13} />
                     <span>{course.lessons} درس</span>
@@ -160,13 +177,20 @@ const CoursesSection = () => {
                   </div>
                 </div>
 
-                {/* Rating + CTA */}
+                {/* Avatars + CTA */}
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1">
-                    {[...Array(5)].map((_, idx) => (
-                      <Star key={idx} size={13} className="fill-amber-400 text-amber-400" />
+                  <div className="flex items-center -space-x-2 rtl:space-x-reverse">
+                    {course.avatars.map((letter, idx) => (
+                      <div
+                        key={idx}
+                        className="w-7 h-7 rounded-full bg-muted border-2 border-card flex items-center justify-center text-[10px] font-bold text-muted-foreground"
+                      >
+                        {letter}
+                      </div>
                     ))}
-                    <span className="text-[11px] text-muted-foreground mr-1">4.8</span>
+                    <div className="w-7 h-7 rounded-full bg-primary/10 border-2 border-card flex items-center justify-center text-[9px] font-bold text-primary">
+                      +{course.students}
+                    </div>
                   </div>
                   <Button size="sm" variant="ghost" className="gap-1.5 text-xs font-bold group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
                     سجّل الآن
