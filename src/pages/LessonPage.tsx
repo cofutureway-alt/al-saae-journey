@@ -198,6 +198,10 @@ const LessonPage = () => {
 
   const toggleComplete = async () => {
     if (!user || !lesson || !courseId) return;
+    if (completeLocked) {
+      toast.error(`يجب مشاهدة ${requiredPct}% من الفيديو قبل إتمام الدرس (شاهدت ${watchPct}%)`);
+      return;
+    }
     setSaving(true);
     try {
       if (isCompleted) {
