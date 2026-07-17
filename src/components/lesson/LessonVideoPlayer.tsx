@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import Plyr from "plyr/dist/plyr.min.mjs";
+// @ts-expect-error – plyr ships CJS with a default export at runtime
+import Plyr from "plyr";
 import "plyr/dist/plyr.css";
 import { motion } from "framer-motion";
 import { AlertCircle, PlayCircle, X } from "lucide-react";
