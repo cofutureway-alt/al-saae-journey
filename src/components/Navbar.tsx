@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Moon, Sun, Menu, X, LogOut, User as UserIcon, LogIn } from "lucide-react";
+import { Moon, Sun, Menu, X, LogOut, User as UserIcon, LogIn, LayoutDashboard } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
