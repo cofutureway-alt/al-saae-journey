@@ -407,12 +407,14 @@ const LessonPage = () => {
                   <div className="space-y-2">
                     <AnimatePresence initial={false}>
                       {files.map((f, i) => (
-                        <motion.div
+                        <motion.button
                           key={f.id}
                           initial={{ opacity: 0, x: 12 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: i * 0.04 }}
-                          className="flex items-center gap-3 p-3 rounded-xl border border-border bg-background hover:border-primary/40 transition-colors"
+                          onClick={() => openViewer(f)}
+                          whileHover={{ y: -2 }}
+                          className="w-full flex items-center gap-3 p-3 rounded-xl border border-border bg-background hover:border-primary/50 hover:shadow-md transition-all text-right"
                         >
                           <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
                             <FileTypeIcon type={f.file_type} />
@@ -421,25 +423,24 @@ const LessonPage = () => {
                             <div className="text-sm font-semibold truncate">
                               {f.file_name}
                             </div>
-                            <div className="text-xs text-muted-foreground">
-                              {formatBytes(f.file_size)}
+                            <div className="text-xs text-muted-foreground flex items-center gap-2">
+                              <span>{f.file_type?.split("/")[1]?.toUpperCase() || "ملف"}</span>
+                              {!f.allow_download && (
+                                <>
+                                  <span className="opacity-40">·</span>
+                                  <span className="inline-flex items-center gap-1 text-destructive">
+                                    <Lock className="w-3 h-3" />
+                                    عرض فقط
+                                  </span>
+                                </>
+                              )}
                             </div>
                           </div>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => download(f)}
-                            disabled={downloadingId === f.id}
-                            className="gap-1"
-                          >
-                            {downloadingId === f.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <Download className="w-4 h-4" />
-                            )}
-                            تنزيل
-                          </Button>
-                        </motion.div>
+                          <div className="inline-flex items-center gap-1 text-xs font-semibold text-primary shrink-0">
+                            <Eye className="w-4 h-4" />
+                            عرض
+                          </div>
+                        </motion.button>
                       ))}
                     </AnimatePresence>
                   </div>
