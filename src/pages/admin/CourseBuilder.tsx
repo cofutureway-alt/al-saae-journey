@@ -538,21 +538,25 @@ const CourseBuilder = () => {
 
   const persistOrder = async (nextUnits: Unit[]) => {
     await markSaving(async () => {
-      const unitUpdates = nextUnits.map((u, i) =>
-        supabase.from("units").update({ position: i }).eq("id", u.id),
-      );
-      const lessonUpdates: Promise<any>[] = [];
-      nextUnits.forEach((u) => {
-        u.lessons.forEach((l, i) => {
-          lessonUpdates.push(
-            supabase
-              .from("lessons")
-              .update({ position: i, unit_id: u.id })
-              .eq("id", l.id),
+      const ops: Promise<any>[] = [];
+      nextUnits.forEach((u, i) => {
+        ops.push(
+          Promise.resolve(
+            supabase.from("units").update({ position: i }).eq("id", u.id),
+          ),
+        );
+        u.lessons.forEach((l, li) => {
+          ops.push(
+            Promise.resolve(
+              supabase
+                .from("lessons")
+                .update({ position: li, unit_id: u.id })
+                .eq("id", l.id),
+            ),
           );
         });
       });
-      const results = await Promise.all([...unitUpdates, ...lessonUpdates]);
+      const results = await Promise.all(ops);
       const err = results.find((r: any) => r.error)?.error;
       if (err) throw err;
     });
