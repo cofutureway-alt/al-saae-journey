@@ -80,6 +80,7 @@ const LessonPage = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [watchPct, setWatchPct] = useState(0);
 
   const load = useCallback(async () => {
     if (!courseId || !lessonId) return;
