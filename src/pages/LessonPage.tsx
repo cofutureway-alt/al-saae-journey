@@ -361,16 +361,29 @@ const LessonPage = () => {
                     onClick={toggleComplete}
                     disabled={saving}
                     variant={isCompleted ? "outline" : "default"}
-                    className={`gap-2 font-bold ${isCompleted ? "border-emerald-500/50 text-emerald-600 dark:text-emerald-400" : ""}`}
+                    title={completeLocked ? `مطلوب مشاهدة ${requiredPct}% (شاهدت ${watchPct}%)` : undefined}
+                    className={`gap-2 font-bold ${
+                      isCompleted
+                        ? "border-emerald-500/50 text-emerald-600 dark:text-emerald-400"
+                        : completeLocked
+                          ? "opacity-60"
+                          : ""
+                    }`}
                   >
                     {saving ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : isCompleted ? (
                       <CheckCircle2 className="w-4 h-4" />
+                    ) : completeLocked ? (
+                      <Lock className="w-4 h-4" />
                     ) : (
                       <ListChecks className="w-4 h-4" />
                     )}
-                    {isCompleted ? "تم الإنجاز" : "إنجاز الدرس"}
+                    {isCompleted
+                      ? "تم الإنجاز"
+                      : completeLocked
+                        ? `${watchPct}% / ${requiredPct}%`
+                        : "إنجاز الدرس"}
                   </Button>
                 </motion.div>
                 {nextLesson && (
