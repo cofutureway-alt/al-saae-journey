@@ -192,6 +192,10 @@ const LessonPage = () => {
   const percent = totalLessons ? Math.round((completedCount / totalLessons) * 100) : 0;
   const isCompleted = lesson ? completedIds.has(lesson.id) : false;
 
+  const gateActive = playerSettings.completion_gate_enabled && !isAdmin;
+  const requiredPct = playerSettings.completion_required_percentage;
+  const completeLocked = gateActive && !isCompleted && watchPct < requiredPct;
+
   const toggleComplete = async () => {
     if (!user || !lesson || !courseId) return;
     setSaving(true);
