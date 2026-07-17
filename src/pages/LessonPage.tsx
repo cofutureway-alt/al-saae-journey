@@ -335,10 +335,13 @@ const LessonPage = () => {
 
           <div className="rounded-2xl border border-border bg-card p-4 md:p-6">
             <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
-              <div className="min-w-0">
-                <h1 className="text-xl md:text-2xl font-bold">{lesson.title}</h1>
-                <div className="text-xs text-muted-foreground mt-1">
-                  الدرس {currentIndex + 1} من {totalLessons}
+              <div className="min-w-0 flex items-center gap-3">
+                <CircularProgress value={watchPct} size={52} label="نسبة المشاهدة" />
+                <div className="min-w-0">
+                  <h1 className="text-xl md:text-2xl font-bold">{lesson.title}</h1>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    الدرس {currentIndex + 1} من {totalLessons}
+                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-2">
