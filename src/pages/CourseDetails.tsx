@@ -23,6 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSignedThumbnail } from "@/hooks/use-signed-thumbnail";
+import { useCourseProgress } from "@/hooks/use-my-progress";
 import { EightPointStar } from "@/components/IslamicPatterns";
 
 interface Course {
@@ -147,7 +148,9 @@ const CourseDetails = () => {
 
   const totalLessons = units.reduce((acc, u) => acc + u.lessons.length, 0);
   const unlocked = enrolled || isAdmin;
-  const progress = enrolled ? 0 : null; // real progress in next phase
+  const { data: progressData } = useCourseProgress(enrolled ? id : undefined);
+  const progress = enrolled ? (progressData?.percent ?? 0) : null;
+  const completedIds = progressData?.completedLessonIds ?? new Set<string>();
 
   const handleEnroll = async () => {
     if (!id) return;
@@ -179,12 +182,13 @@ const CourseDetails = () => {
   };
 
   const startCourse = () => {
-    const first = units.find((u) => u.lessons.length > 0)?.lessons[0];
-    if (!first) {
+    const all = units.flatMap((u) => u.lessons);
+    if (!all.length) {
       toast.info("لم يتم إضافة دروس بعد");
       return;
     }
-    navigate(`/courses/${id}/lessons/${first.id}`);
+    const next = all.find((l) => !completedIds.has(l.id)) ?? all[0];
+    navigate(`/courses/${id}/learn/${next.id}`);
   };
 
   if (loading || authLoading) {
@@ -269,6 +273,7 @@ const CourseDetails = () => {
                     }
                     unlocked={unlocked}
                     courseId={course.id}
+                    completedIds={completedIds}
                   />
                 ))}
               </div>
@@ -448,7 +453,11 @@ const EnrollCard = ({
             className="w-full font-bold shadow-lg shadow-primary/20"
           >
             <PlayCircle className="w-5 h-5 ml-2" />
-            {isAdmin && !enrolled ? "بدء المعاينة" : "بدء الدورة"}
+            {isAdmin && !enrolled
+              ? "بدء المعاينة"
+              : progress && progress > 0
+                ? "متابعة التعلّم"
+                : "بدء الدورة"}
           </Button>
         ) : (
           <Button
@@ -474,6 +483,7 @@ const UnitAccordion = ({
   onToggle,
   unlocked,
   courseId,
+  completedIds,
 }: {
   unit: UnitWithLessons;
   index: number;
@@ -481,6 +491,7 @@ const UnitAccordion = ({
   onToggle: () => void;
   unlocked: boolean;
   courseId: string;
+  completedIds: Set<string>;
 }) => {
   return (
     <motion.div
@@ -532,6 +543,7 @@ const UnitAccordion = ({
                     index={i}
                     unlocked={unlocked}
                     courseId={courseId}
+                    completed={completedIds.has(l.id)}
                   />
                 ))
               )}
@@ -548,11 +560,13 @@ const LessonRow = ({
   index,
   unlocked,
   courseId,
+  completed,
 }: {
   lesson: LessonLite;
   index: number;
   unlocked: boolean;
   courseId: string;
+  completed?: boolean;
 }) => {
   const content = (
     <div
@@ -565,9 +579,17 @@ const LessonRow = ({
       <span className="w-7 text-center text-xs font-semibold text-muted-foreground">
         {String(index + 1).padStart(2, "0")}
       </span>
-      <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
-        {unlocked ? (
-          <PlayCircle className="w-4 h-4 text-primary" />
+      <div
+        className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 ${
+          completed
+            ? "bg-emerald-500 text-white"
+            : "bg-primary/10 text-primary"
+        }`}
+      >
+        {completed ? (
+          <CheckCircle2 className="w-4 h-4" />
+        ) : unlocked ? (
+          <PlayCircle className="w-4 h-4" />
         ) : (
           <Lock className="w-3.5 h-3.5 text-muted-foreground" />
         )}
@@ -585,7 +607,7 @@ const LessonRow = ({
 
   if (!unlocked) return content;
   return (
-    <Link to={`/courses/${courseId}/lessons/${lesson.id}`} className="block">
+    <Link to={`/courses/${courseId}/learn/${lesson.id}`} className="block">
       {content}
     </Link>
   );

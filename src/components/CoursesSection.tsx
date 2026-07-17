@@ -5,11 +5,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useScrollAnimation } from "@/hooks/use-scroll-animation";
 import { IslamicDivider, EightPointStar } from "@/components/IslamicPatterns";
 import { usePublicCourses } from "@/hooks/use-public-courses";
+import { useMyProgressMap } from "@/hooks/use-my-progress";
 import { CourseCard } from "@/components/CourseCard";
 
 const CoursesSection = () => {
   const { ref, isVisible } = useScrollAnimation();
   const courses = usePublicCourses(6);
+  const progressMap = useMyProgressMap();
 
   return (
     <section id="courses" className="py-24 relative overflow-hidden">
@@ -61,7 +63,7 @@ const CoursesSection = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {courses.map((c, i) => (
-              <CourseCard key={c.id} course={c} index={i} />
+              <CourseCard key={c.id} course={c} index={i} progress={progressMap[c.id]} />
             ))}
           </div>
         )}

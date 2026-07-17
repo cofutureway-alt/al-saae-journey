@@ -5,7 +5,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import RequireAdmin from "@/components/auth/RequireAdmin";
+import RequireAuth from "@/components/auth/RequireAuth";
 import AdminLayout from "@/components/admin/AdminLayout";
+import StudentLayout from "@/components/student/StudentLayout";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -17,6 +19,9 @@ import CourseInfoEditor from "./pages/admin/CourseInfoEditor";
 import CourseBuilder from "./pages/admin/CourseBuilder";
 import Courses from "./pages/Courses";
 import CourseDetails from "./pages/CourseDetails";
+import LessonPage from "./pages/LessonPage";
+import MyCourses from "./pages/student/MyCourses";
+import StudentStatistics from "./pages/student/StudentStatistics";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +38,25 @@ const App = () => (
             <Route path="/signup" element={<Signup />} />
             <Route path="/courses" element={<Courses />} />
             <Route path="/courses/:id" element={<CourseDetails />} />
+            <Route
+              path="/courses/:courseId/learn/:lessonId"
+              element={
+                <RequireAuth>
+                  <LessonPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/dashboard"
+              element={
+                <RequireAuth>
+                  <StudentLayout />
+                </RequireAuth>
+              }
+            >
+              <Route index element={<MyCourses />} />
+              <Route path="statistics" element={<StudentStatistics />} />
+            </Route>
             <Route
               path="/admin"
               element={

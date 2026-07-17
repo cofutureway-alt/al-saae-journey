@@ -70,14 +70,16 @@ const Navbar = () => {
               <div className="text-muted-foreground truncate">{user.email}</div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {profile?.role === "admin" && (
-              <>
-                <DropdownMenuItem onClick={() => { navigate("/admin"); setOpen(false); }} className="gap-2">
-                  <LayoutDashboard className="w-4 h-4" />
-                  لوحة الإدارة
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-              </>
+            {profile?.role === "admin" ? (
+              <DropdownMenuItem onClick={() => { navigate("/admin"); setOpen(false); }} className="gap-2">
+                <LayoutDashboard className="w-4 h-4" />
+                لوحة الإدارة
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem onClick={() => { navigate("/dashboard"); setOpen(false); }} className="gap-2">
+                <LayoutDashboard className="w-4 h-4" />
+                لوحتي
+              </DropdownMenuItem>
             )}
             <DropdownMenuItem disabled className="gap-2">
               <UserIcon className="w-4 h-4" />
@@ -185,6 +187,12 @@ const Navbar = () => {
                         <div className="text-xs text-muted-foreground truncate">{user.email}</div>
                       </div>
                     </div>
+                    <Link to={profile?.role === "admin" ? "/admin" : "/dashboard"} onClick={() => setOpen(false)}>
+                      <Button variant="secondary" size="sm" className="w-full gap-2 font-bold">
+                        <LayoutDashboard className="w-4 h-4" />
+                        {profile?.role === "admin" ? "لوحة الإدارة" : "لوحتي"}
+                      </Button>
+                    </Link>
                     <Button variant="outline" size="sm" onClick={handleSignOut} className="w-full gap-2">
                       <LogOut className="w-4 h-4" />
                       تسجيل الخروج

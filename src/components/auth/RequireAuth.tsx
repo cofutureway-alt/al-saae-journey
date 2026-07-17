@@ -20,7 +20,8 @@ const RequireAuth = ({ children }: Props) => {
   }
 
   if (!user) {
-    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+    const redirect = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`/login?redirect=${redirect}`} replace />;
   }
 
   return <>{children}</>;

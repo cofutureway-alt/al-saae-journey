@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CourseCard } from "@/components/CourseCard";
 import { usePublicCourses } from "@/hooks/use-public-courses";
+import { useMyProgressMap } from "@/hooks/use-my-progress";
 import { supabase } from "@/integrations/supabase/client";
 import { EightPointStar } from "@/components/IslamicPatterns";
 
@@ -17,6 +18,7 @@ interface Stage {
 
 const Courses = () => {
   const courses = usePublicCourses();
+  const progressMap = useMyProgressMap();
   const [stages, setStages] = useState<Stage[]>([]);
   const [query, setQuery] = useState("");
   const [stageId, setStageId] = useState<string | "all">("all");
@@ -122,7 +124,7 @@ const Courses = () => {
             >
               <AnimatePresence mode="popLayout">
                 {filtered.map((c, i) => (
-                  <CourseCard key={c.id} course={c} index={i} />
+                  <CourseCard key={c.id} course={c} index={i} progress={progressMap[c.id]} />
                 ))}
               </AnimatePresence>
             </motion.div>
