@@ -26,11 +26,12 @@ const Navbar = () => {
   }, [dark]);
 
   const links = [
-    { label: "الرئيسية", href: "/#hero" },
+    { label: "الرئيسية", href: "/" },
     { label: "المميزات", href: "/#features" },
-    { label: "الدورات", href: "/#courses" },
+    { label: "الدورات", href: "/courses" },
     { label: "المتصدرين", href: "/#leaderboard" },
   ];
+
 
   const handleSignOut = async () => {
     await signOut();
