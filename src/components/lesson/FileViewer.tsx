@@ -80,6 +80,7 @@ export const FileViewer = ({ file, onClose }: Props) => {
     setSignedUrl(null);
     setPage(1);
     setPageCount(0);
+    setZoom(1);
     setUrlLoading(true);
 
     (async () => {
