@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { EightPointStar, CrescentStar, IslamicDivider } from "@/components/IslamicPatterns";
+import ThemeToggle from "@/components/ThemeToggle";
 
 interface Props {
   title: string;
@@ -13,6 +14,9 @@ interface Props {
 const AuthLayout = ({ title, subtitle, children, footer }: Props) => {
   return (
     <div className="min-h-screen relative overflow-hidden bg-background flex items-center justify-center p-4">
+      <div className="absolute top-4 left-4 z-20">
+        <ThemeToggle />
+      </div>
       {/* Islamic geometric background pattern */}
       <div
         className="absolute inset-0 opacity-[0.03] dark:opacity-[0.06] pointer-events-none"
