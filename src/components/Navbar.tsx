@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Moon, Sun, Menu, X, LogOut, User as UserIcon, LogIn } from "lucide-react";
+import { Moon, Sun, Menu, X, LogOut, User as UserIcon, LogIn, LayoutDashboard } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -69,6 +69,15 @@ const Navbar = () => {
               <div className="text-muted-foreground truncate">{user.email}</div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            {profile?.role === "admin" && (
+              <>
+                <DropdownMenuItem onClick={() => { navigate("/admin"); setOpen(false); }} className="gap-2">
+                  <LayoutDashboard className="w-4 h-4" />
+                  لوحة الإدارة
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            )}
             <DropdownMenuItem disabled className="gap-2">
               <UserIcon className="w-4 h-4" />
               الملف الشخصي
