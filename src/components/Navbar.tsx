@@ -20,6 +20,7 @@ const Navbar = () => {
   const [open, setOpen] = useState(false);
   const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
 
   const links = [
@@ -28,6 +29,31 @@ const Navbar = () => {
     { label: "الدورات", href: "/courses" },
     { label: "المتصدرين", href: "/#leaderboard" },
   ];
+
+  const handleNav = (e: React.MouseEvent, href: string) => {
+    e.preventDefault();
+    setOpen(false);
+    const [path, hash] = href.split("#");
+    const targetPath = path || "/";
+    const scrollToHash = () => {
+      if (!hash) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+      // Wait a tick for the target route to render
+      requestAnimationFrame(() => {
+        const el = document.getElementById(hash);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    };
+    if (location.pathname !== targetPath) {
+      navigate(targetPath + (hash ? `#${hash}` : ""));
+      setTimeout(scrollToHash, 60);
+    } else {
+      scrollToHash();
+    }
+  };
+
 
 
   const handleSignOut = async () => {
