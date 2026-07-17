@@ -148,7 +148,9 @@ const CourseDetails = () => {
 
   const totalLessons = units.reduce((acc, u) => acc + u.lessons.length, 0);
   const unlocked = enrolled || isAdmin;
-  const progress = enrolled ? 0 : null; // real progress in next phase
+  const { data: progressData } = useCourseProgress(enrolled ? id : undefined);
+  const progress = enrolled ? (progressData?.percent ?? 0) : null;
+  const completedIds = progressData?.completedLessonIds ?? new Set<string>();
 
   const handleEnroll = async () => {
     if (!id) return;
