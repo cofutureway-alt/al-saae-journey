@@ -70,9 +70,58 @@ export const FileViewer = ({ file, onClose }: Props) => {
 
   const kind = useMemo(() => detectKind(file?.file_type ?? null), [file]);
 
-  const zoomIn = useCallback(() => setZoom((z) => Math.min(4, +(z + 0.25).toFixed(2))), []);
-  const zoomOut = useCallback(() => setZoom((z) => Math.max(0.5, +(z - 0.25).toFixed(2))), []);
+  const setZoomClamped = useCallback(
+    (v: number) => setZoom(Math.max(0.5, Math.min(4, +v.toFixed(2)))),
+    [],
+  );
+  const zoomIn = useCallback(() => setZoomClamped(zoom + 0.25), [zoom, setZoomClamped]);
+  const zoomOut = useCallback(() => setZoomClamped(zoom - 0.25), [zoom, setZoomClamped]);
   const zoomReset = useCallback(() => setZoom(1), []);
+
+  // Pinch-to-zoom state (touch)
+  const pinchRef = useRef<{ startDist: number; startZoom: number } | null>(null);
+  const lastTapRef = useRef<number>(0);
+
+  const touchDist = (touches: React.TouchList) => {
+    const [a, b] = [touches[0], touches[1]];
+    const dx = a.clientX - b.clientX;
+    const dy = a.clientY - b.clientY;
+    return Math.hypot(dx, dy);
+  };
+
+  const onTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      if (e.touches.length === 2) {
+        pinchRef.current = { startDist: touchDist(e.touches), startZoom: zoom };
+      } else if (e.touches.length === 1) {
+        // Double-tap to toggle zoom
+        const now = Date.now();
+        if (now - lastTapRef.current < 300) {
+          setZoom((z) => (z > 1 ? 1 : 2));
+          lastTapRef.current = 0;
+        } else {
+          lastTapRef.current = now;
+        }
+      }
+    },
+    [zoom],
+  );
+
+  const onTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      if (e.touches.length === 2 && pinchRef.current) {
+        e.preventDefault();
+        const dist = touchDist(e.touches);
+        const ratio = dist / pinchRef.current.startDist;
+        setZoomClamped(pinchRef.current.startZoom * ratio);
+      }
+    },
+    [setZoomClamped],
+  );
+
+  const onTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length < 2) pinchRef.current = null;
+  }, []);
 
   // Load initial download count + signed URL
   useEffect(() => {
@@ -373,7 +422,11 @@ export const FileViewer = ({ file, onClose }: Props) => {
         {/* Content */}
         <div
           ref={containerRef}
-          className="relative flex-1 overflow-auto p-3 md:p-6"
+          className="relative flex-1 overflow-auto p-3 md:p-6 touch-none"
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+          style={{ touchAction: "pan-x pan-y" }}
           onContextMenu={(e) => e.preventDefault()}
           onWheel={(e) => {
             if (e.ctrlKey || e.metaKey) {
