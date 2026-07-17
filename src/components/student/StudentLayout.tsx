@@ -13,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const nav = [
   { to: "/dashboard", label: "دوراتي", icon: BookOpen, end: true },
