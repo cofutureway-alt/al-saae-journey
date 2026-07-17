@@ -539,6 +539,7 @@ const UnitAccordion = ({
                     index={i}
                     unlocked={unlocked}
                     courseId={courseId}
+                    completed={completedIds.has(l.id)}
                   />
                 ))
               )}
