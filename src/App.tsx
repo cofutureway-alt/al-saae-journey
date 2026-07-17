@@ -75,6 +75,8 @@ const App = () => (
               <Route path="courses/:id/edit" element={<CourseInfoEditor />} />
               <Route path="courses/:id/builder" element={<CourseBuilder />} />
               <Route path="stages" element={<AdminStages />} />
+              <Route path="settings" element={<AdminSettings />} />
+              <Route path="settings/video-player" element={<AdminVideoPlayerSettings />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
