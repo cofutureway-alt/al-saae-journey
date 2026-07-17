@@ -479,6 +479,7 @@ const UnitAccordion = ({
   onToggle,
   unlocked,
   courseId,
+  completedIds,
 }: {
   unit: UnitWithLessons;
   index: number;
@@ -486,6 +487,7 @@ const UnitAccordion = ({
   onToggle: () => void;
   unlocked: boolean;
   courseId: string;
+  completedIds: Set<string>;
 }) => {
   return (
     <motion.div
