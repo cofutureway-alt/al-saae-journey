@@ -15,6 +15,9 @@ import {
   FileText,
   Image as ImageIcon,
   Presentation,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -59,6 +62,7 @@ export const FileViewer = ({ file, onClose }: Props) => {
   const [pageCount, setPageCount] = useState(0);
   const [page, setPage] = useState(1);
   const [pdfWidth, setPdfWidth] = useState(800);
+  const [zoom, setZoom] = useState(1);
   const [remaining, setRemaining] = useState<number | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [downloadCount, setDownloadCount] = useState(0);
@@ -66,12 +70,17 @@ export const FileViewer = ({ file, onClose }: Props) => {
 
   const kind = useMemo(() => detectKind(file?.file_type ?? null), [file]);
 
+  const zoomIn = useCallback(() => setZoom((z) => Math.min(4, +(z + 0.25).toFixed(2))), []);
+  const zoomOut = useCallback(() => setZoom((z) => Math.max(0.5, +(z - 0.25).toFixed(2))), []);
+  const zoomReset = useCallback(() => setZoom(1), []);
+
   // Load initial download count + signed URL
   useEffect(() => {
     if (!file || !user) return;
     setSignedUrl(null);
     setPage(1);
     setPageCount(0);
+    setZoom(1);
     setUrlLoading(true);
 
     (async () => {
@@ -104,7 +113,7 @@ export const FileViewer = ({ file, onClose }: Props) => {
     if (!file) return;
     const compute = () => {
       const el = containerRef.current;
-      if (el) setPdfWidth(Math.min(el.clientWidth - 24, 1000));
+      if (el) setPdfWidth(Math.max(320, el.clientWidth - 48));
     };
     compute();
     window.addEventListener("resize", compute);
@@ -120,6 +129,20 @@ export const FileViewer = ({ file, onClose }: Props) => {
       if (e.key === "Escape") {
         e.preventDefault();
         e.stopPropagation();
+        return;
+      }
+      // Zoom shortcuts (Ctrl/Cmd + / - / 0)
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === "+" || e.key === "=") {
+          e.preventDefault();
+          zoomIn();
+        } else if (e.key === "-") {
+          e.preventDefault();
+          zoomOut();
+        } else if (e.key === "0") {
+          e.preventDefault();
+          zoomReset();
+        }
       }
     };
     window.addEventListener("keydown", blockEsc, true);
@@ -257,6 +280,50 @@ export const FileViewer = ({ file, onClose }: Props) => {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
+            {(kind === "image" || kind === "pdf") && (
+              <div className="hidden sm:flex items-center gap-1 bg-white/5 border border-white/10 rounded-md p-0.5">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={zoomOut}
+                  disabled={zoom <= 0.5}
+                  className="h-8 w-8 text-white hover:bg-white/10 hover:text-white"
+                  aria-label="تصغير"
+                  title="تصغير (Ctrl -)"
+                >
+                  <ZoomOut className="w-4 h-4" />
+                </Button>
+                <button
+                  onClick={zoomReset}
+                  className="text-xs font-bold text-white tabular-nums px-2 min-w-[52px] hover:bg-white/10 rounded"
+                  title="إعادة الضبط (Ctrl 0)"
+                >
+                  {Math.round(zoom * 100)}%
+                </button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={zoomIn}
+                  disabled={zoom >= 4}
+                  className="h-8 w-8 text-white hover:bg-white/10 hover:text-white"
+                  aria-label="تكبير"
+                  title="تكبير (Ctrl +)"
+                >
+                  <ZoomIn className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={zoomReset}
+                  className="h-8 w-8 text-white hover:bg-white/10 hover:text-white"
+                  aria-label="ملء الشاشة"
+                  title="ملاءمة"
+                >
+                  <Maximize2 className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
+
             {canDownload ? (
               <div className="hidden sm:flex items-center gap-2 text-xs text-white/70">
                 {file.download_limit === null ? (
@@ -306,73 +373,88 @@ export const FileViewer = ({ file, onClose }: Props) => {
         {/* Content */}
         <div
           ref={containerRef}
-          className="relative flex-1 overflow-auto flex items-center justify-center p-3 md:p-6"
+          className="relative flex-1 overflow-auto p-3 md:p-6"
           onContextMenu={(e) => e.preventDefault()}
+          onWheel={(e) => {
+            if (e.ctrlKey || e.metaKey) {
+              e.preventDefault();
+              if (e.deltaY < 0) zoomIn();
+              else zoomOut();
+            }
+          }}
         >
-          {urlLoading || !signedUrl ? (
-            <div className="text-white/80 flex flex-col items-center gap-3">
-              <Loader2 className="w-8 h-8 animate-spin" />
-              <span className="text-sm">جارٍ تحميل الملف...</span>
-            </div>
-          ) : kind === "image" ? (
-            <img
-              src={signedUrl}
-              alt={file.file_name}
-              draggable={false}
-              onContextMenu={(e) => e.preventDefault()}
-              className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
-              style={noSelectStyle}
-            />
-          ) : kind === "pdf" ? (
-            <div className="flex flex-col items-center gap-4 w-full">
-              <Document
-                file={signedUrl}
-                onLoadSuccess={(d) => setPageCount(d.numPages)}
-                loading={
-                  <div className="text-white/70 flex items-center gap-2">
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    <span className="text-sm">جارٍ تحميل الملف...</span>
-                  </div>
-                }
-                error={
-                  <div className="text-white/80 text-center max-w-sm p-6 rounded-xl bg-white/5 border border-white/10">
-                    <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-amber-400" />
-                    تعذّر عرض هذا الملف.
-                  </div>
-                }
-              >
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={page}
-                    initial={{ opacity: 0, rotateY: 12, x: 20 }}
-                    animate={{ opacity: 1, rotateY: 0, x: 0 }}
-                    exit={{ opacity: 0, rotateY: -12, x: -20 }}
-                    transition={{ duration: 0.28 }}
-                    className="rounded-lg overflow-hidden shadow-2xl bg-white"
-                  >
-                    <Page
-                      pageNumber={page}
-                      width={pdfWidth}
-                      renderAnnotationLayer={false}
-                      renderTextLayer={false}
-                    />
-                  </motion.div>
-                </AnimatePresence>
-              </Document>
-            </div>
-          ) : kind === "pptx" ? (
-            <FallbackUnpreviewable
-              icon={<Presentation className="w-10 h-10" />}
-              title="لا يمكن معاينة هذا الملف داخل المتصفح"
-              hint="يمكنك تحميله لعرضه على جهازك."
-            />
-          ) : (
-            <FallbackUnpreviewable
-              icon={<FileText className="w-10 h-10" />}
-              title="لا يمكن عرض هذا الملف"
-              hint="يمكنك تحميله لعرضه."
-            />
-          )}
+          <div className="min-h-full min-w-full flex items-center justify-center">
+            {urlLoading || !signedUrl ? (
+              <div className="text-white/80 flex flex-col items-center gap-3">
+                <Loader2 className="w-8 h-8 animate-spin" />
+                <span className="text-sm">جارٍ تحميل الملف...</span>
+              </div>
+            ) : kind === "image" ? (
+              <img
+                src={signedUrl}
+                alt={file.file_name}
+                draggable={false}
+                onContextMenu={(e) => e.preventDefault()}
+                className="rounded-lg shadow-2xl transition-transform"
+                style={{
+                  ...noSelectStyle,
+                  transform: `scale(${zoom})`,
+                  transformOrigin: "center center",
+                  maxWidth: zoom <= 1 ? "100%" : "none",
+                  maxHeight: zoom <= 1 ? "85vh" : "none",
+                }}
+              />
+            ) : kind === "pdf" ? (
+              <div className="flex flex-col items-center gap-4">
+                <Document
+                  file={signedUrl}
+                  onLoadSuccess={(d) => setPageCount(d.numPages)}
+                  loading={
+                    <div className="text-white/70 flex items-center gap-2">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span className="text-sm">جارٍ تحميل الملف...</span>
+                    </div>
+                  }
+                  error={
+                    <div className="text-white/80 text-center max-w-sm p-6 rounded-xl bg-white/5 border border-white/10">
+                      <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-amber-400" />
+                      تعذّر عرض هذا الملف.
+                    </div>
+                  }
+                >
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={page}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ duration: 0.22 }}
+                      className="rounded-lg overflow-hidden shadow-2xl bg-white"
+                    >
+                      <Page
+                        pageNumber={page}
+                        width={pdfWidth * zoom}
+                        renderAnnotationLayer={false}
+                        renderTextLayer={false}
+                      />
+                    </motion.div>
+                  </AnimatePresence>
+                </Document>
+              </div>
+            ) : kind === "pptx" ? (
+              <FallbackUnpreviewable
+                icon={<Presentation className="w-10 h-10" />}
+                title="لا يمكن معاينة هذا الملف داخل المتصفح"
+                hint="يمكنك تحميله لعرضه على جهازك."
+              />
+            ) : (
+              <FallbackUnpreviewable
+                icon={<FileText className="w-10 h-10" />}
+                title="لا يمكن عرض هذا الملف"
+                hint="يمكنك تحميله لعرضه."
+              />
+            )}
+          </div>
         </div>
 
         {/* PDF Pager */}
