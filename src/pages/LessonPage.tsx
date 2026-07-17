@@ -659,25 +659,10 @@ const CurriculumPanel = ({
 const FileTypeIcon = ({ type }: { type: string | null }) => {
   const t = (type || "").toLowerCase();
   if (t.startsWith("image/")) return <FileImage className="w-4 h-4" />;
-  if (t.startsWith("video/")) return <FileVideo className="w-4 h-4" />;
-  if (t.startsWith("audio/")) return <FileAudio className="w-4 h-4" />;
-  if (t.includes("zip") || t.includes("rar") || t.includes("7z"))
-    return <FileArchive className="w-4 h-4" />;
-  if (t.includes("pdf") || t.includes("text") || t.includes("word"))
-    return <FileText className="w-4 h-4" />;
+  if (t.includes("pdf")) return <FileText className="w-4 h-4" />;
+  if (t.includes("presentation") || t.includes("powerpoint"))
+    return <Presentation className="w-4 h-4" />;
   return <FileIcon className="w-4 h-4" />;
-};
-
-const formatBytes = (bytes: number | null) => {
-  if (!bytes) return "—";
-  const units = ["B", "KB", "MB", "GB"];
-  let n = bytes;
-  let i = 0;
-  while (n >= 1024 && i < units.length - 1) {
-    n /= 1024;
-    i++;
-  }
-  return `${n.toFixed(n < 10 && i > 0 ? 1 : 0)} ${units[i]}`;
 };
 
 export default LessonPage;
