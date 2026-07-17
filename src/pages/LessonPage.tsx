@@ -6,19 +6,17 @@ import {
   ArrowRight,
   CheckCircle2,
   ChevronRight,
-  Download,
+  Eye,
   File as FileIcon,
-  FileArchive,
-  FileAudio,
   FileImage,
   FileText,
-  FileVideo,
   Layers,
   ListChecks,
   Loader2,
   Lock,
   Menu,
   PlayCircle,
+  Presentation,
   Sparkles,
   X,
 } from "lucide-react";
@@ -33,6 +31,7 @@ import type { VideoProvider } from "@/lib/video";
 import LessonVideoPlayer from "@/components/lesson/LessonVideoPlayer";
 import CircularProgress from "@/components/lesson/CircularProgress";
 import { usePlayerSettings } from "@/hooks/use-player-settings";
+import FileViewer, { type ViewerFile } from "@/components/lesson/FileViewer";
 
 interface Lesson {
   id: string;
@@ -72,15 +71,13 @@ const LessonPage = () => {
   const [course, setCourse] = useState<CourseLite | null>(null);
   const [units, setUnits] = useState<CurriculumUnit[]>([]);
   const [lesson, setLesson] = useState<Lesson | null>(null);
-  const [files, setFiles] = useState<
-    { id: string; file_name: string; file_size: number | null; file_type: string | null; file_url: string }[]
-  >([]);
+  const [files, setFiles] = useState<ViewerFile[]>([]);
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const [enrolled, setEnrolled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [viewerFile, setViewerFile] = useState<ViewerFile | null>(null);
   const [watchPct, setWatchPct] = useState(0);
   const { settings: playerSettings } = usePlayerSettings();
 
@@ -155,12 +152,12 @@ const LessonPage = () => {
     setLesson((lRow as Lesson) ?? null);
 
     // Files
-    const { data: fData } = await supabase
+    const { data: fData } = await (supabase as any)
       .from("lesson_files")
-      .select("id, file_name, file_size, file_type, file_url")
+      .select("id, file_name, file_type, file_url, allow_download, download_limit")
       .eq("lesson_id", lessonId)
       .order("created_at");
-    setFiles(fData ?? []);
+    setFiles((fData ?? []) as ViewerFile[]);
 
     // Progress
     if (user) {
@@ -223,19 +220,8 @@ const LessonPage = () => {
     }
   };
 
-  const download = async (row: (typeof files)[number]) => {
-    setDownloadingId(row.id);
-    try {
-      const { data, error } = await supabase.storage
-        .from("lesson-files")
-        .createSignedUrl(row.file_url, 300, { download: row.file_name });
-      if (error || !data?.signedUrl) throw error || new Error("تعذّر التنزيل");
-      window.open(data.signedUrl, "_blank");
-    } catch (e: any) {
-      toast.error(e?.message || "تعذّر تنزيل الملف");
-    } finally {
-      setDownloadingId(null);
-    }
+  const openViewer = (row: ViewerFile) => {
+    setViewerFile(row);
   };
 
   if (authLoading || loading) {
@@ -311,6 +297,7 @@ const LessonPage = () => {
             videoUrl={lesson.video_url}
             settings={isAdmin ? { ...playerSettings, completion_gate_enabled: false } : playerSettings}
             onProgress={setWatchPct}
+            paused={!!viewerFile}
           />
 
           {percent === 100 && (
@@ -420,12 +407,14 @@ const LessonPage = () => {
                   <div className="space-y-2">
                     <AnimatePresence initial={false}>
                       {files.map((f, i) => (
-                        <motion.div
+                        <motion.button
                           key={f.id}
                           initial={{ opacity: 0, x: 12 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: i * 0.04 }}
-                          className="flex items-center gap-3 p-3 rounded-xl border border-border bg-background hover:border-primary/40 transition-colors"
+                          onClick={() => openViewer(f)}
+                          whileHover={{ y: -2 }}
+                          className="w-full flex items-center gap-3 p-3 rounded-xl border border-border bg-background hover:border-primary/50 hover:shadow-md transition-all text-right"
                         >
                           <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
                             <FileTypeIcon type={f.file_type} />
@@ -434,25 +423,24 @@ const LessonPage = () => {
                             <div className="text-sm font-semibold truncate">
                               {f.file_name}
                             </div>
-                            <div className="text-xs text-muted-foreground">
-                              {formatBytes(f.file_size)}
+                            <div className="text-xs text-muted-foreground flex items-center gap-2">
+                              <span>{f.file_type?.split("/")[1]?.toUpperCase() || "ملف"}</span>
+                              {!f.allow_download && (
+                                <>
+                                  <span className="opacity-40">·</span>
+                                  <span className="inline-flex items-center gap-1 text-destructive">
+                                    <Lock className="w-3 h-3" />
+                                    عرض فقط
+                                  </span>
+                                </>
+                              )}
                             </div>
                           </div>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => download(f)}
-                            disabled={downloadingId === f.id}
-                            className="gap-1"
-                          >
-                            {downloadingId === f.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <Download className="w-4 h-4" />
-                            )}
-                            تنزيل
-                          </Button>
-                        </motion.div>
+                          <div className="inline-flex items-center gap-1 text-xs font-semibold text-primary shrink-0">
+                            <Eye className="w-4 h-4" />
+                            عرض
+                          </div>
+                        </motion.button>
                       ))}
                     </AnimatePresence>
                   </div>
@@ -561,6 +549,9 @@ const LessonPage = () => {
           </>
         )}
       </AnimatePresence>
+
+      {/* File viewer overlay */}
+      <FileViewer file={viewerFile} onClose={() => setViewerFile(null)} />
     </div>
   );
 };
@@ -671,25 +662,10 @@ const CurriculumPanel = ({
 const FileTypeIcon = ({ type }: { type: string | null }) => {
   const t = (type || "").toLowerCase();
   if (t.startsWith("image/")) return <FileImage className="w-4 h-4" />;
-  if (t.startsWith("video/")) return <FileVideo className="w-4 h-4" />;
-  if (t.startsWith("audio/")) return <FileAudio className="w-4 h-4" />;
-  if (t.includes("zip") || t.includes("rar") || t.includes("7z"))
-    return <FileArchive className="w-4 h-4" />;
-  if (t.includes("pdf") || t.includes("text") || t.includes("word"))
-    return <FileText className="w-4 h-4" />;
+  if (t.includes("pdf")) return <FileText className="w-4 h-4" />;
+  if (t.includes("presentation") || t.includes("powerpoint"))
+    return <Presentation className="w-4 h-4" />;
   return <FileIcon className="w-4 h-4" />;
-};
-
-const formatBytes = (bytes: number | null) => {
-  if (!bytes) return "—";
-  const units = ["B", "KB", "MB", "GB"];
-  let n = bytes;
-  let i = 0;
-  while (n >= 1024 && i < units.length - 1) {
-    n /= 1024;
-    i++;
-  }
-  return `${n.toFixed(n < 10 && i > 0 ? 1 : 0)} ${units[i]}`;
 };
 
 export default LessonPage;

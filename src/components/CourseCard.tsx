@@ -40,11 +40,18 @@ export const CourseCard = ({ course, index = 0, progress }: Props) => {
               <BookOpen className="w-10 h-10 opacity-30" />
             </div>
           )}
-          {course.stage_name && (
-            <span className="absolute top-3 right-3 text-[11px] font-bold px-3 py-1 rounded-full bg-background/95 backdrop-blur text-foreground border border-border shadow">
-              {course.stage_name}
-            </span>
-          )}
+          <div className="absolute top-3 right-3 flex flex-col items-end gap-1.5">
+            {course.stage_name && (
+              <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-background/95 backdrop-blur text-foreground border border-border shadow">
+                {course.stage_name}
+              </span>
+            )}
+            {course.subject_name && (
+              <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-primary/95 backdrop-blur text-primary-foreground border border-primary/40 shadow">
+                {course.subject_name}
+              </span>
+            )}
+          </div>
           <EightPointStar
             size={36}
             className="absolute bottom-3 left-3 text-primary-foreground/70 opacity-70"

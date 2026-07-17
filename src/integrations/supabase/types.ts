@@ -22,6 +22,7 @@ export type Database = {
           id: string
           stage_id: string | null
           status: Database["public"]["Enums"]["course_status"]
+          subject_id: string | null
           thumbnail_url: string | null
           title: string
           updated_at: string
@@ -33,6 +34,7 @@ export type Database = {
           id?: string
           stage_id?: string | null
           status?: Database["public"]["Enums"]["course_status"]
+          subject_id?: string | null
           thumbnail_url?: string | null
           title: string
           updated_at?: string
@@ -44,6 +46,7 @@ export type Database = {
           id?: string
           stage_id?: string | null
           status?: Database["public"]["Enums"]["course_status"]
+          subject_id?: string | null
           thumbnail_url?: string | null
           title?: string
           updated_at?: string
@@ -61,6 +64,13 @@ export type Database = {
             columns: ["stage_id"]
             isOneToOne: false
             referencedRelation: "stages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "courses_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
             referencedColumns: ["id"]
           },
         ]
@@ -101,9 +111,53 @@ export type Database = {
           },
         ]
       }
-      lesson_files: {
+      lesson_file_downloads: {
         Row: {
           created_at: string
+          download_count: number
+          id: string
+          lesson_file_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          download_count?: number
+          id?: string
+          lesson_file_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          download_count?: number
+          id?: string
+          lesson_file_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_file_downloads_lesson_file_id_fkey"
+            columns: ["lesson_file_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_file_downloads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lesson_files: {
+        Row: {
+          allow_download: boolean
+          created_at: string
+          download_limit: number | null
           file_name: string
           file_size: number | null
           file_type: string | null
@@ -112,7 +166,9 @@ export type Database = {
           lesson_id: string
         }
         Insert: {
+          allow_download?: boolean
           created_at?: string
+          download_limit?: number | null
           file_name: string
           file_size?: number | null
           file_type?: string | null
@@ -121,7 +177,9 @@ export type Database = {
           lesson_id: string
         }
         Update: {
+          allow_download?: boolean
           created_at?: string
+          download_limit?: number | null
           file_name?: string
           file_size?: number | null
           file_type?: string | null
@@ -344,6 +402,33 @@ export type Database = {
         }
         Relationships: []
       }
+      subjects: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          thumbnail_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          thumbnail_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       units: {
         Row: {
           course_id: string
@@ -461,6 +546,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_file_download: {
+        Args: { p_lesson_file_id: string }
+        Returns: number
       }
       is_enrolled_in_lesson_course: {
         Args: { _lesson_id: string; _user_id: string }

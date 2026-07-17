@@ -10,16 +10,17 @@ import {
   Trash2,
   FileText,
   FileImage,
-  FileVideo,
-  FileAudio,
-  FileArchive,
   File as FileIcon,
   Youtube,
   Play,
   Film,
   Info,
   Paperclip,
+  Lock,
+  Infinity as InfinityIcon,
+  Settings2,
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
@@ -50,6 +51,8 @@ interface FileRow {
   file_size: number | null;
   file_type: string | null;
   file_url: string;
+  allow_download: boolean;
+  download_limit: number | null;
 }
 
 const schema = z.object({
@@ -69,15 +72,22 @@ const providers: {
   { key: "vimeo", label: "Vimeo", icon: Film, placeholder: "https://vimeo.com/…" },
 ];
 
+// Phase 10: restricted file types
+const ALLOWED_UPLOAD_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "application/pdf",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+];
+const ALLOWED_TYPES_LABEL = "PNG / JPG / WEBP / PDF / PPT / PPTX فقط";
+
 const fileIcon = (type?: string | null) => {
   if (!type) return FileIcon;
   if (type.startsWith("image/")) return FileImage;
-  if (type.startsWith("video/")) return FileVideo;
-  if (type.startsWith("audio/")) return FileAudio;
-  if (type.includes("zip") || type.includes("rar") || type.includes("7z"))
-    return FileArchive;
-  if (type.includes("pdf") || type.includes("text") || type.includes("word"))
-    return FileText;
+  if (type.includes("pdf")) return FileText;
+  if (type.includes("presentation") || type.includes("powerpoint")) return FileText;
   return FileIcon;
 };
 
@@ -235,15 +245,34 @@ const LessonModal = ({ open, onOpenChange, unitId, lesson, nextPosition, onSaved
 
   const handleUpload = async (fs: FileList | null) => {
     if (!fs || !activeLessonId) return;
+    const rejected: string[] = [];
+    const accepted: File[] = [];
+    for (const f of Array.from(fs)) {
+      if (ALLOWED_UPLOAD_TYPES.includes(f.type)) {
+        accepted.push(f);
+      } else {
+        rejected.push(f.name);
+      }
+    }
+    if (rejected.length) {
+      toast.error(
+        `نوع الملف غير مسموح: ${rejected.join(", ")} — يُسمح فقط بـ ${ALLOWED_TYPES_LABEL}`,
+      );
+    }
+    if (!accepted.length) {
+      if (fileRef.current) fileRef.current.value = "";
+      return;
+    }
+
     setUploading(true);
     try {
-      for (const f of Array.from(fs)) {
+      for (const f of accepted) {
         const path = `${activeLessonId}/${crypto.randomUUID()}-${f.name}`;
         const { error: upErr } = await supabase.storage
           .from("lesson-files")
           .upload(path, f, { contentType: f.type });
         if (upErr) throw upErr;
-        const { data: row, error } = await supabase
+        const { data: row, error } = await (supabase as any)
           .from("lesson_files")
           .insert({
             lesson_id: activeLessonId,
@@ -263,6 +292,24 @@ const LessonModal = ({ open, onOpenChange, unitId, lesson, nextPosition, onSaved
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  const updateFilePerms = async (
+    id: string,
+    patch: { allow_download?: boolean; download_limit?: number | null },
+  ) => {
+    setFiles((prev) =>
+      prev.map((f) => (f.id === id ? { ...f, ...patch } : f)),
+    );
+    try {
+      const { error } = await (supabase as any)
+        .from("lesson_files")
+        .update(patch)
+        .eq("id", id);
+      if (error) throw error;
+    } catch (e: any) {
+      toast.error(e?.message || "تعذّر تحديث الإعدادات");
     }
   };
 
@@ -429,19 +476,20 @@ const LessonModal = ({ open, onOpenChange, unitId, lesson, nextPosition, onSaved
                       <Upload className="w-5 h-5" />
                     </div>
                     <p className="text-sm font-medium">اسحب الملفات أو انقر للرفع</p>
-                    <p className="text-xs">أي نوع من الملفات — يدعم رفع عدة ملفات دفعة واحدة</p>
+                    <p className="text-xs">{ALLOWED_TYPES_LABEL}</p>
                   </div>
                 )}
                 <input
                   ref={fileRef}
                   type="file"
                   multiple
+                  accept={ALLOWED_UPLOAD_TYPES.join(",")}
                   className="hidden"
                   onChange={(e) => handleUpload(e.target.files)}
                 />
               </div>
 
-              <div className="space-y-2 max-h-64 overflow-y-auto">
+              <div className="space-y-2 max-h-80 overflow-y-auto">
                 <AnimatePresence>
                   {files.map((f) => {
                     const Icon = fileIcon(f.file_type);
@@ -452,25 +500,81 @@ const LessonModal = ({ open, onOpenChange, unitId, lesson, nextPosition, onSaved
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
-                        className="flex items-center gap-3 p-3 rounded-lg border border-border/60 bg-card"
+                        className="flex flex-col gap-2 p-3 rounded-lg border border-border/60 bg-card"
                       >
-                        <div className="w-9 h-9 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
-                          <Icon className="w-4 h-4 text-primary" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium truncate">{f.file_name}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {formatSize(f.file_size)}
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+                            <Icon className="w-4 h-4 text-primary" />
                           </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium truncate">{f.file_name}</div>
+                            <div className="text-xs text-muted-foreground flex items-center gap-2">
+                              <span>{formatSize(f.file_size)}</span>
+                              <span className="opacity-40">·</span>
+                              <PermBadge file={f} />
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => deleteFile(f)}
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => deleteFile(f)}
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+
+                        <div className="pt-2 border-t border-border/40 grid gap-3">
+                          <div className="flex items-center justify-between">
+                            <Label className="flex items-center gap-2 text-xs font-semibold cursor-pointer">
+                              <Settings2 className="w-3.5 h-3.5 text-muted-foreground" />
+                              السماح بالتحميل
+                            </Label>
+                            <Switch
+                              checked={f.allow_download}
+                              onCheckedChange={(v) =>
+                                updateFilePerms(f.id, { allow_download: v })
+                              }
+                            />
+                          </div>
+                          {f.allow_download && (
+                            <div className="flex items-center justify-between gap-3 flex-wrap">
+                              <div className="flex items-center gap-2">
+                                <Label className="text-xs font-semibold">
+                                  الحد الأقصى للتحميل لكل طالب
+                                </Label>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 text-xs">
+                                  <InfinityIcon className="w-3.5 h-3.5 text-muted-foreground" />
+                                  <span>غير محدود</span>
+                                  <Switch
+                                    checked={f.download_limit === null}
+                                    onCheckedChange={(unlimited) =>
+                                      updateFilePerms(f.id, {
+                                        download_limit: unlimited ? null : 3,
+                                      })
+                                    }
+                                  />
+                                </div>
+                                {f.download_limit !== null && (
+                                  <Input
+                                    type="number"
+                                    min={1}
+                                    value={f.download_limit ?? ""}
+                                    onChange={(e) => {
+                                      const n = Number(e.target.value);
+                                      updateFilePerms(f.id, {
+                                        download_limit: Number.isFinite(n) && n > 0 ? Math.floor(n) : 1,
+                                      });
+                                    }}
+                                    className="w-20 h-8"
+                                  />
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </motion.div>
                     );
                   })}
@@ -494,3 +598,28 @@ const LessonModal = ({ open, onOpenChange, unitId, lesson, nextPosition, onSaved
 };
 
 export default LessonModal;
+
+const PermBadge = ({ file }: { file: FileRow }) => {
+  if (!file.allow_download) {
+    return (
+      <span className="inline-flex items-center gap-1 font-semibold text-destructive">
+        <Lock className="w-3 h-3" />
+        التحميل غير مسموح
+      </span>
+    );
+  }
+  if (file.download_limit === null) {
+    return (
+      <span className="inline-flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400">
+        <InfinityIcon className="w-3 h-3" />
+        غير محدود
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 font-semibold text-amber-600 dark:text-amber-400">
+      <Settings2 className="w-3 h-3" />
+      محدود ({file.download_limit})
+    </span>
+  );
+};

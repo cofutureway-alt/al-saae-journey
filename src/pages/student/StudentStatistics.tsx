@@ -1,50 +1,272 @@
-import { motion } from "framer-motion";
-import { BarChart3, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Link } from "react-router-dom";
+import {
+  BookOpen,
+  CheckCircle2,
+  ChevronDown,
+  Compass,
+  ListChecks,
+  Percent,
+  PlayCircle,
+  Sparkles,
+  TrendingUp,
+} from "lucide-react";
+import { useStudentStats, type StudentCourseStat } from "@/hooks/use-stats";
+import { StatCard } from "@/components/StatCard";
+import { useSignedThumbnail } from "@/hooks/use-signed-thumbnail";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useCountUp } from "@/hooks/use-count-up";
 
 const StudentStatistics = () => {
-  return (
-    <div className="max-w-3xl mx-auto">
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="relative overflow-hidden rounded-3xl border-2 border-dashed border-border p-10 md:p-16 text-center"
-      >
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
-          className="absolute -top-16 -left-16 w-56 h-56 rounded-full bg-primary/5"
-        />
-        <motion.div
-          animate={{ rotate: -360 }}
-          transition={{ duration: 55, repeat: Infinity, ease: "linear" }}
-          className="absolute -bottom-20 -right-20 w-72 h-72 rounded-full bg-primary/5"
-        />
+  const stats = useStudentStats();
 
-        <div className="relative">
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.1 }}
-            className="mx-auto inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-primary/10 mb-6"
-          >
-            <BarChart3 className="w-10 h-10 text-primary" />
-          </motion.div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-3">
-            إحصائياتك قادمة قريبًا
-          </h1>
-          <p className="text-muted-foreground max-w-md mx-auto leading-relaxed">
-            نعمل على لوحة إحصائيات ثريّة تعرض تقدّمك، ساعات دراستك، ومعدل إنجازك
-            الأسبوعي. ترقّبها في إصدار قادم.
-          </p>
-          <div className="mt-6 inline-flex items-center gap-2 text-xs font-semibold text-primary bg-primary/10 px-3 py-1.5 rounded-full">
-            <Sparkles className="w-3.5 h-3.5" />
-            قيد التطوير
-          </div>
-        </div>
+  return (
+    <div className="max-w-6xl mx-auto space-y-8">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+        <h1 className="text-2xl md:text-3xl font-bold text-foreground">الإحصائيات</h1>
+        <p className="text-muted-foreground mt-1">
+          تقدّمك عبر الدورات ونسبة إنجازك الفعلية.
+        </p>
       </motion.div>
+
+      {!stats ? (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-32 rounded-2xl" />
+          ))}
+        </div>
+      ) : stats.enrollmentsCount === 0 ? (
+        <EmptyState />
+      ) : (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <StatCard
+              label="الكورسات المشترك بها"
+              value={stats.enrollmentsCount}
+              icon={BookOpen}
+              accent="primary"
+              delay={0}
+            />
+            <StatCard
+              label="الدروس المكتملة"
+              value={stats.completedLessons}
+              icon={ListChecks}
+              accent="emerald"
+              delay={0.05}
+            />
+            <OverallCard percent={stats.overallPercent} />
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="rounded-2xl border border-border/60 bg-card overflow-hidden"
+          >
+            <div className="p-5 md:p-6 border-b border-border/60">
+              <h2 className="text-lg md:text-xl font-bold">دوراتي</h2>
+              <p className="text-xs text-muted-foreground">
+                اضغط على الدورة لعرض تفاصيل الدروس والتقدّم داخل كل درس.
+              </p>
+            </div>
+            <div className="divide-y divide-border/50">
+              {stats.courses.map((c, i) => (
+                <CourseRow key={c.id} course={c} index={i} />
+              ))}
+            </div>
+          </motion.div>
+        </>
+      )}
     </div>
   );
 };
+
+const OverallCard = ({ percent }: { percent: number }) => {
+  const { count } = useCountUp(percent, 1400);
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 18, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ delay: 0.1, type: "spring", damping: 22, stiffness: 200 }}
+      whileHover={{ y: -3 }}
+      className="relative overflow-hidden rounded-2xl border border-border/60 bg-card p-5 md:p-6"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="text-xs md:text-sm font-medium text-muted-foreground mb-2">
+            نسبة الإكمال الإجمالية
+          </div>
+          <div className="text-3xl md:text-4xl font-black tabular-nums text-foreground leading-none">
+            {count}
+            <span className="text-lg md:text-xl font-bold text-muted-foreground mr-1">%</span>
+          </div>
+          <div className="mt-3">
+            <Progress value={count} className="h-2" />
+          </div>
+        </div>
+        <div className="w-11 h-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+          <Percent className="w-5 h-5" />
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+const CourseRow = ({ course, index }: { course: StudentCourseStat; index: number }) => {
+  const [open, setOpen] = useState(false);
+  const thumb = useSignedThumbnail(course.thumbnail_url);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: 0.25 + index * 0.05 }}
+    >
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center gap-3 p-4 md:p-5 text-right hover:bg-accent/30 transition-colors"
+      >
+        <div className="w-16 h-11 md:w-20 md:h-14 rounded-lg overflow-hidden bg-accent shrink-0 flex items-center justify-center">
+          {thumb ? (
+            <img src={thumb} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <BookOpen className="w-5 h-5 text-muted-foreground/50" />
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-bold text-foreground truncate">{course.title}</div>
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            {course.stage_name && (
+              <Badge variant="secondary" className="text-[10px] font-medium">
+                {course.stage_name}
+              </Badge>
+            )}
+            {course.subject_name && (
+              <Badge variant="outline" className="text-[10px] font-medium">
+                {course.subject_name}
+              </Badge>
+            )}
+            <span className="text-[11px] text-muted-foreground">
+              {course.completed_lessons}/{course.total_lessons} درس
+            </span>
+          </div>
+        </div>
+        <div className="hidden sm:flex flex-col items-end gap-1 w-32 shrink-0">
+          <div className="flex items-center gap-1 text-sm font-bold tabular-nums">
+            <TrendingUp className="w-3.5 h-3.5 text-primary" />
+            {course.percent}%
+          </div>
+          <Progress value={course.percent} className="h-1.5 w-full" />
+        </div>
+        <div className="sm:hidden text-sm font-bold tabular-nums shrink-0">{course.percent}%</div>
+        <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }}>
+          <ChevronDown className="w-4 h-4 text-muted-foreground" />
+        </motion.div>
+      </button>
+
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="overflow-hidden bg-muted/20 border-t border-border/40"
+          >
+            <div className="p-4 md:p-5 space-y-4">
+              {course.units.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  لا توجد وحدات بعد.
+                </p>
+              ) : (
+                course.units.map((u, ui) => (
+                  <div key={u.id} className="space-y-1.5">
+                    <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase tracking-wider px-1">
+                      <span className="w-5 h-5 rounded bg-primary/10 text-primary inline-flex items-center justify-center text-[10px]">
+                        {ui + 1}
+                      </span>
+                      <span className="truncate">{u.title}</span>
+                    </div>
+                    {u.lessons.length === 0 ? (
+                      <div className="text-xs text-muted-foreground px-2 py-1.5">
+                        لا توجد دروس
+                      </div>
+                    ) : (
+                      u.lessons.map((l) => (
+                        <Link
+                          key={l.id}
+                          to={`/courses/${course.id}/learn/${l.id}`}
+                          className="flex items-center gap-3 p-2.5 rounded-lg bg-background border border-border/50 hover:border-primary/40 transition-colors group"
+                        >
+                          <div
+                            className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 ${
+                              l.completed
+                                ? "bg-emerald-500 text-white"
+                                : "bg-primary/10 text-primary"
+                            }`}
+                          >
+                            {l.completed ? (
+                              <CheckCircle2 className="w-4 h-4" />
+                            ) : (
+                              <PlayCircle className="w-4 h-4" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0 text-sm font-medium truncate">
+                            {l.title}
+                          </div>
+                          <div className="text-xs font-bold tabular-nums shrink-0">
+                            {l.completed ? (
+                              <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                مكتمل
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">
+                                {Math.round(l.watch_percentage)}%
+                              </span>
+                            )}
+                          </div>
+                        </Link>
+                      ))
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+};
+
+const EmptyState = () => (
+  <motion.div
+    initial={{ opacity: 0, y: 12 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="rounded-3xl border-2 border-dashed border-border p-12 md:p-16 text-center max-w-xl mx-auto"
+  >
+    <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-primary/10 mb-6">
+      <Compass className="w-10 h-10 text-primary" />
+    </div>
+    <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary bg-primary/10 rounded-full px-3 py-1 mb-3">
+      <Sparkles className="w-3 h-3" />
+      ابدأ رحلتك
+    </div>
+    <h2 className="text-xl md:text-2xl font-bold mb-2">
+      لم تسجّل في أي دورة بعد
+    </h2>
+    <p className="text-muted-foreground max-w-md mx-auto mb-6">
+      سجّل في أول دورة لتظهر إحصائيات تقدّمك هنا.
+    </p>
+    <Button asChild size="lg" className="font-bold">
+      <Link to="/courses">استعرض الدورات</Link>
+    </Button>
+  </motion.div>
+);
 
 export default StudentStatistics;
