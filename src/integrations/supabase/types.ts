@@ -185,6 +185,70 @@ export type Database = {
           },
         ]
       }
+      lesson_watch_progress: {
+        Row: {
+          course_id: string
+          created_at: string
+          duration_seconds: number
+          furthest_position_seconds: number
+          id: string
+          last_position_seconds: number
+          lesson_id: string
+          updated_at: string
+          user_id: string
+          watch_percentage: number
+          watched_seconds: number
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          duration_seconds?: number
+          furthest_position_seconds?: number
+          id?: string
+          last_position_seconds?: number
+          lesson_id: string
+          updated_at?: string
+          user_id: string
+          watch_percentage?: number
+          watched_seconds?: number
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          duration_seconds?: number
+          furthest_position_seconds?: number
+          id?: string
+          last_position_seconds?: number
+          lesson_id?: string
+          updated_at?: string
+          user_id?: string
+          watch_percentage?: number
+          watched_seconds?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_watch_progress_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_watch_progress_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_watch_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lessons: {
         Row: {
           created_at: string

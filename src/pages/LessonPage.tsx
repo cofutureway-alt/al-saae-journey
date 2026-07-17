@@ -30,7 +30,8 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { VideoProvider } from "@/lib/video";
-import { parseVideoUrl } from "@/lib/video";
+import LessonVideoPlayer from "@/components/lesson/LessonVideoPlayer";
+import CircularProgress from "@/components/lesson/CircularProgress";
 
 interface Lesson {
   id: string;
@@ -79,6 +80,7 @@ const LessonPage = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [watchPct, setWatchPct] = useState(0);
 
   const load = useCallback(async () => {
     if (!courseId || !lessonId) return;
@@ -300,7 +302,14 @@ const LessonPage = () => {
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px]">
         {/* Main content */}
         <main className="p-3 md:p-6 space-y-5 min-w-0">
-          <VideoPlayer lesson={lesson} />
+          <LessonVideoPlayer
+            lessonId={lesson.id}
+            courseId={courseId!}
+            title={lesson.title}
+            provider={lesson.video_provider}
+            videoUrl={lesson.video_url}
+            onProgress={setWatchPct}
+          />
 
           {percent === 100 && (
             <motion.div
@@ -326,10 +335,13 @@ const LessonPage = () => {
 
           <div className="rounded-2xl border border-border bg-card p-4 md:p-6">
             <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
-              <div className="min-w-0">
-                <h1 className="text-xl md:text-2xl font-bold">{lesson.title}</h1>
-                <div className="text-xs text-muted-foreground mt-1">
-                  الدرس {currentIndex + 1} من {totalLessons}
+              <div className="min-w-0 flex items-center gap-3">
+                <CircularProgress value={watchPct} size={52} label="نسبة المشاهدة" />
+                <div className="min-w-0">
+                  <h1 className="text-xl md:text-2xl font-bold">{lesson.title}</h1>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    الدرس {currentIndex + 1} من {totalLessons}
+                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -532,43 +544,6 @@ const LessonPage = () => {
   );
 };
 
-// ---------- Video player ----------
-const VideoPlayer = ({ lesson }: { lesson: Lesson }) => {
-  const embed = useMemo(() => {
-    if (!lesson.video_provider || !lesson.video_url) return null;
-    const parsed = parseVideoUrl(lesson.video_provider, lesson.video_url);
-    if ("error" in parsed) return null;
-    if (parsed.provider === "youtube") {
-      return `https://www.youtube-nocookie.com/embed/${parsed.id}?rel=0&modestbranding=1`;
-    }
-    if (parsed.provider === "vimeo") {
-      return `https://player.vimeo.com/video/${parsed.id}`;
-    }
-    if (parsed.provider === "bunny") {
-      return parsed.url;
-    }
-    return null;
-  }, [lesson]);
-
-  return (
-    <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-black border border-border shadow-lg">
-      {embed ? (
-        <iframe
-          src={embed}
-          className="absolute inset-0 w-full h-full"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-          allowFullScreen
-          title={lesson.title}
-        />
-      ) : (
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground gap-2">
-          <PlayCircle className="w-14 h-14 opacity-30" />
-          <div className="text-sm">لا يوجد فيديو صالح لهذا الدرس بعد.</div>
-        </div>
-      )}
-    </div>
-  );
-};
 
 // ---------- Curriculum panel ----------
 const CurriculumPanel = ({
