@@ -16,6 +16,7 @@ import AdminStages from "./pages/admin/AdminStages";
 import CourseInfoEditor from "./pages/admin/CourseInfoEditor";
 import CourseBuilder from "./pages/admin/CourseBuilder";
 import Courses from "./pages/Courses";
+import CourseDetails from "./pages/CourseDetails";
 
 const queryClient = new QueryClient();
 
