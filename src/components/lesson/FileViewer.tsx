@@ -422,7 +422,11 @@ export const FileViewer = ({ file, onClose }: Props) => {
         {/* Content */}
         <div
           ref={containerRef}
-          className="relative flex-1 overflow-auto p-3 md:p-6"
+          className="relative flex-1 overflow-auto p-3 md:p-6 touch-none"
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+          style={{ touchAction: "pan-x pan-y" }}
           onContextMenu={(e) => e.preventDefault()}
           onWheel={(e) => {
             if (e.ctrlKey || e.metaKey) {
