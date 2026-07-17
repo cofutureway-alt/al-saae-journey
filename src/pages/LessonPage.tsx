@@ -541,43 +541,6 @@ const LessonPage = () => {
   );
 };
 
-// ---------- Video player ----------
-const VideoPlayer = ({ lesson }: { lesson: Lesson }) => {
-  const embed = useMemo(() => {
-    if (!lesson.video_provider || !lesson.video_url) return null;
-    const parsed = parseVideoUrl(lesson.video_provider, lesson.video_url);
-    if ("error" in parsed) return null;
-    if (parsed.provider === "youtube") {
-      return `https://www.youtube-nocookie.com/embed/${parsed.id}?rel=0&modestbranding=1`;
-    }
-    if (parsed.provider === "vimeo") {
-      return `https://player.vimeo.com/video/${parsed.id}`;
-    }
-    if (parsed.provider === "bunny") {
-      return parsed.url;
-    }
-    return null;
-  }, [lesson]);
-
-  return (
-    <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-black border border-border shadow-lg">
-      {embed ? (
-        <iframe
-          src={embed}
-          className="absolute inset-0 w-full h-full"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-          allowFullScreen
-          title={lesson.title}
-        />
-      ) : (
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground gap-2">
-          <PlayCircle className="w-14 h-14 opacity-30" />
-          <div className="text-sm">لا يوجد فيديو صالح لهذا الدرس بعد.</div>
-        </div>
-      )}
-    </div>
-  );
-};
 
 // ---------- Curriculum panel ----------
 const CurriculumPanel = ({
