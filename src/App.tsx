@@ -16,6 +16,7 @@ import NotFound from "./pages/NotFound";
 import AdminStatistics from "./pages/admin/AdminStatistics";
 import AdminCourses from "./pages/admin/AdminCourses";
 import AdminStages from "./pages/admin/AdminStages";
+import AdminSubjects from "./pages/admin/AdminSubjects";
 import CourseInfoEditor from "./pages/admin/CourseInfoEditor";
 import CourseBuilder from "./pages/admin/CourseBuilder";
 import Courses from "./pages/Courses";
@@ -75,6 +76,7 @@ const App = () => (
               <Route path="courses/:id/edit" element={<CourseInfoEditor />} />
               <Route path="courses/:id/builder" element={<CourseBuilder />} />
               <Route path="stages" element={<AdminStages />} />
+              <Route path="subjects" element={<AdminSubjects />} />
               <Route path="settings" element={<AdminSettings />} />
               <Route path="settings/video-player" element={<AdminVideoPlayerSettings />} />
             </Route>

@@ -6,19 +6,17 @@ import {
   ArrowRight,
   CheckCircle2,
   ChevronRight,
-  Download,
+  Eye,
   File as FileIcon,
-  FileArchive,
-  FileAudio,
   FileImage,
   FileText,
-  FileVideo,
   Layers,
   ListChecks,
   Loader2,
   Lock,
   Menu,
   PlayCircle,
+  Presentation,
   Sparkles,
   X,
 } from "lucide-react";
@@ -33,6 +31,7 @@ import type { VideoProvider } from "@/lib/video";
 import LessonVideoPlayer from "@/components/lesson/LessonVideoPlayer";
 import CircularProgress from "@/components/lesson/CircularProgress";
 import { usePlayerSettings } from "@/hooks/use-player-settings";
+import FileViewer, { type ViewerFile } from "@/components/lesson/FileViewer";
 
 interface Lesson {
   id: string;
@@ -72,15 +71,13 @@ const LessonPage = () => {
   const [course, setCourse] = useState<CourseLite | null>(null);
   const [units, setUnits] = useState<CurriculumUnit[]>([]);
   const [lesson, setLesson] = useState<Lesson | null>(null);
-  const [files, setFiles] = useState<
-    { id: string; file_name: string; file_size: number | null; file_type: string | null; file_url: string }[]
-  >([]);
+  const [files, setFiles] = useState<ViewerFile[]>([]);
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const [enrolled, setEnrolled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [viewerFile, setViewerFile] = useState<ViewerFile | null>(null);
   const [watchPct, setWatchPct] = useState(0);
   const { settings: playerSettings } = usePlayerSettings();
 

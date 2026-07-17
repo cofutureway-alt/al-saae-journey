@@ -12,6 +12,7 @@ import {
   X,
   AlertTriangle,
   Layers,
+  BookMarked,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ const schema = z.object({
   title: z.string().trim().min(2, "العنوان قصير جدًا").max(120),
   description: z.string().trim().max(1000).optional(),
   stage_id: z.string().uuid("اختر مرحلة"),
+  subject_id: z.string().uuid("اختر مادة دراسية"),
 });
 type FormValues = z.infer<typeof schema>;
 
@@ -41,12 +43,17 @@ interface Stage {
   id: string;
   name: string;
 }
+interface Subject {
+  id: string;
+  name: string;
+}
 
 const CourseInfoEditor = () => {
   const { id } = useParams();
   const isEdit = !!id;
   const navigate = useNavigate();
   const [stages, setStages] = useState<Stage[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(isEdit);
   const [submitting, setSubmitting] = useState(false);
   const [existingThumb, setExistingThumb] = useState<string | null>(null);
@@ -64,9 +71,10 @@ const CourseInfoEditor = () => {
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { title: "", description: "", stage_id: "" },
+    defaultValues: { title: "", description: "", stage_id: "", subject_id: "" },
   });
   const stageVal = watch("stage_id");
+  const subjectVal = watch("subject_id");
 
   useEffect(() => {
     supabase
@@ -74,6 +82,12 @@ const CourseInfoEditor = () => {
       .select("id, name")
       .order("name")
       .then(({ data }) => setStages((data as Stage[]) ?? []));
+
+    (supabase as any)
+      .from("subjects")
+      .select("id, name")
+      .order("name")
+      .then(({ data }: any) => setSubjects((data as Subject[]) ?? []));
 
     if (isEdit) {
       supabase
@@ -91,6 +105,7 @@ const CourseInfoEditor = () => {
             title: data.title,
             description: data.description ?? "",
             stage_id: data.stage_id ?? "",
+            subject_id: (data as any).subject_id ?? "",
           });
           setExistingThumb(data.thumbnail_url);
           setLoading(false);
@@ -136,12 +151,13 @@ const CourseInfoEditor = () => {
       }
 
       if (isEdit) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from("courses")
           .update({
             title: values.title,
             description: values.description || null,
             stage_id: values.stage_id,
+            subject_id: values.subject_id,
             thumbnail_url: thumbPath,
           })
           .eq("id", id!);
@@ -150,12 +166,13 @@ const CourseInfoEditor = () => {
         navigate(`/admin/courses/${id}/builder`);
       } else {
         const { data: userRes } = await supabase.auth.getUser();
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from("courses")
           .insert({
             title: values.title,
             description: values.description || null,
             stage_id: values.stage_id,
+            subject_id: values.subject_id,
             thumbnail_url: thumbPath,
             status: "draft",
             created_by: userRes.user?.id ?? null,
@@ -209,7 +226,7 @@ const CourseInfoEditor = () => {
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 mb-6 flex items-start gap-3"
+          className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 mb-4 flex items-start gap-3"
         >
           <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
           <div className="flex-1">
@@ -222,6 +239,28 @@ const CourseInfoEditor = () => {
             <Link to="/admin/stages">
               <Layers className="w-4 h-4 ml-2" />
               إدارة المراحل
+            </Link>
+          </Button>
+        </motion.div>
+      )}
+
+      {subjects.length === 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 mb-6 flex items-start gap-3"
+        >
+          <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <div className="font-semibold text-foreground">لا توجد مواد دراسية بعد</div>
+            <p className="text-sm text-muted-foreground">
+              يجب إنشاء مادة دراسية واحدة على الأقل أولاً.
+            </p>
+          </div>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/admin/subjects">
+              <BookMarked className="w-4 h-4 ml-2" />
+              إدارة المواد
             </Link>
           </Button>
         </motion.div>
@@ -248,27 +287,52 @@ const CourseInfoEditor = () => {
           )}
         </div>
 
-        <div className="space-y-2">
-          <Label>المرحلة الدراسية</Label>
-          <Select
-            value={stageVal}
-            onValueChange={(v) => setValue("stage_id", v, { shouldValidate: true })}
-            disabled={stages.length === 0}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="اختر المرحلة" />
-            </SelectTrigger>
-            <SelectContent>
-              {stages.map((s) => (
-                <SelectItem key={s.id} value={s.id}>
-                  {s.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {errors.stage_id && (
-            <p className="text-xs text-destructive">{errors.stage_id.message}</p>
-          )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>المرحلة الدراسية</Label>
+            <Select
+              value={stageVal}
+              onValueChange={(v) => setValue("stage_id", v, { shouldValidate: true })}
+              disabled={stages.length === 0}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="اختر المرحلة" />
+              </SelectTrigger>
+              <SelectContent>
+                {stages.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.stage_id && (
+              <p className="text-xs text-destructive">{errors.stage_id.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label>المادة الدراسية</Label>
+            <Select
+              value={subjectVal}
+              onValueChange={(v) => setValue("subject_id", v, { shouldValidate: true })}
+              disabled={subjects.length === 0}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="اختر المادة" />
+              </SelectTrigger>
+              <SelectContent>
+                {subjects.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.subject_id && (
+              <p className="text-xs text-destructive">{errors.subject_id.message}</p>
+            )}
+          </div>
         </div>
 
         <div className="space-y-2">
@@ -339,7 +403,7 @@ const CourseInfoEditor = () => {
           >
             إلغاء
           </Button>
-          <Button type="submit" disabled={submitting || stages.length === 0}>
+          <Button type="submit" disabled={submitting || stages.length === 0 || subjects.length === 0}>
             {submitting && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
             {isEdit ? "حفظ التغييرات" : "التالي: بناء المحتوى"}
           </Button>

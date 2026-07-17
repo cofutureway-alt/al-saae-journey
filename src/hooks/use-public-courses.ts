@@ -8,6 +8,8 @@ export interface PublicCourse {
   thumbnail_url: string | null;
   stage_id: string | null;
   stage_name: string | null;
+  subject_id: string | null;
+  subject_name: string | null;
   units_count: number;
   lessons_count: number;
   created_at: string;
@@ -19,10 +21,10 @@ export function usePublicCourses(limit?: number) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      let q = supabase
+      let q = (supabase as any)
         .from("courses")
         .select(
-          "id, title, description, thumbnail_url, stage_id, created_at, stages(name), units(id)",
+          "id, title, description, thumbnail_url, stage_id, subject_id, created_at, stages(name), subjects(name), units(id)",
         )
         .eq("status", "published")
         .order("created_at", { ascending: false });
@@ -58,6 +60,8 @@ export function usePublicCourses(limit?: number) {
           thumbnail_url: c.thumbnail_url,
           stage_id: c.stage_id,
           stage_name: c.stages?.name ?? null,
+          subject_id: c.subject_id ?? null,
+          subject_name: c.subjects?.name ?? null,
           units_count: c.units?.length ?? 0,
           lessons_count: (c.units ?? []).reduce(
             (acc: number, u: any) => acc + (lessonCounts[u.id] ?? 0),

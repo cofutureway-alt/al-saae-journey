@@ -18,6 +18,7 @@ interface Props {
   videoUrl: string | null;
   settings?: VideoPlayerSettings;
   onProgress?: (pct: number) => void;
+  paused?: boolean;
 }
 
 export const LessonVideoPlayer = ({
@@ -28,6 +29,7 @@ export const LessonVideoPlayer = ({
   videoUrl,
   settings: settingsProp,
   onProgress,
+  paused,
 }: Props) => {
   const settings = settingsProp ?? DEFAULT_PLAYER_SETTINGS;
   const { user, profile } = useAuth();
@@ -41,8 +43,29 @@ export const LessonVideoPlayer = ({
   const isBunny = parsed?.provider === "bunny";
   const shellRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLDivElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const plyrRef = useRef<Plyr | null>(null);
   const tracker = useWatchTracker({ userId: user?.id, lessonId, courseId });
+
+  // Externally-triggered pause (e.g. when file viewer opens on the lesson page)
+  useEffect(() => {
+    if (!paused) return;
+    try {
+      plyrRef.current?.pause();
+    } catch {
+      /* noop */
+    }
+    if (isBunny && iframeRef.current) {
+      try {
+        iframeRef.current.contentWindow?.postMessage(
+          '{"method":"pause"}',
+          "*",
+        );
+      } catch {
+        /* noop */
+      }
+    }
+  }, [paused, isBunny]);
 
   const [seekHint, setSeekHint] = useState<null | "forward" | "backward">(null);
   const seekHintTimer = useRef<number | null>(null);
@@ -318,6 +341,7 @@ export const LessonVideoPlayer = ({
       >
         {isBunny ? (
           <iframe
+            ref={iframeRef}
             src={parsed.url}
             className="absolute inset-0 w-full h-full"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"

@@ -11,7 +11,7 @@ import { useMyProgressMap } from "@/hooks/use-my-progress";
 import { supabase } from "@/integrations/supabase/client";
 import { EightPointStar } from "@/components/IslamicPatterns";
 
-interface Stage {
+interface Named {
   id: string;
   name: string;
 }
@@ -19,27 +19,35 @@ interface Stage {
 const Courses = () => {
   const courses = usePublicCourses();
   const progressMap = useMyProgressMap();
-  const [stages, setStages] = useState<Stage[]>([]);
+  const [stages, setStages] = useState<Named[]>([]);
+  const [subjects, setSubjects] = useState<Named[]>([]);
   const [query, setQuery] = useState("");
   const [stageId, setStageId] = useState<string | "all">("all");
+  const [subjectId, setSubjectId] = useState<string | "all">("all");
 
   useEffect(() => {
     supabase
       .from("stages")
       .select("id, name")
       .order("name")
-      .then(({ data }) => setStages((data as Stage[]) ?? []));
+      .then(({ data }) => setStages((data as Named[]) ?? []));
+    (supabase as any)
+      .from("subjects")
+      .select("id, name")
+      .order("name")
+      .then(({ data }: any) => setSubjects((data as Named[]) ?? []));
   }, []);
 
   const filtered = useMemo(() => {
     if (!courses) return null;
     return courses.filter((c) => {
       if (stageId !== "all" && c.stage_id !== stageId) return false;
+      if (subjectId !== "all" && c.subject_id !== subjectId) return false;
       if (query && !c.title.toLowerCase().includes(query.toLowerCase()))
         return false;
       return true;
     });
-  }, [courses, query, stageId]);
+  }, [courses, query, stageId, subjectId]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -69,7 +77,6 @@ const Courses = () => {
             </p>
           </motion.div>
 
-          {/* Search + filters */}
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -87,20 +94,48 @@ const Courses = () => {
             </div>
 
             {stages.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                <StageChip
-                  active={stageId === "all"}
-                  onClick={() => setStageId("all")}
-                  label="جميع المراحل"
-                />
-                {stages.map((s) => (
-                  <StageChip
-                    key={s.id}
-                    active={stageId === s.id}
-                    onClick={() => setStageId(s.id)}
-                    label={s.name}
+              <div>
+                <div className="text-xs font-semibold text-muted-foreground mb-2">المراحل</div>
+                <div className="flex flex-wrap gap-2">
+                  <Chip
+                    layoutId="stage-chip-active"
+                    active={stageId === "all"}
+                    onClick={() => setStageId("all")}
+                    label="جميع المراحل"
                   />
-                ))}
+                  {stages.map((s) => (
+                    <Chip
+                      key={s.id}
+                      layoutId="stage-chip-active"
+                      active={stageId === s.id}
+                      onClick={() => setStageId(s.id)}
+                      label={s.name}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {subjects.length > 0 && (
+              <div>
+                <div className="text-xs font-semibold text-muted-foreground mb-2">المواد الدراسية</div>
+                <div className="flex flex-wrap gap-2">
+                  <Chip
+                    layoutId="subject-chip-active"
+                    active={subjectId === "all"}
+                    onClick={() => setSubjectId("all")}
+                    label="جميع المواد"
+                  />
+                  {subjects.map((s) => (
+                    <Chip
+                      key={s.id}
+                      layoutId="subject-chip-active"
+                      active={subjectId === s.id}
+                      onClick={() => setSubjectId(s.id)}
+                      label={s.name}
+                    />
+                  ))}
+                </div>
               </div>
             )}
           </motion.div>
@@ -141,7 +176,7 @@ const Courses = () => {
               <p className="text-muted-foreground">
                 {courses.length === 0
                   ? "سنضيف الدورات قريبًا. تابعنا للاطلاع على الجديد."
-                  : "جرّب كلمات بحث أخرى أو غيّر المرحلة."}
+                  : "جرّب كلمات بحث أخرى أو غيّر المرحلة أو المادة."}
               </p>
             </div>
           )}
@@ -153,14 +188,16 @@ const Courses = () => {
   );
 };
 
-const StageChip = ({
+const Chip = ({
   active,
   onClick,
   label,
+  layoutId,
 }: {
   active: boolean;
   onClick: () => void;
   label: string;
+  layoutId: string;
 }) => (
   <button
     onClick={onClick}
@@ -172,7 +209,7 @@ const StageChip = ({
   >
     {active && (
       <motion.span
-        layoutId="stage-chip-active"
+        layoutId={layoutId}
         className="absolute inset-0 rounded-full bg-primary -z-10"
         transition={{ type: "spring", stiffness: 380, damping: 30 }}
       />

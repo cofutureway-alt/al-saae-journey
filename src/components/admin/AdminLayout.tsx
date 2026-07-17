@@ -3,6 +3,7 @@ import { NavLink, useLocation, useNavigate, Outlet } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart3,
+  BookMarked,
   BookOpen,
   Layers,
   LogOut,
@@ -28,6 +29,7 @@ const nav = [
   { to: "/admin", label: "الإحصائيات", icon: BarChart3, end: true },
   { to: "/admin/courses", label: "الدورات", icon: BookOpen },
   { to: "/admin/stages", label: "المراحل", icon: Layers },
+  { to: "/admin/subjects", label: "المواد الدراسية", icon: BookMarked },
   { to: "/admin/settings", label: "الإعدادات", icon: Settings2 },
 ];
 

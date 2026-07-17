@@ -33,6 +33,7 @@ interface Course {
   thumbnail_url: string | null;
   stage_id: string | null;
   stage_name: string | null;
+  subject_name: string | null;
   status: "draft" | "published";
 }
 
@@ -68,9 +69,9 @@ const CourseDetails = () => {
     if (!id) return;
     setLoading(true);
     // Fetch course (RLS: published visible to all, admin sees all)
-    const { data: cData, error: cErr } = await supabase
+    const { data: cData, error: cErr } = await (supabase as any)
       .from("courses")
-      .select("id, title, description, thumbnail_url, stage_id, status, stages(name)")
+      .select("id, title, description, thumbnail_url, stage_id, status, stages(name), subjects(name)")
       .eq("id", id)
       .maybeSingle();
 
@@ -86,6 +87,7 @@ const CourseDetails = () => {
       thumbnail_url: cData.thumbnail_url,
       stage_id: cData.stage_id,
       stage_name: (cData as any).stages?.name ?? null,
+      subject_name: (cData as any).subjects?.name ?? null,
       status: cData.status,
     });
 
@@ -357,6 +359,11 @@ const CourseHero = ({
               {course.stage_name && (
                 <Badge className="bg-primary text-primary-foreground border-0">
                   {course.stage_name}
+                </Badge>
+              )}
+              {course.subject_name && (
+                <Badge variant="outline" className="border-primary/40 text-foreground">
+                  {course.subject_name}
                 </Badge>
               )}
               {course.status === "draft" && (
