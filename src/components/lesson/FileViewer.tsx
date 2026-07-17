@@ -129,6 +129,20 @@ export const FileViewer = ({ file, onClose }: Props) => {
       if (e.key === "Escape") {
         e.preventDefault();
         e.stopPropagation();
+        return;
+      }
+      // Zoom shortcuts (Ctrl/Cmd + / - / 0)
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === "+" || e.key === "=") {
+          e.preventDefault();
+          zoomIn();
+        } else if (e.key === "-") {
+          e.preventDefault();
+          zoomOut();
+        } else if (e.key === "0") {
+          e.preventDefault();
+          zoomReset();
+        }
       }
     };
     window.addEventListener("keydown", blockEsc, true);
