@@ -280,6 +280,50 @@ export const FileViewer = ({ file, onClose }: Props) => {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
+            {(kind === "image" || kind === "pdf") && (
+              <div className="hidden sm:flex items-center gap-1 bg-white/5 border border-white/10 rounded-md p-0.5">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={zoomOut}
+                  disabled={zoom <= 0.5}
+                  className="h-8 w-8 text-white hover:bg-white/10 hover:text-white"
+                  aria-label="تصغير"
+                  title="تصغير (Ctrl -)"
+                >
+                  <ZoomOut className="w-4 h-4" />
+                </Button>
+                <button
+                  onClick={zoomReset}
+                  className="text-xs font-bold text-white tabular-nums px-2 min-w-[52px] hover:bg-white/10 rounded"
+                  title="إعادة الضبط (Ctrl 0)"
+                >
+                  {Math.round(zoom * 100)}%
+                </button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={zoomIn}
+                  disabled={zoom >= 4}
+                  className="h-8 w-8 text-white hover:bg-white/10 hover:text-white"
+                  aria-label="تكبير"
+                  title="تكبير (Ctrl +)"
+                >
+                  <ZoomIn className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={zoomReset}
+                  className="h-8 w-8 text-white hover:bg-white/10 hover:text-white"
+                  aria-label="ملء الشاشة"
+                  title="ملاءمة"
+                >
+                  <Maximize2 className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
+
             {canDownload ? (
               <div className="hidden sm:flex items-center gap-2 text-xs text-white/70">
                 {file.download_limit === null ? (
