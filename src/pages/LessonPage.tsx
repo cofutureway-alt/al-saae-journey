@@ -549,6 +549,9 @@ const LessonPage = () => {
           </>
         )}
       </AnimatePresence>
+
+      {/* File viewer overlay */}
+      <FileViewer file={viewerFile} onClose={() => setViewerFile(null)} />
     </div>
   );
 };
