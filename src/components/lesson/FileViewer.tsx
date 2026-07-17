@@ -62,12 +62,17 @@ export const FileViewer = ({ file, onClose }: Props) => {
   const [pageCount, setPageCount] = useState(0);
   const [page, setPage] = useState(1);
   const [pdfWidth, setPdfWidth] = useState(800);
+  const [zoom, setZoom] = useState(1);
   const [remaining, setRemaining] = useState<number | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [downloadCount, setDownloadCount] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const kind = useMemo(() => detectKind(file?.file_type ?? null), [file]);
+
+  const zoomIn = useCallback(() => setZoom((z) => Math.min(4, +(z + 0.25).toFixed(2))), []);
+  const zoomOut = useCallback(() => setZoom((z) => Math.max(0.5, +(z - 0.25).toFixed(2))), []);
+  const zoomReset = useCallback(() => setZoom(1), []);
 
   // Load initial download count + signed URL
   useEffect(() => {
