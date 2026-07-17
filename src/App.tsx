@@ -30,6 +30,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/courses" element={<Courses />} />
             <Route
               path="/admin"
               element={
@@ -40,6 +41,9 @@ const App = () => (
             >
               <Route index element={<AdminStatistics />} />
               <Route path="courses" element={<AdminCourses />} />
+              <Route path="courses/new" element={<CourseInfoEditor />} />
+              <Route path="courses/:id/edit" element={<CourseInfoEditor />} />
+              <Route path="courses/:id/builder" element={<CourseBuilder />} />
               <Route path="stages" element={<AdminStages />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
