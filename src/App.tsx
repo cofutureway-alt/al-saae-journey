@@ -23,6 +23,8 @@ import CourseDetails from "./pages/CourseDetails";
 import LessonPage from "./pages/LessonPage";
 import MyCourses from "./pages/student/MyCourses";
 import StudentStatistics from "./pages/student/StudentStatistics";
+import AdminSettings from "./pages/admin/AdminSettings";
+import AdminVideoPlayerSettings from "./pages/admin/AdminVideoPlayerSettings";
 
 const queryClient = new QueryClient();
 
