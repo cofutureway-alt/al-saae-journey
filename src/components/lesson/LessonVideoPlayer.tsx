@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Plyr from "plyr";
 import "plyr/dist/plyr.css";
 import { motion, AnimatePresence } from "framer-motion";
-import { AlertCircle, ChevronsLeft, ChevronsRight, PlayCircle, X } from "lucide-react";
+import { AlertCircle, ChevronsLeft, ChevronsRight, PlayCircle } from "lucide-react";
 import { parseVideoUrl, type VideoProvider } from "@/lib/video";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWatchTracker } from "@/hooks/use-watch-tracker";
@@ -43,7 +43,7 @@ export const LessonVideoPlayer = ({
   const videoRef = useRef<HTMLDivElement>(null);
   const plyrRef = useRef<Plyr | null>(null);
   const tracker = useWatchTracker({ userId: user?.id, lessonId, courseId });
-  const [ytNoticeDismissed, setYtNoticeDismissed] = useState(false);
+  
   const [seekHint, setSeekHint] = useState<null | "forward" | "backward">(null);
   const [gateWarning, setGateWarning] = useState(false);
   const seekHintTimer = useRef<number | null>(null);
@@ -393,27 +393,6 @@ export const LessonVideoPlayer = ({
         </AnimatePresence>
       </div>
 
-      {parsed.provider === "youtube" && !ytNoticeDismissed && (
-        <motion.div
-          initial={{ opacity: 0, y: -6 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/5 text-amber-900 dark:text-amber-200 p-3 text-sm"
-          dir="rtl"
-        >
-          <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" />
-          <div className="flex-1">
-            بسبب قيود منصة يوتيوب، لا يمكن التحكم الكامل في جودة الفيديو أو منع
-            التقديم على مقاطع اليوتيوب.
-          </div>
-          <button
-            onClick={() => setYtNoticeDismissed(true)}
-            className="p-1 rounded hover:bg-amber-500/20 transition-colors shrink-0"
-            aria-label="إخفاء"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </motion.div>
-      )}
     </div>
   );
 };

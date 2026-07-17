@@ -198,33 +198,23 @@ const LessonPage = () => {
 
   const toggleComplete = async () => {
     if (!user || !lesson || !courseId) return;
+    if (isCompleted) {
+      // Students cannot un-complete a lesson from the lesson page.
+      // (Admin-side unmarking will be introduced in a future phase.)
+      return;
+    }
     if (completeLocked) {
       toast.error(`يجب مشاهدة ${requiredPct}% من الفيديو قبل إتمام الدرس (شاهدت ${watchPct}%)`);
       return;
     }
     setSaving(true);
     try {
-      if (isCompleted) {
-        const { error } = await supabase
-          .from("lesson_progress")
-          .delete()
-          .eq("user_id", user.id)
-          .eq("lesson_id", lesson.id);
-        if (error) throw error;
-        setCompletedIds((s) => {
-          const n = new Set(s);
-          n.delete(lesson.id);
-          return n;
-        });
-        toast.success("تم إلغاء تعليم الدرس كمكتمل");
-      } else {
-        const { error } = await supabase
-          .from("lesson_progress")
-          .insert({ user_id: user.id, lesson_id: lesson.id, course_id: courseId });
-        if (error && (error as any).code !== "23505") throw error;
-        setCompletedIds((s) => new Set(s).add(lesson.id));
-        toast.success("أحسنت! تم إنجاز الدرس");
-      }
+      const { error } = await supabase
+        .from("lesson_progress")
+        .insert({ user_id: user.id, lesson_id: lesson.id, course_id: courseId });
+      if (error && (error as any).code !== "23505") throw error;
+      setCompletedIds((s) => new Set(s).add(lesson.id));
+      toast.success("أحسنت! تم إنجاز الدرس");
     } catch (e: any) {
       toast.error(e?.message || "تعذّر حفظ التقدّم");
     } finally {
@@ -359,9 +349,15 @@ const LessonPage = () => {
                 <motion.div whileTap={{ scale: 0.96 }}>
                   <Button
                     onClick={toggleComplete}
-                    disabled={saving}
+                    disabled={saving || isCompleted}
                     variant={isCompleted ? "outline" : "default"}
-                    title={completeLocked ? `مطلوب مشاهدة ${requiredPct}% (شاهدت ${watchPct}%)` : undefined}
+                    title={
+                      isCompleted
+                        ? "تم إنجاز الدرس — لا يمكن التراجع عن الإنجاز"
+                        : completeLocked
+                          ? `مطلوب مشاهدة ${requiredPct}% (شاهدت ${watchPct}%)`
+                          : undefined
+                    }
                     className={`gap-2 font-bold ${
                       isCompleted
                         ? "border-emerald-500/50 text-emerald-600 dark:text-emerald-400"

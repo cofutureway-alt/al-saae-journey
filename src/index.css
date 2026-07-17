@@ -82,3 +82,29 @@
     @apply bg-background text-foreground font-tajawal;
   }
 }
+
+/* --- Lesson video player: block YouTube/Vimeo branding & pass-through clicks --- */
+/* Make embedded iframe click-through so YT/Vimeo native UI (logo, title, "watch on YouTube",
+   related videos, share, pause overlay) cannot be interacted with. Plyr's own controls
+   sit above the iframe and remain fully clickable. */
+.plyr__video-embed iframe,
+.plyr__video-embed > div > iframe {
+  pointer-events: none !important;
+}
+/* Plyr wrapper still needs to receive clicks so click-to-play works via Plyr, not YouTube */
+.plyr--youtube .plyr__video-wrapper,
+.plyr--vimeo .plyr__video-wrapper {
+  pointer-events: auto;
+}
+/* Extra insurance: cover the top strip (YT title bar) with a transparent shield only when
+   the player is paused (YT shows the title overlay when paused). The shield is invisible,
+   doesn't intercept our own controls (which live below and above via z-index). */
+.plyr--paused.plyr--youtube .plyr__video-wrapper::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 60px;
+  z-index: 2;
+  pointer-events: auto;
+  background: transparent;
+}

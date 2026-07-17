@@ -342,6 +342,23 @@ const LessonModal = ({ open, onOpenChange, unitId, lesson, nextPosition, onSaved
                     );
                   })}
                 </div>
+                <AnimatePresence>
+                  {provider === "youtube" && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="mt-2 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 text-amber-900 dark:text-amber-200 p-3 text-xs">
+                        <Info className="w-4 h-4 mt-0.5 shrink-0" />
+                        <span>
+                          ملاحظة للإدارة: بسبب قيود منصة يوتيوب لا يمكن التحكم الكامل في جودة الفيديو من داخل المشغّل. تعمل بقية الميزات (منع التقديم، السرعة، العلامة المائية) بشكل طبيعي.
+                        </span>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               <div className="space-y-2">
