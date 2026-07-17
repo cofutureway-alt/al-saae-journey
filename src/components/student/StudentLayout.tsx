@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { BarChart3, BookOpen, Home, LogOut, Menu, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -96,6 +96,10 @@ const StudentLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  if (profile?.role === "admin") {
+    return <Navigate to="/admin" replace />;
+  }
 
   const initials =
     profile?.full_name

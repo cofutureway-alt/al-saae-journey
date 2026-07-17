@@ -44,7 +44,7 @@ const Login = () => {
     }
 
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: parsed.data.email,
       password: parsed.data.password,
     });
@@ -60,7 +60,18 @@ const Login = () => {
     }
 
     toast.success("تم تسجيل الدخول بنجاح");
-    navigate(from, { replace: true });
+
+    // Role-aware default destination when no explicit redirect
+    let destination = from;
+    if (!redirectParam && (!location.state || !(location.state as any)?.from)) {
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", data.user!.id)
+        .maybeSingle();
+      destination = prof?.role === "admin" ? "/admin" : "/dashboard";
+    }
+    navigate(destination, { replace: true });
   };
 
   return (
