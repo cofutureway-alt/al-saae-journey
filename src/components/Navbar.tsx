@@ -70,14 +70,16 @@ const Navbar = () => {
               <div className="text-muted-foreground truncate">{user.email}</div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {profile?.role === "admin" && (
-              <>
-                <DropdownMenuItem onClick={() => { navigate("/admin"); setOpen(false); }} className="gap-2">
-                  <LayoutDashboard className="w-4 h-4" />
-                  لوحة الإدارة
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-              </>
+            {profile?.role === "admin" ? (
+              <DropdownMenuItem onClick={() => { navigate("/admin"); setOpen(false); }} className="gap-2">
+                <LayoutDashboard className="w-4 h-4" />
+                لوحة الإدارة
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem onClick={() => { navigate("/dashboard"); setOpen(false); }} className="gap-2">
+                <LayoutDashboard className="w-4 h-4" />
+                لوحتي
+              </DropdownMenuItem>
             )}
             <DropdownMenuItem disabled className="gap-2">
               <UserIcon className="w-4 h-4" />
