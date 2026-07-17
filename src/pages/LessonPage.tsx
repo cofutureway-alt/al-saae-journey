@@ -301,7 +301,14 @@ const LessonPage = () => {
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px]">
         {/* Main content */}
         <main className="p-3 md:p-6 space-y-5 min-w-0">
-          <VideoPlayer lesson={lesson} />
+          <LessonVideoPlayer
+            lessonId={lesson.id}
+            courseId={courseId!}
+            title={lesson.title}
+            provider={lesson.video_provider}
+            videoUrl={lesson.video_url}
+            onProgress={setWatchPct}
+          />
 
           {percent === 100 && (
             <motion.div
