@@ -556,11 +556,13 @@ const LessonRow = ({
   index,
   unlocked,
   courseId,
+  completed,
 }: {
   lesson: LessonLite;
   index: number;
   unlocked: boolean;
   courseId: string;
+  completed?: boolean;
 }) => {
   const content = (
     <div
@@ -573,9 +575,17 @@ const LessonRow = ({
       <span className="w-7 text-center text-xs font-semibold text-muted-foreground">
         {String(index + 1).padStart(2, "0")}
       </span>
-      <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
-        {unlocked ? (
-          <PlayCircle className="w-4 h-4 text-primary" />
+      <div
+        className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 ${
+          completed
+            ? "bg-emerald-500 text-white"
+            : "bg-primary/10 text-primary"
+        }`}
+      >
+        {completed ? (
+          <CheckCircle2 className="w-4 h-4" />
+        ) : unlocked ? (
+          <PlayCircle className="w-4 h-4" />
         ) : (
           <Lock className="w-3.5 h-3.5 text-muted-foreground" />
         )}
@@ -593,7 +603,7 @@ const LessonRow = ({
 
   if (!unlocked) return content;
   return (
-    <Link to={`/courses/${courseId}/lessons/${lesson.id}`} className="block">
+    <Link to={`/courses/${courseId}/learn/${lesson.id}`} className="block">
       {content}
     </Link>
   );
