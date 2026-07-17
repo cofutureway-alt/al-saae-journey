@@ -325,13 +325,13 @@ const LessonModal = ({ open, onOpenChange, unitId, lesson, nextPosition, onSaved
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden" dir="rtl">
-        <DialogHeader className="px-6 pt-6 pb-3">
+      <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col" dir="rtl">
+        <DialogHeader className="px-6 pt-6 pb-3 shrink-0">
           <DialogTitle>{isEdit ? "تعديل الدرس" : "درس جديد"}</DialogTitle>
         </DialogHeader>
 
-        <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
-          <div className="px-6">
+        <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="flex-1 min-h-0 flex flex-col">
+          <div className="px-6 shrink-0">
             <TabsList className="w-full grid grid-cols-2">
               <TabsTrigger value="details" className="gap-2">
                 <Info className="w-4 h-4" />
@@ -344,7 +344,7 @@ const LessonModal = ({ open, onOpenChange, unitId, lesson, nextPosition, onSaved
             </TabsList>
           </div>
 
-          <TabsContent value="details" className="mt-0">
+          <TabsContent value="details" className="mt-0 flex-1 min-h-0 overflow-y-auto">
             <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="ltitle">عنوان الدرس</Label>
@@ -454,7 +454,7 @@ const LessonModal = ({ open, onOpenChange, unitId, lesson, nextPosition, onSaved
             </form>
           </TabsContent>
 
-          <TabsContent value="files" className="mt-0">
+          <TabsContent value="files" className="mt-0 flex-1 min-h-0 overflow-y-auto">
             <div className="p-6 space-y-4">
               <div
                 onClick={() => fileRef.current?.click()}
