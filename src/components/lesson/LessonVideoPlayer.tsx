@@ -43,7 +43,7 @@ export const LessonVideoPlayer = ({
   const videoRef = useRef<HTMLDivElement>(null);
   const plyrRef = useRef<Plyr | null>(null);
   const tracker = useWatchTracker({ userId: user?.id, lessonId, courseId });
-  const [ytNoticeDismissed, setYtNoticeDismissed] = useState(false);
+  
   const [seekHint, setSeekHint] = useState<null | "forward" | "backward">(null);
   const [gateWarning, setGateWarning] = useState(false);
   const seekHintTimer = useRef<number | null>(null);
