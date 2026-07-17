@@ -385,7 +385,7 @@ const LessonPage = () => {
               </div>
             </div>
 
-            <Tabs dir="rtl" defaultValue="files" className="w-full">
+            <Tabs defaultValue="files" className="w-full">
               <TabsList className="grid grid-cols-2 max-w-sm">
                 <TabsTrigger value="files" className="gap-2">
                   <FileText className="w-4 h-4" />
