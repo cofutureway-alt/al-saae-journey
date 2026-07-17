@@ -187,8 +187,8 @@ const Navbar = () => {
                 <a
                   key={l.href}
                   href={l.href}
-                  onClick={() => setOpen(false)}
-                  className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+                  onClick={(e) => handleNav(e, l.href)}
+                  className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground cursor-pointer"
                 >
                   {l.label}
                 </a>
