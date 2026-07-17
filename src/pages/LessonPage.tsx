@@ -318,6 +318,7 @@ const LessonPage = () => {
             title={lesson.title}
             provider={lesson.video_provider}
             videoUrl={lesson.video_url}
+            settings={isAdmin ? { ...playerSettings, completion_gate_enabled: false } : playerSettings}
             onProgress={setWatchPct}
           />
 
