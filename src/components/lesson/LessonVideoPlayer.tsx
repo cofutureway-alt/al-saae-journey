@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Plyr from "plyr";
 import "plyr/dist/plyr.css";
 import { motion, AnimatePresence } from "framer-motion";
-import { AlertCircle, ChevronsLeft, ChevronsRight, PlayCircle } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, PlayCircle } from "lucide-react";
 import { parseVideoUrl, type VideoProvider } from "@/lib/video";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWatchTracker } from "@/hooks/use-watch-tracker";
@@ -43,13 +43,10 @@ export const LessonVideoPlayer = ({
   const videoRef = useRef<HTMLDivElement>(null);
   const plyrRef = useRef<Plyr | null>(null);
   const tracker = useWatchTracker({ userId: user?.id, lessonId, courseId });
-  
-  const [seekHint, setSeekHint] = useState<null | "forward" | "backward">(null);
-  const [gateWarning, setGateWarning] = useState(false);
-  const seekHintTimer = useRef<number | null>(null);
-  const gateWarnTimer = useRef<number | null>(null);
 
-  // Keep latest settings & tracker state accessible inside event handlers
+  const [seekHint, setSeekHint] = useState<null | "forward" | "backward">(null);
+  const seekHintTimer = useRef<number | null>(null);
+
   const settingsRef = useRef(settings);
   useEffect(() => {
     settingsRef.current = settings;
@@ -64,18 +61,20 @@ export const LessonVideoPlayer = ({
     if (seekHintTimer.current) window.clearTimeout(seekHintTimer.current);
     seekHintTimer.current = window.setTimeout(() => setSeekHint(null), 550);
   };
-  const showGateWarning = () => {
-    setGateWarning(true);
-    if (gateWarnTimer.current) window.clearTimeout(gateWarnTimer.current);
-    gateWarnTimer.current = window.setTimeout(() => setGateWarning(false), 2200);
-  };
 
-  // Compute allowed seek ceiling given completion gate
-  const gateCeiling = () => {
-    const s = settingsRef.current;
-    if (!s.completion_gate_enabled) return Infinity;
-    // Furthest reached plus tiny epsilon so natural playback isn't blocked
-    return tracker.stateRef.current.furthest + 1.5;
+  // Manual seek helper — respected by keyboard + double-tap
+  const seekBy = (deltaSec: number) => {
+    const player = plyrRef.current;
+    if (!player) return;
+    const cur = player.currentTime || 0;
+    const dur = player.duration || Infinity;
+    const target = Math.max(0, Math.min(dur - 0.5, cur + deltaSec));
+    try {
+      player.currentTime = target;
+    } catch {
+      /* noop */
+    }
+    showSeekHint(deltaSec > 0 ? "forward" : "backward");
   };
 
   // Setup Plyr for YT / Vimeo
@@ -112,18 +111,33 @@ export const LessonVideoPlayer = ({
       controls,
       settings: settingsRef.current.speed_control_enabled ? ["quality", "speed"] : [],
       speed: { selected: 1, options: speeds },
-      youtube: { noCookie: true, rel: 0, modestbranding: 1 },
+      seekTime: settingsRef.current.seek_forward_seconds || 10,
+      keyboard: { focused: true, global: true },
+      youtube: {
+        noCookie: true,
+        rel: 0,
+        modestbranding: 1,
+        iv_load_policy: 3,
+        showinfo: 0,
+        controls: 0,
+        disablekb: 1,
+      },
       ratio: "16:9",
     });
     plyrRef.current = player;
 
     let tickTimer: number | null = null;
+    let lastTickTs = 0;
     const startTicking = () => {
       if (tickTimer) return;
+      lastTickTs = performance.now();
       tickTimer = window.setInterval(() => {
         if (document.hidden) return;
+        const now = performance.now();
+        const delta = (now - lastTickTs) / 1000;
+        lastTickTs = now;
         try {
-          tracker.tick(player.currentTime || 0);
+          tracker.tick(player.currentTime || 0, delta);
         } catch {
           /* noop */
         }
@@ -161,31 +175,7 @@ export const LessonVideoPlayer = ({
       tracker.flush();
     };
     const onSeeked = () => {
-      // Enforce gate: snap back if user skipped past furthest
-      const ceil = gateCeiling();
-      const t = player.currentTime || 0;
-      if (t > ceil) {
-        try {
-          player.currentTime = Math.max(0, tracker.stateRef.current.furthest);
-        } catch {
-          /* noop */
-        }
-        showGateWarning();
-      }
       tracker.setPosition(player.currentTime || 0);
-    };
-    // Preemptive block during seeking too
-    const onTimeUpdate = () => {
-      const ceil = gateCeiling();
-      const t = player.currentTime || 0;
-      if (t > ceil + 0.5) {
-        try {
-          player.currentTime = Math.max(0, tracker.stateRef.current.furthest);
-        } catch {
-          /* noop */
-        }
-        showGateWarning();
-      }
     };
 
     player.on("ready", onReady);
@@ -194,7 +184,6 @@ export const LessonVideoPlayer = ({
     player.on("pause", onPause);
     player.on("ended", onEnded);
     player.on("seeked", onSeeked);
-    player.on("timeupdate", onTimeUpdate);
 
     const saveTimer = window.setInterval(() => tracker.flush(), 8000);
 
@@ -229,7 +218,26 @@ export const LessonVideoPlayer = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [parsed?.provider, parsed?.id, isBunny, lessonId]);
 
-  // Double-tap seek gesture
+  // Keyboard shortcuts: Left/Right arrows seek by configured amount.
+  // (Overrides Plyr's default 5s step to match admin settings.)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!plyrRef.current) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        seekBy(settingsRef.current.seek_forward_seconds || 10);
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        seekBy(-(settingsRef.current.seek_backward_seconds || 10));
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  // Double-tap seek gesture (mobile & desktop)
   useEffect(() => {
     if (isBunny) return;
     if (!settings.double_tap_seek_enabled) return;
@@ -241,7 +249,6 @@ export const LessonVideoPlayer = ({
     const DBL_MS = 320;
 
     const handleTap = (clientX: number, target: EventTarget | null) => {
-      // Ignore taps on the actual Plyr control bar so scrubbing/buttons still work
       if (target instanceof HTMLElement && target.closest(".plyr__controls, .plyr__control")) {
         return false;
       }
@@ -249,30 +256,10 @@ export const LessonVideoPlayer = ({
       if (now - lastTap < DBL_MS && Math.abs(clientX - lastX) < 60) {
         const rect = el.getBoundingClientRect();
         const isRight = clientX - rect.left > rect.width / 2;
-        const player = plyrRef.current;
-        if (!player) return false;
-        const cur = player.currentTime || 0;
-        const cfg = settingsRef.current;
         if (isRight) {
-          let target = cur + cfg.seek_forward_seconds;
-          const ceil = gateCeiling();
-          if (target > ceil) {
-            target = Math.max(cur, ceil);
-            showGateWarning();
-          }
-          try {
-            player.currentTime = target;
-          } catch {
-            /* noop */
-          }
-          showSeekHint("forward");
+          seekBy(settingsRef.current.seek_forward_seconds);
         } else {
-          try {
-            player.currentTime = Math.max(0, cur - cfg.seek_backward_seconds);
-          } catch {
-            /* noop */
-          }
-          showSeekHint("backward");
+          seekBy(-settingsRef.current.seek_backward_seconds);
         }
         lastTap = 0;
         return true;
@@ -348,7 +335,6 @@ export const LessonVideoPlayer = ({
           speedSeconds={settings.watermark_speed_seconds}
         />
 
-        {/* Double-tap seek visual */}
         <AnimatePresence>
           {seekHint && (
             <motion.div
@@ -375,24 +361,7 @@ export const LessonVideoPlayer = ({
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Gate warning overlay */}
-        <AnimatePresence>
-          {gateWarning && (
-            <motion.div
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              dir="rtl"
-              className="absolute top-3 left-1/2 -translate-x-1/2 z-30 pointer-events-none flex items-center gap-2 px-3 py-2 rounded-lg bg-black/75 text-white text-xs font-semibold"
-            >
-              <AlertCircle className="w-4 h-4" />
-              لا يمكن تخطّي الفيديو قبل إتمام النسبة المطلوبة
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
-
     </div>
   );
 };
