@@ -152,12 +152,12 @@ const LessonPage = () => {
     setLesson((lRow as Lesson) ?? null);
 
     // Files
-    const { data: fData } = await supabase
+    const { data: fData } = await (supabase as any)
       .from("lesson_files")
-      .select("id, file_name, file_size, file_type, file_url")
+      .select("id, file_name, file_type, file_url, allow_download, download_limit")
       .eq("lesson_id", lessonId)
       .order("created_at");
-    setFiles(fData ?? []);
+    setFiles((fData ?? []) as ViewerFile[]);
 
     // Progress
     if (user) {
@@ -220,19 +220,8 @@ const LessonPage = () => {
     }
   };
 
-  const download = async (row: (typeof files)[number]) => {
-    setDownloadingId(row.id);
-    try {
-      const { data, error } = await supabase.storage
-        .from("lesson-files")
-        .createSignedUrl(row.file_url, 300, { download: row.file_name });
-      if (error || !data?.signedUrl) throw error || new Error("تعذّر التنزيل");
-      window.open(data.signedUrl, "_blank");
-    } catch (e: any) {
-      toast.error(e?.message || "تعذّر تنزيل الملف");
-    } finally {
-      setDownloadingId(null);
-    }
+  const openViewer = (row: ViewerFile) => {
+    setViewerFile(row);
   };
 
   if (authLoading || loading) {
