@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import Plyr from "plyr";
+import Plyr from "plyr/dist/plyr.min.mjs";
 import "plyr/dist/plyr.css";
 import { motion } from "framer-motion";
 import { AlertCircle, PlayCircle, X } from "lucide-react";
