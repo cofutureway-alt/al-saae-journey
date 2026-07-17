@@ -325,13 +325,13 @@ const LessonModal = ({ open, onOpenChange, unitId, lesson, nextPosition, onSaved
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden" dir="rtl">
-        <DialogHeader className="px-6 pt-6 pb-3">
+      <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col" dir="rtl">
+        <DialogHeader className="px-6 pt-6 pb-3 shrink-0">
           <DialogTitle>{isEdit ? "تعديل الدرس" : "درس جديد"}</DialogTitle>
         </DialogHeader>
 
-        <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
-          <div className="px-6">
+        <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="flex-1 min-h-0 flex flex-col">
+          <div className="px-6 shrink-0">
             <TabsList className="w-full grid grid-cols-2">
               <TabsTrigger value="details" className="gap-2">
                 <Info className="w-4 h-4" />
