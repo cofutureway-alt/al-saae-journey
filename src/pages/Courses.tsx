@@ -18,6 +18,7 @@ interface Stage {
 
 const Courses = () => {
   const courses = usePublicCourses();
+  const progressMap = useMyProgressMap();
   const [stages, setStages] = useState<Stage[]>([]);
   const [query, setQuery] = useState("");
   const [stageId, setStageId] = useState<string | "all">("all");
