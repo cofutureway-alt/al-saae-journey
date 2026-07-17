@@ -22,7 +22,7 @@ export function usePublicCourses(limit?: number) {
       let q = supabase
         .from("courses")
         .select(
-          "id, title, description, thumbnail_url, stage_id, created_at, stages(name), units(id, lessons_public(id))",
+          "id, title, description, thumbnail_url, stage_id, created_at, stages(name), units(id)",
         )
         .eq("status", "published")
         .order("created_at", { ascending: false });
@@ -33,6 +33,23 @@ export function usePublicCourses(limit?: number) {
         setCourses([]);
         return;
       }
+
+      const unitIds: string[] = (data ?? []).flatMap((c: any) =>
+        (c.units ?? []).map((u: any) => u.id),
+      );
+
+      let lessonCounts: Record<string, number> = {};
+      if (unitIds.length) {
+        const { data: lessons } = await supabase
+          .from("lessons_public")
+          .select("unit_id")
+          .in("unit_id", unitIds);
+        (lessons ?? []).forEach((l: any) => {
+          lessonCounts[l.unit_id] = (lessonCounts[l.unit_id] ?? 0) + 1;
+        });
+      }
+
+      if (cancelled) return;
       setCourses(
         (data ?? []).map((c: any) => ({
           id: c.id,
@@ -42,11 +59,10 @@ export function usePublicCourses(limit?: number) {
           stage_id: c.stage_id,
           stage_name: c.stages?.name ?? null,
           units_count: c.units?.length ?? 0,
-          lessons_count:
-            c.units?.reduce(
-              (acc: number, u: any) => acc + (u.lessons_public?.length ?? 0),
-              0,
-            ) ?? 0,
+          lessons_count: (c.units ?? []).reduce(
+            (acc: number, u: any) => acc + (lessonCounts[u.id] ?? 0),
+            0,
+          ),
           created_at: c.created_at,
         })),
       );
