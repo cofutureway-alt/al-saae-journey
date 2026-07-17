@@ -63,7 +63,7 @@ const Signup = () => {
     }
 
     toast.success("تم إنشاء حسابك بنجاح، أهلاً بك في الساعي");
-    navigate("/", { replace: true });
+    navigate(redirectTo, { replace: true });
   };
 
   return (
