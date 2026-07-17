@@ -124,7 +124,7 @@ const Courses = () => {
             >
               <AnimatePresence mode="popLayout">
                 {filtered.map((c, i) => (
-                  <CourseCard key={c.id} course={c} index={i} />
+                  <CourseCard key={c.id} course={c} index={i} progress={progressMap[c.id]} />
                 ))}
               </AnimatePresence>
             </motion.div>
