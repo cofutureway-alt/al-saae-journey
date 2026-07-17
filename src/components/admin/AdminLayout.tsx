@@ -185,6 +185,8 @@ const AdminLayout = ({ children }: { children?: ReactNode }) => {
             </div>
           </div>
 
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-3 rounded-full p-1 pl-3 hover:bg-accent transition-colors">
@@ -213,6 +215,7 @@ const AdminLayout = ({ children }: { children?: ReactNode }) => {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          </div>
         </header>
 
         <motion.main
