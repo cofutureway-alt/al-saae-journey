@@ -16,6 +16,7 @@ import AdminStages from "./pages/admin/AdminStages";
 import CourseInfoEditor from "./pages/admin/CourseInfoEditor";
 import CourseBuilder from "./pages/admin/CourseBuilder";
 import Courses from "./pages/Courses";
+import CourseDetails from "./pages/CourseDetails";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/courses" element={<Courses />} />
+            <Route path="/courses/:id" element={<CourseDetails />} />
             <Route
               path="/admin"
               element={

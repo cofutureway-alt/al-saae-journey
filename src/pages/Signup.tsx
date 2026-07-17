@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { motion } from "framer-motion";
 import { Loader2, Mail, Lock, User, Eye, EyeOff, ArrowLeft } from "lucide-react";
@@ -18,6 +18,8 @@ const signupSchema = z.object({
 
 const Signup = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectTo = new URLSearchParams(location.search).get("redirect") ?? "/";
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -61,7 +63,7 @@ const Signup = () => {
     }
 
     toast.success("تم إنشاء حسابك بنجاح، أهلاً بك في الساعي");
-    navigate("/", { replace: true });
+    navigate(redirectTo, { replace: true });
   };
 
   return (

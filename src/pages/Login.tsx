@@ -24,7 +24,9 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
-  const from = (location.state as { from?: string } | null)?.from ?? "/";
+  const params = new URLSearchParams(location.search);
+  const redirectParam = params.get("redirect");
+  const from = redirectParam ?? (location.state as { from?: string } | null)?.from ?? "/";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
