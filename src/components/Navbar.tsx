@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, X, LogOut, User as UserIcon, LogIn, LayoutDashboard } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -20,6 +20,7 @@ const Navbar = () => {
   const [open, setOpen] = useState(false);
   const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
 
   const links = [
@@ -28,6 +29,31 @@ const Navbar = () => {
     { label: "الدورات", href: "/courses" },
     { label: "المتصدرين", href: "/#leaderboard" },
   ];
+
+  const handleNav = (e: React.MouseEvent, href: string) => {
+    e.preventDefault();
+    setOpen(false);
+    const [path, hash] = href.split("#");
+    const targetPath = path || "/";
+    const scrollToHash = () => {
+      if (!hash) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+      // Wait a tick for the target route to render
+      requestAnimationFrame(() => {
+        const el = document.getElementById(hash);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    };
+    if (location.pathname !== targetPath) {
+      navigate(targetPath + (hash ? `#${hash}` : ""));
+      setTimeout(scrollToHash, 60);
+    } else {
+      scrollToHash();
+    }
+  };
+
 
 
   const handleSignOut = async () => {
@@ -120,7 +146,8 @@ const Navbar = () => {
             <a
               key={l.href}
               href={l.href}
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              onClick={(e) => handleNav(e, l.href)}
+              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >
               {l.label}
             </a>
@@ -160,8 +187,8 @@ const Navbar = () => {
                 <a
                   key={l.href}
                   href={l.href}
-                  onClick={() => setOpen(false)}
-                  className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+                  onClick={(e) => handleNav(e, l.href)}
+                  className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground cursor-pointer"
                 >
                   {l.label}
                 </a>

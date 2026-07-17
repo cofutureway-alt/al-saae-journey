@@ -16,12 +16,14 @@ interface State {
 }
 
 /**
- * Tracks accumulated distinct watched seconds for a lesson.
+ * Tracks the ACTUAL time a lesson was watched.
  *
- * - `tick()` should be called ~every second while the video is actively playing
- *   AND the tab is visible. It bumps `watched` by 1s and updates position.
- * - `flush()` persists the current state to the DB (debounced by caller).
- * - Loads any existing row for resume support and exposes it via `stateRef`.
+ * - `tick(currentTime, deltaSeconds)` is called only while the video is
+ *   actively playing AND the tab is visible. `deltaSeconds` is the real
+ *   wall-clock time elapsed since the previous tick, so pausing / seeking
+ *   without playback contribute exactly 0 to the watched total.
+ * - Percentage = watched / duration (capped at 100).
+ * - `flush()` persists to the DB (debounced by caller).
  */
 export function useWatchTracker({ userId, lessonId, courseId }: Params) {
   const stateRef = useRef<State>({
@@ -35,7 +37,6 @@ export function useWatchTracker({ userId, lessonId, courseId }: Params) {
   const savingRef = useRef(false);
   const onProgressRef = useRef<((pct: number) => void) | null>(null);
 
-  // Load existing row
   useEffect(() => {
     let cancelled = false;
     stateRef.current = { duration: 0, watched: 0, furthest: 0, last: 0, loaded: false };
@@ -72,9 +73,12 @@ export function useWatchTracker({ userId, lessonId, courseId }: Params) {
     }
   }, []);
 
-  const tick = useCallback((currentTime: number) => {
+  const tick = useCallback((currentTime: number, deltaSeconds: number) => {
+    if (!deltaSeconds || deltaSeconds <= 0) return;
+    // Cap delta to avoid huge jumps (tab hidden, wake from sleep, etc.)
+    const delta = Math.min(deltaSeconds, 2);
     const s = stateRef.current;
-    s.watched += 1;
+    s.watched += delta;
     s.last = currentTime;
     if (currentTime > s.furthest) s.furthest = currentTime;
     dirtyRef.current = true;
@@ -105,14 +109,11 @@ export function useWatchTracker({ userId, lessonId, courseId }: Params) {
       };
       dirtyRef.current = false;
       try {
-        if (opts?.keepalive && navigator.sendBeacon) {
-          // Best-effort unload persist via REST
+        if (opts?.keepalive) {
           const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/lesson_watch_progress?on_conflict=user_id,lesson_id`;
           const { data: sess } = await supabase.auth.getSession();
           const token = sess.session?.access_token;
           const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
-          const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
-          // sendBeacon doesn't allow headers, so fall back to fetch with keepalive
           await fetch(url, {
             method: "POST",
             keepalive: true,
@@ -148,5 +149,5 @@ export function useWatchTracker({ userId, lessonId, courseId }: Params) {
 
 function computePct(s: State) {
   if (!s.duration) return 0;
-  return Math.min(100, Math.round((s.furthest / s.duration) * 100));
+  return Math.min(100, Math.round((s.watched / s.duration) * 100));
 }

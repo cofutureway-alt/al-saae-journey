@@ -173,7 +173,8 @@ const LessonPage = () => {
     }
 
     setLoading(false);
-  }, [courseId, lessonId, user, isAdmin, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courseId, lessonId, user?.id, isAdmin, navigate]);
 
   useEffect(() => {
     if (!authLoading) load();
