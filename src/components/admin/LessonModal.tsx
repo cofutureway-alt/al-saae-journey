@@ -176,19 +176,20 @@ const LessonModal = ({ open, onOpenChange, unitId, lesson, nextPosition, onSaved
   };
 
   const onSubmit = async (values: FormValues) => {
-    // Validate video url if provided
-    let finalUrl: string | null = null;
-    let finalProvider: VideoProvider | null = null;
-    if (videoUrl.trim()) {
-      const parsed = parseVideoUrl(provider, videoUrl);
-      if ("error" in parsed) {
-        setVideoError(parsed.error);
-        setTab("details");
-        return;
-      }
-      finalUrl = parsed.url;
-      finalProvider = parsed.provider;
+    // Video link is required — every lesson must have exactly one video source
+    if (!videoUrl.trim()) {
+      setVideoError("رابط الفيديو مطلوب — كل درس يجب أن يحتوي على فيديو واحد");
+      setTab("details");
+      return;
     }
+    const parsed = parseVideoUrl(provider, videoUrl);
+    if ("error" in parsed) {
+      setVideoError(parsed.error);
+      setTab("details");
+      return;
+    }
+    const finalUrl: string | null = parsed.url;
+    const finalProvider: VideoProvider | null = parsed.provider;
 
     setSubmitting(true);
     try {
@@ -344,7 +345,7 @@ const LessonModal = ({ open, onOpenChange, unitId, lesson, nextPosition, onSaved
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="vurl">رابط الفيديو</Label>
+                <Label htmlFor="vurl">رابط الفيديو <span className="text-destructive">*</span></Label>
                 <Input
                   id="vurl"
                   dir="ltr"

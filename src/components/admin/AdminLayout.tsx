@@ -72,10 +72,8 @@ const NavItem = ({
 const SidebarContent = ({ onNavigate }: { onNavigate?: () => void }) => (
   <div className="flex h-full flex-col">
     <div className="px-6 py-6 border-b border-border/60">
-      <NavLink to="/" className="flex items-center gap-2 group">
-        <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold">
-          س
-        </div>
+      <NavLink to="/" className="flex items-center gap-3 group">
+        <img src="/logo.png" alt="شعار الساعي" className="h-11 w-11 rounded-lg object-contain" />
         <div>
           <div className="font-bold text-foreground leading-tight">لوحة الإدارة</div>
           <div className="text-xs text-muted-foreground">إدارة المنصة</div>
