@@ -63,7 +63,7 @@ const CoursesSection = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {courses.map((c, i) => (
-              <CourseCard key={c.id} course={c} index={i} />
+              <CourseCard key={c.id} course={c} index={i} progress={progressMap[c.id]} />
             ))}
           </div>
         )}
