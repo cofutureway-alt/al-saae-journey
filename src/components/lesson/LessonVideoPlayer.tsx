@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Plyr from "plyr";
 import "plyr/dist/plyr.css";
 import { motion, AnimatePresence } from "framer-motion";
-import { AlertCircle, ChevronsLeft, ChevronsRight, PlayCircle, X } from "lucide-react";
+import { AlertCircle, ChevronsLeft, ChevronsRight, PlayCircle } from "lucide-react";
 import { parseVideoUrl, type VideoProvider } from "@/lib/video";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWatchTracker } from "@/hooks/use-watch-tracker";
