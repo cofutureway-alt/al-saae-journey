@@ -82,6 +82,7 @@ const LessonPage = () => {
   const [saving, setSaving] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [watchPct, setWatchPct] = useState(0);
+  const { settings: playerSettings } = usePlayerSettings();
 
   const load = useCallback(async () => {
     if (!courseId || !lessonId) return;
