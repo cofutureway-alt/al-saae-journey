@@ -453,7 +453,11 @@ const EnrollCard = ({
             className="w-full font-bold shadow-lg shadow-primary/20"
           >
             <PlayCircle className="w-5 h-5 ml-2" />
-            {isAdmin && !enrolled ? "بدء المعاينة" : "بدء الدورة"}
+            {isAdmin && !enrolled
+              ? "بدء المعاينة"
+              : progress && progress > 0
+                ? "متابعة التعلّم"
+                : "بدء الدورة"}
           </Button>
         ) : (
           <Button
