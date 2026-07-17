@@ -15,6 +15,9 @@ import {
   FileText,
   Image as ImageIcon,
   Presentation,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
