@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
+// Worker imported as a URL asset by Vite (matches pdfjs-dist version exactly)
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import {
   ChevronLeft,
