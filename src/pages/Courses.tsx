@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CourseCard } from "@/components/CourseCard";
 import { usePublicCourses } from "@/hooks/use-public-courses";
+import { useMyProgressMap } from "@/hooks/use-my-progress";
 import { supabase } from "@/integrations/supabase/client";
 import { EightPointStar } from "@/components/IslamicPatterns";
 
