@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { BarChart3, BookOpen, Home, LogOut, Menu, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
