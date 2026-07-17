@@ -113,7 +113,7 @@ export const FileViewer = ({ file, onClose }: Props) => {
     if (!file) return;
     const compute = () => {
       const el = containerRef.current;
-      if (el) setPdfWidth(Math.min(el.clientWidth - 24, 1000));
+      if (el) setPdfWidth(Math.max(320, el.clientWidth - 48));
     };
     compute();
     window.addEventListener("resize", compute);
