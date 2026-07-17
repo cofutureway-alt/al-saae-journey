@@ -4,8 +4,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
-// Worker imported as a URL asset by Vite (matches pdfjs-dist version exactly)
-import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import {
   ChevronLeft,
   ChevronRight,
@@ -25,8 +23,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePlayerSettings } from "@/hooks/use-player-settings";
 import Watermark from "./Watermark";
 
-// Setup worker (Vite will resolve the ?url import to a served asset)
-pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+// Load the pdf.js worker from a CDN pinned to the exact pdfjs-dist version
+// bundled with react-pdf. Avoids Vite worker-URL and version-drift issues.
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 export interface ViewerFile {
   id: string;
