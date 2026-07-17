@@ -454,7 +454,7 @@ const LessonModal = ({ open, onOpenChange, unitId, lesson, nextPosition, onSaved
             </form>
           </TabsContent>
 
-          <TabsContent value="files" className="mt-0">
+          <TabsContent value="files" className="mt-0 flex-1 min-h-0 overflow-y-auto">
             <div className="p-6 space-y-4">
               <div
                 onClick={() => fileRef.current?.click()}
