@@ -32,6 +32,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { VideoProvider } from "@/lib/video";
 import LessonVideoPlayer from "@/components/lesson/LessonVideoPlayer";
 import CircularProgress from "@/components/lesson/CircularProgress";
+import { usePlayerSettings } from "@/hooks/use-player-settings";
 
 interface Lesson {
   id: string;
@@ -81,6 +82,7 @@ const LessonPage = () => {
   const [saving, setSaving] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [watchPct, setWatchPct] = useState(0);
+  const { settings: playerSettings } = usePlayerSettings();
 
   const load = useCallback(async () => {
     if (!courseId || !lessonId) return;
@@ -190,8 +192,16 @@ const LessonPage = () => {
   const percent = totalLessons ? Math.round((completedCount / totalLessons) * 100) : 0;
   const isCompleted = lesson ? completedIds.has(lesson.id) : false;
 
+  const gateActive = playerSettings.completion_gate_enabled && !isAdmin;
+  const requiredPct = playerSettings.completion_required_percentage;
+  const completeLocked = gateActive && !isCompleted && watchPct < requiredPct;
+
   const toggleComplete = async () => {
     if (!user || !lesson || !courseId) return;
+    if (completeLocked) {
+      toast.error(`يجب مشاهدة ${requiredPct}% من الفيديو قبل إتمام الدرس (شاهدت ${watchPct}%)`);
+      return;
+    }
     setSaving(true);
     try {
       if (isCompleted) {
@@ -308,6 +318,7 @@ const LessonPage = () => {
             title={lesson.title}
             provider={lesson.video_provider}
             videoUrl={lesson.video_url}
+            settings={isAdmin ? { ...playerSettings, completion_gate_enabled: false } : playerSettings}
             onProgress={setWatchPct}
           />
 
@@ -350,16 +361,29 @@ const LessonPage = () => {
                     onClick={toggleComplete}
                     disabled={saving}
                     variant={isCompleted ? "outline" : "default"}
-                    className={`gap-2 font-bold ${isCompleted ? "border-emerald-500/50 text-emerald-600 dark:text-emerald-400" : ""}`}
+                    title={completeLocked ? `مطلوب مشاهدة ${requiredPct}% (شاهدت ${watchPct}%)` : undefined}
+                    className={`gap-2 font-bold ${
+                      isCompleted
+                        ? "border-emerald-500/50 text-emerald-600 dark:text-emerald-400"
+                        : completeLocked
+                          ? "opacity-60"
+                          : ""
+                    }`}
                   >
                     {saving ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : isCompleted ? (
                       <CheckCircle2 className="w-4 h-4" />
+                    ) : completeLocked ? (
+                      <Lock className="w-4 h-4" />
                     ) : (
                       <ListChecks className="w-4 h-4" />
                     )}
-                    {isCompleted ? "تم الإنجاز" : "إنجاز الدرس"}
+                    {isCompleted
+                      ? "تم الإنجاز"
+                      : completeLocked
+                        ? `${watchPct}% / ${requiredPct}%`
+                        : "إنجاز الدرس"}
                   </Button>
                 </motion.div>
                 {nextLesson && (

@@ -382,6 +382,57 @@ export type Database = {
           },
         ]
       }
+      video_player_settings: {
+        Row: {
+          allowed_speeds: Json
+          completion_gate_enabled: boolean
+          completion_required_percentage: number
+          double_tap_seek_enabled: boolean
+          id: number
+          seek_backward_seconds: number
+          seek_forward_seconds: number
+          speed_control_enabled: boolean
+          updated_at: string
+          watermark_color: string
+          watermark_opacity: number
+          watermark_show_email: boolean
+          watermark_show_name: boolean
+          watermark_speed_seconds: number
+        }
+        Insert: {
+          allowed_speeds?: Json
+          completion_gate_enabled?: boolean
+          completion_required_percentage?: number
+          double_tap_seek_enabled?: boolean
+          id?: number
+          seek_backward_seconds?: number
+          seek_forward_seconds?: number
+          speed_control_enabled?: boolean
+          updated_at?: string
+          watermark_color?: string
+          watermark_opacity?: number
+          watermark_show_email?: boolean
+          watermark_show_name?: boolean
+          watermark_speed_seconds?: number
+        }
+        Update: {
+          allowed_speeds?: Json
+          completion_gate_enabled?: boolean
+          completion_required_percentage?: number
+          double_tap_seek_enabled?: boolean
+          id?: number
+          seek_backward_seconds?: number
+          seek_forward_seconds?: number
+          speed_control_enabled?: boolean
+          updated_at?: string
+          watermark_color?: string
+          watermark_opacity?: number
+          watermark_show_email?: boolean
+          watermark_show_name?: boolean
+          watermark_speed_seconds?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       lessons_public: {

@@ -23,6 +23,8 @@ import CourseDetails from "./pages/CourseDetails";
 import LessonPage from "./pages/LessonPage";
 import MyCourses from "./pages/student/MyCourses";
 import StudentStatistics from "./pages/student/StudentStatistics";
+import AdminSettings from "./pages/admin/AdminSettings";
+import AdminVideoPlayerSettings from "./pages/admin/AdminVideoPlayerSettings";
 
 const queryClient = new QueryClient();
 
@@ -73,6 +75,8 @@ const App = () => (
               <Route path="courses/:id/edit" element={<CourseInfoEditor />} />
               <Route path="courses/:id/builder" element={<CourseBuilder />} />
               <Route path="stages" element={<AdminStages />} />
+              <Route path="settings" element={<AdminSettings />} />
+              <Route path="settings/video-player" element={<AdminVideoPlayerSettings />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
