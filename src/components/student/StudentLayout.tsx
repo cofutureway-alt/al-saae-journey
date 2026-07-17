@@ -13,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const nav = [
   { to: "/dashboard", label: "دوراتي", icon: BookOpen, end: true },
@@ -176,6 +177,8 @@ const StudentLayout = () => {
             </div>
           </div>
 
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-3 rounded-full p-1 pl-3 hover:bg-accent transition-colors">
@@ -204,6 +207,7 @@ const StudentLayout = () => {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          </div>
         </header>
 
         <motion.main

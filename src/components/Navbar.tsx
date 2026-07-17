@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Moon, Sun, Menu, X, LogOut, User as UserIcon, LogIn, LayoutDashboard } from "lucide-react";
+import { Menu, X, LogOut, User as UserIcon, LogIn, LayoutDashboard } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -14,16 +14,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const Navbar = () => {
-  const [dark, setDark] = useState(false);
   const [open, setOpen] = useState(false);
   const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", dark);
-  }, [dark]);
 
   const links = [
     { label: "الرئيسية", href: "/" },
@@ -128,16 +125,13 @@ const Navbar = () => {
               {l.label}
             </a>
           ))}
-          <Button variant="ghost" size="icon" onClick={() => setDark(!dark)}>
-            {dark ? <Sun size={18} /> : <Moon size={18} />}
-          </Button>
+          <ThemeToggle />
           <AuthArea />
         </div>
 
         <div className="md:hidden flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => setDark(!dark)}>
-            {dark ? <Sun size={18} /> : <Moon size={18} />}
-          </Button>
+          <ThemeToggle />
+
           {user && (
             <Avatar className="w-8 h-8 border border-border">
               {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
