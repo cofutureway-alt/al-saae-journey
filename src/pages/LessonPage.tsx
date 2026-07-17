@@ -32,6 +32,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { VideoProvider } from "@/lib/video";
 import LessonVideoPlayer from "@/components/lesson/LessonVideoPlayer";
 import CircularProgress from "@/components/lesson/CircularProgress";
+import { usePlayerSettings } from "@/hooks/use-player-settings";
 
 interface Lesson {
   id: string;
