@@ -207,6 +207,7 @@ const StudentLayout = () => {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          </div>
         </header>
 
         <motion.main
