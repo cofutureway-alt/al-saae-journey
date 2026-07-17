@@ -13,6 +13,9 @@ import NotFound from "./pages/NotFound";
 import AdminStatistics from "./pages/admin/AdminStatistics";
 import AdminCourses from "./pages/admin/AdminCourses";
 import AdminStages from "./pages/admin/AdminStages";
+import CourseInfoEditor from "./pages/admin/CourseInfoEditor";
+import CourseBuilder from "./pages/admin/CourseBuilder";
+import Courses from "./pages/Courses";
 
 const queryClient = new QueryClient();
 
