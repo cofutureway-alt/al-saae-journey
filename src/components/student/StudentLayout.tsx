@@ -97,6 +97,10 @@ const StudentLayout = () => {
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
+  if (profile?.role === "admin") {
+    return <Navigate to="/admin" replace />;
+  }
+
   const initials =
     profile?.full_name
       ?.split(" ")
