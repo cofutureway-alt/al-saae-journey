@@ -30,7 +30,8 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { VideoProvider } from "@/lib/video";
-import { parseVideoUrl } from "@/lib/video";
+import LessonVideoPlayer from "@/components/lesson/LessonVideoPlayer";
+import CircularProgress from "@/components/lesson/CircularProgress";
 
 interface Lesson {
   id: string;
