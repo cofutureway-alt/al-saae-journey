@@ -349,9 +349,15 @@ const LessonPage = () => {
                 <motion.div whileTap={{ scale: 0.96 }}>
                   <Button
                     onClick={toggleComplete}
-                    disabled={saving}
+                    disabled={saving || isCompleted}
                     variant={isCompleted ? "outline" : "default"}
-                    title={completeLocked ? `مطلوب مشاهدة ${requiredPct}% (شاهدت ${watchPct}%)` : undefined}
+                    title={
+                      isCompleted
+                        ? "تم إنجاز الدرس — لا يمكن التراجع عن الإنجاز"
+                        : completeLocked
+                          ? `مطلوب مشاهدة ${requiredPct}% (شاهدت ${watchPct}%)`
+                          : undefined
+                    }
                     className={`gap-2 font-bold ${
                       isCompleted
                         ? "border-emerald-500/50 text-emerald-600 dark:text-emerald-400"
