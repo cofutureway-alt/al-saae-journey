@@ -273,6 +273,7 @@ const CourseDetails = () => {
                     }
                     unlocked={unlocked}
                     courseId={course.id}
+                    completedIds={completedIds}
                   />
                 ))}
               </div>
