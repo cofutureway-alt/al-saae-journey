@@ -182,12 +182,13 @@ const CourseDetails = () => {
   };
 
   const startCourse = () => {
-    const first = units.find((u) => u.lessons.length > 0)?.lessons[0];
-    if (!first) {
+    const all = units.flatMap((u) => u.lessons);
+    if (!all.length) {
       toast.info("لم يتم إضافة دروس بعد");
       return;
     }
-    navigate(`/courses/${id}/lessons/${first.id}`);
+    const next = all.find((l) => !completedIds.has(l.id)) ?? all[0];
+    navigate(`/courses/${id}/learn/${next.id}`);
   };
 
   if (loading || authLoading) {
