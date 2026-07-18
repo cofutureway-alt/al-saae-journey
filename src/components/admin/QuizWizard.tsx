@@ -111,6 +111,8 @@ const QuizWizard = ({ open, onOpenChange, unitId, courseId, quiz, onSaved }: Pro
   const [savedQuizId, setSavedQuizId] = useState<string | null>(quiz?.id ?? null);
   const [saving, setSaving] = useState(false);
   const [hasAttempts, setHasAttempts] = useState(false);
+  const [formCounts, setFormCounts] = useState<Record<number, number>>({});
+  const [showCountError, setShowCountError] = useState(false);
 
   const {
     register,
