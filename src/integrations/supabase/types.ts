@@ -832,6 +832,14 @@ export type Database = {
         Args: { _attempt_id: string; _delta: number; _question_id: string }
         Returns: undefined
       }
+      admin_save_feedback: {
+        Args: { _attempt_id: string; _feedback: string }
+        Returns: Json
+      }
+      admin_save_grading: {
+        Args: { _attempt_id: string; _updates: Json }
+        Returns: Json
+      }
       get_attempt_details: { Args: { _attempt_id: string }; Returns: Json }
       get_attempt_questions: { Args: { _attempt_id: string }; Returns: Json }
       get_lessons_public: {
@@ -842,6 +850,10 @@ export type Database = {
           title: string
           unit_id: string
         }[]
+      }
+      get_official_result: {
+        Args: { _quiz_id: string; _user_id: string }
+        Returns: Json
       }
       get_or_finalize_attempt: {
         Args: { _attempt_id: string }
