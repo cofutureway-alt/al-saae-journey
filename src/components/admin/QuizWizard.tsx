@@ -4,6 +4,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
+import QuestionsStep from "./quiz/QuestionsStep";
 import {
   Loader2,
   ClipboardList,
@@ -111,6 +112,8 @@ const QuizWizard = ({ open, onOpenChange, unitId, courseId, quiz, onSaved }: Pro
   const [savedQuizId, setSavedQuizId] = useState<string | null>(quiz?.id ?? null);
   const [saving, setSaving] = useState(false);
   const [hasAttempts, setHasAttempts] = useState(false);
+  const [formCounts, setFormCounts] = useState<Record<number, number>>({});
+  const [showCountError, setShowCountError] = useState(false);
 
   const {
     register,
@@ -163,6 +166,11 @@ const QuizWizard = ({ open, onOpenChange, unitId, courseId, quiz, onSaved }: Pro
       setHasAttempts(false);
     }
   }, [open, quiz, reset]);
+
+  useEffect(() => {
+    setShowCountError(false);
+  }, [step]);
+
 
   // Structure the forms_count change as a distinct function so Phase 12
   // can add a "has-questions" guard without restructuring.
@@ -243,13 +251,25 @@ const QuizWizard = ({ open, onOpenChange, unitId, courseId, quiz, onSaved }: Pro
       setStep(1);
       return;
     }
+    // On question steps, require at least 1 question in the current form.
+    if ((formCounts[step] ?? 0) < 1) {
+      setShowCountError(true);
+      toast.error("يجب إضافة سؤال واحد على الأقل لهذا النموذج");
+      return;
+    }
+    setShowCountError(false);
     if (step < totalSteps - 1) setStep(step + 1);
   };
 
   const handleFinish = async () => {
+    if ((formCounts[step] ?? 0) < 1) {
+      setShowCountError(true);
+      toast.error("يجب إضافة سؤال واحد على الأقل لهذا النموذج");
+      return;
+    }
     onSaved();
     onOpenChange(false);
-    toast.success("تم إغلاق المعالج");
+    toast.success("تم حفظ الاختبار بنجاح");
   };
 
   const onSubmit = handleSubmit(() => handleNext());
@@ -531,27 +551,36 @@ const QuizWizard = ({ open, onOpenChange, unitId, courseId, quiz, onSaved }: Pro
                   </p>
                 </div>
               </motion.form>
-            ) : (
+            ) : savedQuizId ? (
               <motion.div
                 key={`form-${step}`}
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.25 }}
-                className="h-full flex items-center justify-center py-10"
+                className="space-y-3"
               >
-                <div className="text-center max-w-md mx-auto">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
-                    <FileQuestion className="w-8 h-8 text-primary" />
+                <QuestionsStep
+                  quizId={savedQuizId}
+                  formNumber={step}
+                  formsCount={formsCount || 1}
+                  onCountChange={(c) => {
+                    setFormCounts((prev) => (prev[step] === c ? prev : { ...prev, [step]: c }));
+                    if (c > 0) setShowCountError(false);
+                  }}
+                />
+                {showCountError && (formCounts[step] ?? 0) < 1 && (
+                  <div className="max-w-3xl mx-auto flex items-start gap-2 p-3 rounded-lg border border-destructive/40 bg-destructive/10 text-destructive text-xs">
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span>يجب إضافة سؤال واحد على الأقل لهذا النموذج قبل المتابعة.</span>
                   </div>
-                  <h3 className="text-lg font-bold text-foreground mb-2">
-                    {stepLabels[step]}
-                  </h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    سيتم إضافة الأسئلة هنا في الخطوة التالية من التطوير.
-                  </p>
-                </div>
+                )}
               </motion.div>
+            ) : (
+              <div className="h-full flex items-center justify-center py-10 text-sm text-muted-foreground">
+                <FileQuestion className="w-4 h-4 ml-2" />
+                احفظ إعدادات الاختبار أولاً.
+              </div>
             )}
           </AnimatePresence>
         </div>
