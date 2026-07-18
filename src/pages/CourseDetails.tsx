@@ -569,21 +569,31 @@ const UnitAccordion = ({
             className="overflow-hidden"
           >
             <div className="px-4 md:px-5 pb-4 space-y-1.5 border-t border-border pt-3">
-              {unit.lessons.length === 0 ? (
+              {unit.items.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-3 text-center">
-                  لا توجد دروس في هذه الوحدة بعد.
+                  لا يوجد محتوى في هذه الوحدة بعد.
                 </p>
               ) : (
-                unit.lessons.map((l, i) => (
-                  <LessonRow
-                    key={l.id}
-                    lesson={l}
-                    index={i}
-                    unlocked={unlocked}
-                    courseId={courseId}
-                    completed={completedIds.has(l.id)}
-                  />
-                ))
+                unit.items.map((it, i) =>
+                  it.kind === "lesson" ? (
+                    <LessonRow
+                      key={`l-${it.lesson.id}`}
+                      lesson={it.lesson}
+                      index={i}
+                      unlocked={unlocked}
+                      courseId={courseId}
+                      completed={completedIds.has(it.lesson.id)}
+                    />
+                  ) : (
+                    <QuizRow
+                      key={`q-${it.quiz.id}`}
+                      quiz={it.quiz}
+                      index={i}
+                      unlocked={unlocked}
+                      courseId={courseId}
+                    />
+                  ),
+                )
               )}
             </div>
           </motion.div>
