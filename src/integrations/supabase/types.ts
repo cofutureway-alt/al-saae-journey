@@ -947,6 +947,43 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      list_quiz_attempts: {
+        Args: {
+          _course_id?: string
+          _limit?: number
+          _needs_review_only?: boolean
+          _offset?: number
+          _stage_id?: string
+          _subject_id?: string
+          _user_search?: string
+        }
+        Returns: {
+          attempt_id: string
+          attempt_number: number
+          course_id: string
+          course_title: string
+          earned_points: number
+          feedback_given_at: string
+          form_number: number
+          has_feedback: boolean
+          pass_percentage: number
+          passed: boolean
+          percentage: number
+          quiz_id: string
+          quiz_title: string
+          stage_id: string
+          stage_name: string
+          status: string
+          student_email: string
+          student_name: string
+          subject_id: string
+          subject_name: string
+          submitted_at: string
+          total_count: number
+          total_points: number
+          user_id: string
+        }[]
+      }
       next_unit_order_index: { Args: { _unit_id: string }; Returns: number }
       save_quiz_answer: {
         Args: {
