@@ -167,6 +167,11 @@ const QuizWizard = ({ open, onOpenChange, unitId, courseId, quiz, onSaved }: Pro
     }
   }, [open, quiz, reset]);
 
+  useEffect(() => {
+    setShowCountError(false);
+  }, [step]);
+
+
   // Structure the forms_count change as a distinct function so Phase 12
   // can add a "has-questions" guard without restructuring.
   const handleFormsCountChange = (next: number) => {
