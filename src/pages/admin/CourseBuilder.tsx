@@ -1031,6 +1031,48 @@ const CourseBuilder = () => {
         />
       )}
 
+      {quizUnitId && id && (
+        <QuizWizard
+          open={quizWizardOpen}
+          onOpenChange={(v) => {
+            setQuizWizardOpen(v);
+            if (!v) load();
+          }}
+          unitId={quizUnitId}
+          courseId={id}
+          quiz={editingQuiz}
+          onSaved={load}
+        />
+      )}
+
+      {/* Delete quiz */}
+      <AlertDialog
+        open={!!deletingQuiz}
+        onOpenChange={(v) => !v && setDeletingQuiz(null)}
+      >
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>حذف الاختبار</AlertDialogTitle>
+            <AlertDialogDescription>
+              سيتم حذف "{deletingQuiz?.title}" وجميع أسئلته ومحاولات الطلاب.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                deleteQuiz();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              حذف
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+
       {/* Delete unit */}
       <AlertDialog
         open={!!deletingUnit}
