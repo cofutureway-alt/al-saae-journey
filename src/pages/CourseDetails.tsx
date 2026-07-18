@@ -221,7 +221,7 @@ const CourseDetails = () => {
       return;
     }
     const next = all.find((l) => !completedIds.has(l.id)) ?? all[0];
-    navigate(`/courses/${id}/learn/${next.id}`);
+    navigate(`/courses/${id}/learn/lesson/${next.id}`);
   };
 
   if (loading || authLoading) {
@@ -655,7 +655,7 @@ const LessonRow = ({
 
   if (!unlocked) return content;
   return (
-    <Link to={`/courses/${courseId}/learn/${lesson.id}`} className="block">
+    <Link to={`/courses/${courseId}/learn/lesson/${lesson.id}`} className="block">
       {content}
     </Link>
   );
@@ -699,7 +699,7 @@ const QuizRow = ({
 
   if (!unlocked) return content;
   return (
-    <Link to={`/courses/${courseId}/quizzes/${quiz.id}`} className="block">
+    <Link to={`/courses/${courseId}/learn/quiz/${quiz.id}`} className="block">
       {content}
     </Link>
   );

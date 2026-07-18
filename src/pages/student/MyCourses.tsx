@@ -110,7 +110,7 @@ const MyCourseCard = ({ course, index }: { course: MyCourse; index: number }) =>
         .eq("user_id", user.id);
       const doneSet = new Set<string>((done ?? []).map((d: any) => d.lesson_id));
       const next = ordered.find((l: any) => !doneSet.has(l.id)) ?? ordered[0];
-      navigate(`/courses/${course.id}/learn/${next.id}`);
+      navigate(`/courses/${course.id}/learn/lesson/${next.id}`);
     } finally {
       setLoading(false);
     }

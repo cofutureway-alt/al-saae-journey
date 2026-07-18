@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import {
-  ArrowLeft,
   Clock,
   Target,
   Repeat,
@@ -14,8 +13,6 @@ import {
   MessageSquare,
   ClipboardCheck,
 } from "lucide-react";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -40,8 +37,12 @@ const fmtDateTime = (iso: string | null) =>
       })
     : "";
 
-const QuizDetailsPage = () => {
-  const { courseId, quizId } = useParams();
+interface Props {
+  quizId: string;
+  onAttemptCreated?: () => void;
+}
+
+const QuizInlinePanel = ({ quizId, onAttemptCreated }: Props) => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [quiz, setQuiz] = useState<QuizMeta | null>(null);
@@ -83,7 +84,7 @@ const QuizDetailsPage = () => {
   const startState = useMemo(() => {
     if (!quiz) return { disabled: true, message: "" };
     if (!user) return { disabled: true, message: "يجب تسجيل الدخول للبدء." };
-    if (inProgress) return { disabled: false, message: "", resume: true };
+    if (inProgress) return { disabled: false, message: "" };
     if (quiz.start_at && now < new Date(quiz.start_at).getTime())
       return {
         disabled: true,
@@ -105,6 +106,7 @@ const QuizDetailsPage = () => {
         return;
       }
       const id = await startAttempt(quiz.id);
+      onAttemptCreated?.();
       navigate(`/quizzes/attempts/${id}`);
     } catch (e: any) {
       toast.error(e?.message || "تعذّر بدء الاختبار");
@@ -113,122 +115,107 @@ const QuizDetailsPage = () => {
     }
   };
 
+  if (loading || !quiz) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-40 rounded-2xl" />
+        <Skeleton className="h-64 rounded-2xl" />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <main className="pt-24 pb-16 container mx-auto px-4">
-        <div className="mb-4">
-          <Button variant="ghost" asChild size="sm">
-            <Link to={`/courses/${courseId}`}>
-              <ArrowLeft className="w-4 h-4 ml-2" />
-              العودة للدورة
-            </Link>
-          </Button>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="lg:col-span-2 space-y-5"
+      >
+        <div className="rounded-2xl border border-border bg-card p-5 md:p-7">
+          <div className="flex items-center gap-2 mb-3">
+            <Badge className="bg-primary text-primary-foreground border-0 gap-1">
+              <ClipboardCheck className="w-3.5 h-3.5" />
+              اختبار
+            </Badge>
+          </div>
+          <h1 className="text-2xl md:text-3xl font-bold mb-3">{quiz.title}</h1>
+          {quiz.description && (
+            <p className="text-muted-foreground leading-relaxed">{quiz.description}</p>
+          )}
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
+            <MetaCard icon={<Clock className="w-4 h-4" />} label="المدة" value={`${quiz.duration_minutes} دقيقة`} />
+            <MetaCard icon={<Target className="w-4 h-4" />} label="النجاح" value={`${quiz.pass_percentage}%`} />
+            <MetaCard
+              icon={<Repeat className="w-4 h-4" />}
+              label="المحاولات"
+              value={`${finishedCount} / ${quiz.max_attempts}`}
+            />
+            {(quiz.start_at || quiz.end_at) ? (
+              <MetaCard
+                icon={<Calendar className="w-4 h-4" />}
+                label="النافذة"
+                value={
+                  <div className="text-xs leading-tight">
+                    {quiz.start_at && <div>من: {fmtDateTime(quiz.start_at)}</div>}
+                    {quiz.end_at && <div>إلى: {fmtDateTime(quiz.end_at)}</div>}
+                  </div>
+                }
+              />
+            ) : (
+              <MetaCard icon={<Calendar className="w-4 h-4" />} label="النافذة" value="غير محدودة" />
+            )}
+          </div>
         </div>
 
-        {loading || !quiz ? (
-          <div className="space-y-4">
-            <Skeleton className="h-40" />
-            <Skeleton className="h-64" />
+        <div className="rounded-2xl border border-border bg-card p-5 md:p-6">
+          <h2 className="text-lg md:text-xl font-bold mb-4">محاولاتك السابقة</h2>
+          {attempts.length === 0 ? (
+            <div className="text-center text-muted-foreground py-8 border-2 border-dashed border-border rounded-xl">
+              لم تقم بأي محاولة بعد.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {attempts.map((a) => (
+                <AttemptRow
+                  key={a.id}
+                  attempt={a}
+                  onDetails={() => setDetailsAttemptId(a.id)}
+                  onResume={() => navigate(`/quizzes/attempts/${a.id}`)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </motion.div>
+
+      <motion.aside
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="lg:sticky lg:top-20 lg:self-start"
+      >
+        <div className="rounded-2xl border border-border bg-card p-5 md:p-6 space-y-4">
+          {startState.message && (
+            <div className="rounded-lg bg-accent p-3 text-sm">{startState.message}</div>
+          )}
+          <Button
+            onClick={handleStart}
+            disabled={startState.disabled || starting}
+            size="lg"
+            className="w-full font-bold text-base shadow-lg shadow-primary/20"
+          >
+            {starting ? (
+              <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+            ) : (
+              <Play className="w-4 h-4 ml-2" />
+            )}
+            {inProgress ? "متابعة الاختبار" : "بدء الاختبار"}
+          </Button>
+          <div className="text-xs text-muted-foreground leading-relaxed">
+            عند بدء الاختبار سيتم تخصيص نموذج عشوائي لك وسيبدأ العدّ التنازلي فوراً. لا يمكن إيقاف المؤقت.
           </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="lg:col-span-2 space-y-6"
-            >
-              <div className="rounded-2xl border border-border bg-card p-6 md:p-8">
-                <div className="flex items-center gap-2 mb-3">
-                  <Badge className="bg-primary text-primary-foreground border-0 gap-1">
-                    <ClipboardCheck className="w-3.5 h-3.5" />
-                    اختبار
-                  </Badge>
-                </div>
-                <h1 className="text-2xl md:text-4xl font-bold mb-3">{quiz.title}</h1>
-                {quiz.description && (
-                  <p className="text-muted-foreground leading-relaxed">{quiz.description}</p>
-                )}
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
-                  <MetaCard icon={<Clock className="w-4 h-4" />} label="المدة" value={`${quiz.duration_minutes} دقيقة`} />
-                  <MetaCard icon={<Target className="w-4 h-4" />} label="النجاح" value={`${quiz.pass_percentage}%`} />
-                  <MetaCard
-                    icon={<Repeat className="w-4 h-4" />}
-                    label="المحاولات"
-                    value={`${finishedCount} / ${quiz.max_attempts}`}
-                  />
-                  {(quiz.start_at || quiz.end_at) ? (
-                    <MetaCard
-                      icon={<Calendar className="w-4 h-4" />}
-                      label="النافذة"
-                      value={
-                        <div className="text-xs leading-tight">
-                          {quiz.start_at && <div>من: {fmtDateTime(quiz.start_at)}</div>}
-                          {quiz.end_at && <div>إلى: {fmtDateTime(quiz.end_at)}</div>}
-                        </div>
-                      }
-                    />
-                  ) : (
-                    <MetaCard icon={<Calendar className="w-4 h-4" />} label="النافذة" value="غير محدودة" />
-                  )}
-                </div>
-              </div>
-
-              {/* Attempt history */}
-              <div className="rounded-2xl border border-border bg-card p-6">
-                <h2 className="text-xl font-bold mb-4">محاولاتك السابقة</h2>
-                {attempts.length === 0 ? (
-                  <div className="text-center text-muted-foreground py-8 border-2 border-dashed border-border rounded-xl">
-                    لم تقم بأي محاولة بعد.
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {attempts.map((a) => (
-                      <AttemptRow
-                        key={a.id}
-                        attempt={a}
-                        onDetails={() => setDetailsAttemptId(a.id)}
-                        onResume={() => navigate(`/quizzes/attempts/${a.id}`)}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            </motion.div>
-
-            {/* Sidebar CTA */}
-            <motion.aside
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="lg:sticky lg:top-24 lg:self-start"
-            >
-              <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
-                {startState.message && (
-                  <div className="rounded-lg bg-accent p-3 text-sm">{startState.message}</div>
-                )}
-                <Button
-                  onClick={handleStart}
-                  disabled={startState.disabled || starting}
-                  size="lg"
-                  className="w-full font-bold text-base shadow-lg shadow-primary/20"
-                >
-                  {starting ? (
-                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                  ) : (
-                    <Play className="w-4 h-4 ml-2" />
-                  )}
-                  {inProgress ? "متابعة الاختبار" : "بدء الاختبار"}
-                </Button>
-                <div className="text-xs text-muted-foreground leading-relaxed">
-                  عند بدء الاختبار سيتم تخصيص نموذج عشوائي لك وسيبدأ العدّ التنازلي فوراً. لا يمكن إيقاف المؤقت.
-                </div>
-              </div>
-            </motion.aside>
-          </div>
-        )}
-      </main>
-      <Footer />
+        </div>
+      </motion.aside>
 
       <AttemptDetailsModal
         attemptId={detailsAttemptId}
@@ -301,4 +288,4 @@ const AttemptRow = ({
   );
 };
 
-export default QuizDetailsPage;
+export default QuizInlinePanel;

@@ -4,11 +4,11 @@ import { useAuth } from "@/contexts/AuthContext";
 
 export interface CourseProgress {
   courseId: string;
-  completed: number; // completed lessons + passed quizzes
+  completed: number; // completed lessons + attempted quizzes
   total: number; // total lessons + total quizzes
   percent: number;
   completedLessonIds: Set<string>;
-  passedQuizIds: Set<string>;
+  attemptedQuizIds: Set<string>;
   totalLessons: number;
   totalQuizzes: number;
 }
@@ -59,26 +59,25 @@ export function useCourseProgress(courseId: string | undefined) {
       .eq("user_id", user.id);
     const completedIds = new Set<string>((progress ?? []).map((p: any) => p.lesson_id));
 
-    const passedQuizIds = new Set<string>();
+    const attemptedQuizIds = new Set<string>();
     if (quizIds.length) {
       const { data: attempts } = await (supabase as any)
         .from("quiz_attempts")
-        .select("quiz_id, passed")
+        .select("quiz_id")
         .eq("user_id", user.id)
-        .eq("passed", true)
         .in("quiz_id", quizIds);
-      (attempts ?? []).forEach((a: any) => passedQuizIds.add(a.quiz_id));
+      (attempts ?? []).forEach((a: any) => attemptedQuizIds.add(a.quiz_id));
     }
 
     const total = totalLessons + quizIds.length;
-    const completed = completedIds.size + passedQuizIds.size;
+    const completed = completedIds.size + attemptedQuizIds.size;
     setData({
       courseId,
       completed,
       total,
       percent: total ? Math.round((completed / total) * 100) : 0,
       completedLessonIds: completedIds,
-      passedQuizIds,
+      attemptedQuizIds,
       totalLessons,
       totalQuizzes: quizIds.length,
     });
@@ -165,27 +164,26 @@ export function useMyProgressMap() {
         doneLessons[p.course_id] = (doneLessons[p.course_id] ?? 0) + 1;
       });
 
-      const donePassedQuizzes: Record<string, Set<string>> = {};
+      const doneAttemptedQuizzes: Record<string, Set<string>> = {};
       const quizIds = Object.keys(quizToCourse);
       if (quizIds.length) {
         const { data: attempts } = await (supabase as any)
           .from("quiz_attempts")
-          .select("quiz_id, passed")
+          .select("quiz_id")
           .eq("user_id", user.id)
-          .eq("passed", true)
           .in("quiz_id", quizIds);
         (attempts ?? []).forEach((a: any) => {
           const cId = quizToCourse[a.quiz_id];
           if (!cId) return;
-          if (!donePassedQuizzes[cId]) donePassedQuizzes[cId] = new Set();
-          donePassedQuizzes[cId].add(a.quiz_id);
+          if (!doneAttemptedQuizzes[cId]) doneAttemptedQuizzes[cId] = new Set();
+          doneAttemptedQuizzes[cId].add(a.quiz_id);
         });
       }
 
       const result: Record<string, number> = {};
       courseIds.forEach((id) => {
         const t = (lessonTotals[id] ?? 0) + (quizTotals[id] ?? 0);
-        const d = (doneLessons[id] ?? 0) + (donePassedQuizzes[id]?.size ?? 0);
+        const d = (doneLessons[id] ?? 0) + (doneAttemptedQuizzes[id]?.size ?? 0);
         result[id] = t ? Math.round((d / t) * 100) : 0;
       });
       if (!cancelled) setMap(result);
