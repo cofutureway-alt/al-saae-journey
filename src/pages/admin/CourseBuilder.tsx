@@ -515,20 +515,50 @@ const CourseBuilder = () => {
     }
     setCourse(c as Course);
 
-    const { data: u } = await supabase
-      .from("units")
-      .select("id, title, description, position, lessons(id, title, description, video_provider, video_url, unit_id, position)")
-      .eq("course_id", id)
-      .order("position");
-    const mapped: Unit[] = (u ?? []).map((row: any) => ({
-      id: row.id,
-      title: row.title,
-      description: row.description,
-      position: row.position,
-      lessons: [...(row.lessons ?? [])].sort((a: any, b: any) => a.position - b.position),
-    }));
+    const [{ data: u }, { data: qz }] = await Promise.all([
+      supabase
+        .from("units")
+        .select(
+          "id, title, description, position, lessons(id, title, description, video_provider, video_url, unit_id, position)",
+        )
+        .eq("course_id", id)
+        .order("position"),
+      supabase
+        .from("quizzes")
+        .select("*")
+        .eq("course_id", id),
+    ]);
+
+    const quizzesByUnit = new Map<string, QuizRecord[]>();
+    (qz ?? []).forEach((q: any) => {
+      const arr = quizzesByUnit.get(q.unit_id) ?? [];
+      arr.push(q as QuizRecord);
+      quizzesByUnit.set(q.unit_id, arr);
+    });
+
+    const mapped: Unit[] = (u ?? []).map((row: any) => {
+      const lessonItems: ContentItem[] = (row.lessons ?? []).map((l: any) => ({
+        kind: "lesson" as const,
+        id: l.id,
+        order: l.position,
+        lesson: l as LessonRecord,
+      }));
+      const quizItems: ContentItem[] = (quizzesByUnit.get(row.id) ?? []).map((q) => ({
+        kind: "quiz" as const,
+        id: q.id,
+        order: q.order_index,
+        quiz: q,
+      }));
+      const content = [...lessonItems, ...quizItems].sort((a, b) => a.order - b.order);
+      return {
+        id: row.id,
+        title: row.title,
+        description: row.description,
+        position: row.position,
+        content,
+      };
+    });
     setUnits(mapped);
-    // expand all by default
     setExpanded((prev) => {
       const next = { ...prev };
       mapped.forEach((u) => {
