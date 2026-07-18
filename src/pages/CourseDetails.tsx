@@ -12,6 +12,8 @@ import {
   CheckCircle2,
   ShieldCheck,
   Sparkles,
+  ClipboardCheck,
+  Clock,
 } from "lucide-react";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
@@ -25,6 +27,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useSignedThumbnail } from "@/hooks/use-signed-thumbnail";
 import { useCourseProgress } from "@/hooks/use-my-progress";
 import { EightPointStar } from "@/components/IslamicPatterns";
+import { listUnitQuizzes } from "@/lib/quiz-api";
 
 interface Course {
   id: string;
@@ -44,12 +47,26 @@ interface LessonLite {
   position: number;
 }
 
+interface QuizLite {
+  id: string;
+  unit_id: string;
+  title: string;
+  order_index: number;
+  duration_minutes: number;
+}
+
+type UnitItem =
+  | { kind: "lesson"; order: number; lesson: LessonLite }
+  | { kind: "quiz"; order: number; quiz: QuizLite };
+
 interface UnitWithLessons {
   id: string;
   title: string;
   description: string | null;
   position: number;
   lessons: LessonLite[];
+  quizzes: QuizLite[];
+  items: UnitItem[];
 }
 
 const CourseDetails = () => {
@@ -121,11 +138,25 @@ const CourseDetails = () => {
       }
     }
 
+    // Fetch quizzes per unit (parallel)
+    const quizzesByUnit: Record<string, QuizLite[]> = {};
+    if (unitIds.length) {
+      const results = await Promise.all(unitIds.map((uid) => listUnitQuizzes(uid).catch(() => [])));
+      unitIds.forEach((uid, i) => {
+        quizzesByUnit[uid] = (results[i] ?? []) as QuizLite[];
+      });
+    }
+
     setUnits(
-      unitList.map((u) => ({
-        ...u,
-        lessons: lessons.filter((l) => l.unit_id === u.id),
-      })),
+      unitList.map((u) => {
+        const uLessons = lessons.filter((l) => l.unit_id === u.id);
+        const uQuizzes = quizzesByUnit[u.id] ?? [];
+        const items: UnitItem[] = [
+          ...uLessons.map((l) => ({ kind: "lesson" as const, order: l.position, lesson: l })),
+          ...uQuizzes.map((q) => ({ kind: "quiz" as const, order: q.order_index, quiz: q })),
+        ].sort((a, b) => a.order - b.order);
+        return { ...u, lessons: uLessons, quizzes: uQuizzes, items };
+      }),
     );
 
     // Enrollment status

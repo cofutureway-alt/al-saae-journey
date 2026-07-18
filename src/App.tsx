@@ -26,6 +26,8 @@ import MyCourses from "./pages/student/MyCourses";
 import StudentStatistics from "./pages/student/StudentStatistics";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminVideoPlayerSettings from "./pages/admin/AdminVideoPlayerSettings";
+import QuizDetails from "./pages/QuizDetails";
+import QuizTake from "./pages/QuizTake";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +50,22 @@ const App = () => (
               element={
                 <RequireAuth>
                   <LessonPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/courses/:courseId/quizzes/:quizId"
+              element={
+                <RequireAuth>
+                  <QuizDetails />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/quizzes/attempts/:attemptId"
+              element={
+                <RequireAuth>
+                  <QuizTake />
                 </RequireAuth>
               }
             />
