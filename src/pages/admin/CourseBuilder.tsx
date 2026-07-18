@@ -78,12 +78,16 @@ interface Course {
   status: "draft" | "published";
 }
 
+type ContentItem =
+  | { kind: "lesson"; id: string; order: number; lesson: LessonRecord }
+  | { kind: "quiz"; id: string; order: number; quiz: QuizRecord };
+
 interface Unit {
   id: string;
   title: string;
   description: string | null;
   position: number;
-  lessons: LessonRecord[];
+  content: ContentItem[];
 }
 
 // ---------- Autosave indicator ----------
