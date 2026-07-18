@@ -12,6 +12,8 @@ import {
   CheckCircle2,
   ShieldCheck,
   Sparkles,
+  ClipboardCheck,
+  Clock,
 } from "lucide-react";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
@@ -25,6 +27,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useSignedThumbnail } from "@/hooks/use-signed-thumbnail";
 import { useCourseProgress } from "@/hooks/use-my-progress";
 import { EightPointStar } from "@/components/IslamicPatterns";
+import { listUnitQuizzes } from "@/lib/quiz-api";
 
 interface Course {
   id: string;
@@ -44,12 +47,26 @@ interface LessonLite {
   position: number;
 }
 
+interface QuizLite {
+  id: string;
+  unit_id: string;
+  title: string;
+  order_index: number;
+  duration_minutes: number;
+}
+
+type UnitItem =
+  | { kind: "lesson"; order: number; lesson: LessonLite }
+  | { kind: "quiz"; order: number; quiz: QuizLite };
+
 interface UnitWithLessons {
   id: string;
   title: string;
   description: string | null;
   position: number;
   lessons: LessonLite[];
+  quizzes: QuizLite[];
+  items: UnitItem[];
 }
 
 const CourseDetails = () => {
@@ -121,11 +138,25 @@ const CourseDetails = () => {
       }
     }
 
+    // Fetch quizzes per unit (parallel)
+    const quizzesByUnit: Record<string, QuizLite[]> = {};
+    if (unitIds.length) {
+      const results = await Promise.all(unitIds.map((uid) => listUnitQuizzes(uid).catch(() => [])));
+      unitIds.forEach((uid, i) => {
+        quizzesByUnit[uid] = (results[i] ?? []) as QuizLite[];
+      });
+    }
+
     setUnits(
-      unitList.map((u) => ({
-        ...u,
-        lessons: lessons.filter((l) => l.unit_id === u.id),
-      })),
+      unitList.map((u) => {
+        const uLessons = lessons.filter((l) => l.unit_id === u.id);
+        const uQuizzes = quizzesByUnit[u.id] ?? [];
+        const items: UnitItem[] = [
+          ...uLessons.map((l) => ({ kind: "lesson" as const, order: l.position, lesson: l })),
+          ...uQuizzes.map((q) => ({ kind: "quiz" as const, order: q.order_index, quiz: q })),
+        ].sort((a, b) => a.order - b.order);
+        return { ...u, lessons: uLessons, quizzes: uQuizzes, items };
+      }),
     );
 
     // Enrollment status
@@ -538,21 +569,31 @@ const UnitAccordion = ({
             className="overflow-hidden"
           >
             <div className="px-4 md:px-5 pb-4 space-y-1.5 border-t border-border pt-3">
-              {unit.lessons.length === 0 ? (
+              {unit.items.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-3 text-center">
-                  لا توجد دروس في هذه الوحدة بعد.
+                  لا يوجد محتوى في هذه الوحدة بعد.
                 </p>
               ) : (
-                unit.lessons.map((l, i) => (
-                  <LessonRow
-                    key={l.id}
-                    lesson={l}
-                    index={i}
-                    unlocked={unlocked}
-                    courseId={courseId}
-                    completed={completedIds.has(l.id)}
-                  />
-                ))
+                unit.items.map((it, i) =>
+                  it.kind === "lesson" ? (
+                    <LessonRow
+                      key={`l-${it.lesson.id}`}
+                      lesson={it.lesson}
+                      index={i}
+                      unlocked={unlocked}
+                      courseId={courseId}
+                      completed={completedIds.has(it.lesson.id)}
+                    />
+                  ) : (
+                    <QuizRow
+                      key={`q-${it.quiz.id}`}
+                      quiz={it.quiz}
+                      index={i}
+                      unlocked={unlocked}
+                      courseId={courseId}
+                    />
+                  ),
+                )
               )}
             </div>
           </motion.div>
@@ -619,5 +660,50 @@ const LessonRow = ({
     </Link>
   );
 };
+
+const QuizRow = ({
+  quiz,
+  index,
+  unlocked,
+  courseId,
+}: {
+  quiz: QuizLite;
+  index: number;
+  unlocked: boolean;
+  courseId: string;
+}) => {
+  const content = (
+    <div
+      className={`group flex items-center gap-3 p-3 rounded-lg transition-colors border border-dashed border-primary/30 ${
+        unlocked ? "hover:bg-primary/5 cursor-pointer" : "opacity-70 cursor-not-allowed"
+      }`}
+    >
+      <span className="w-7 text-center text-xs font-semibold text-muted-foreground">
+        {String(index + 1).padStart(2, "0")}
+      </span>
+      <div className="w-8 h-8 rounded-md flex items-center justify-center shrink-0 bg-primary/15 text-primary">
+        {unlocked ? <ClipboardCheck className="w-4 h-4" /> : <Lock className="w-3.5 h-3.5" />}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-medium truncate">{quiz.title}</div>
+        <div className="text-[11px] text-muted-foreground inline-flex items-center gap-1">
+          <Clock className="w-3 h-3" />
+          {quiz.duration_minutes} دقيقة · اختبار
+        </div>
+      </div>
+      <Badge variant="outline" className="text-[10px] border-primary/40 text-primary shrink-0">
+        اختبار
+      </Badge>
+    </div>
+  );
+
+  if (!unlocked) return content;
+  return (
+    <Link to={`/courses/${courseId}/quizzes/${quiz.id}`} className="block">
+      {content}
+    </Link>
+  );
+};
+
 
 export default CourseDetails;

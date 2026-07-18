@@ -375,6 +375,144 @@ export type Database = {
         }
         Relationships: []
       }
+      quiz_answers: {
+        Row: {
+          answered_at: string | null
+          attempt_id: string
+          created_at: string
+          fill_blank_text: string | null
+          id: string
+          is_correct: boolean | null
+          option_order: Json
+          points_earned: number
+          question_id: string
+          selected_option_ids: Json
+          time_spent_seconds: number
+          updated_at: string
+        }
+        Insert: {
+          answered_at?: string | null
+          attempt_id: string
+          created_at?: string
+          fill_blank_text?: string | null
+          id?: string
+          is_correct?: boolean | null
+          option_order?: Json
+          points_earned?: number
+          question_id: string
+          selected_option_ids?: Json
+          time_spent_seconds?: number
+          updated_at?: string
+        }
+        Update: {
+          answered_at?: string | null
+          attempt_id?: string
+          created_at?: string
+          fill_blank_text?: string | null
+          id?: string
+          is_correct?: boolean | null
+          option_order?: Json
+          points_earned?: number
+          question_id?: string
+          selected_option_ids?: Json
+          time_spent_seconds?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_answers_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_attempts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_attempts: {
+        Row: {
+          attempt_number: number
+          created_at: string
+          earned_points: number
+          expires_at: string
+          feedback: string | null
+          feedback_given_at: string | null
+          form_number: number
+          id: string
+          passed: boolean | null
+          percentage: number | null
+          question_order: Json
+          quiz_id: string
+          started_at: string
+          status: string
+          submitted_at: string | null
+          total_points: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempt_number: number
+          created_at?: string
+          earned_points?: number
+          expires_at: string
+          feedback?: string | null
+          feedback_given_at?: string | null
+          form_number: number
+          id?: string
+          passed?: boolean | null
+          percentage?: number | null
+          question_order: Json
+          quiz_id: string
+          started_at?: string
+          status?: string
+          submitted_at?: string | null
+          total_points?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempt_number?: number
+          created_at?: string
+          earned_points?: number
+          expires_at?: string
+          feedback?: string | null
+          feedback_given_at?: string | null
+          form_number?: number
+          id?: string
+          passed?: boolean | null
+          percentage?: number | null
+          question_order?: Json
+          quiz_id?: string
+          started_at?: string
+          status?: string
+          submitted_at?: string | null
+          total_points?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_attempts_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_attempts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quiz_question_options: {
         Row: {
           content: Json
@@ -688,11 +826,63 @@ export type Database = {
       }
     }
     Functions: {
+      _finalize_attempt: { Args: { _attempt_id: string }; Returns: undefined }
+      _grade_answer: { Args: { _answer_id: string }; Returns: undefined }
+      add_answer_time: {
+        Args: { _attempt_id: string; _delta: number; _question_id: string }
+        Returns: undefined
+      }
+      get_attempt_details: { Args: { _attempt_id: string }; Returns: Json }
+      get_attempt_questions: { Args: { _attempt_id: string }; Returns: Json }
       get_lessons_public: {
         Args: never
         Returns: {
           id: string
           position: number
+          title: string
+          unit_id: string
+        }[]
+      }
+      get_or_finalize_attempt: {
+        Args: { _attempt_id: string }
+        Returns: {
+          attempt_number: number
+          created_at: string
+          earned_points: number
+          expires_at: string
+          feedback: string | null
+          feedback_given_at: string | null
+          form_number: number
+          id: string
+          passed: boolean | null
+          percentage: number | null
+          question_order: Json
+          quiz_id: string
+          started_at: string
+          status: string
+          submitted_at: string | null
+          total_points: number
+          updated_at: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "quiz_attempts"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      get_quiz_for_student: { Args: { _quiz_id: string }; Returns: Json }
+      get_unit_quizzes: {
+        Args: { _unit_id: string }
+        Returns: {
+          duration_minutes: number
+          end_at: string
+          id: string
+          max_attempts: number
+          order_index: number
+          pass_percentage: number
+          start_at: string
           title: string
           unit_id: string
         }[]
@@ -704,6 +894,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      heartbeat_quiz_attempt: {
+        Args: { _attempt_id: string }
+        Returns: boolean
+      }
       increment_file_download: {
         Args: { p_lesson_file_id: string }
         Returns: number
@@ -712,7 +906,48 @@ export type Database = {
         Args: { _lesson_id: string; _user_id: string }
         Returns: boolean
       }
+      list_my_quiz_attempts: {
+        Args: { _quiz_id: string }
+        Returns: {
+          attempt_number: number
+          created_at: string
+          earned_points: number
+          expires_at: string
+          feedback: string | null
+          feedback_given_at: string | null
+          form_number: number
+          id: string
+          passed: boolean | null
+          percentage: number | null
+          question_order: Json
+          quiz_id: string
+          started_at: string
+          status: string
+          submitted_at: string | null
+          total_points: number
+          updated_at: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "quiz_attempts"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       next_unit_order_index: { Args: { _unit_id: string }; Returns: number }
+      save_quiz_answer: {
+        Args: {
+          _attempt_id: string
+          _fill_blank_text: string
+          _question_id: string
+          _selected_option_ids: Json
+          _time_delta_seconds?: number
+        }
+        Returns: undefined
+      }
+      start_quiz_attempt: { Args: { _quiz_id: string }; Returns: string }
+      submit_quiz_attempt: { Args: { _attempt_id: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "student"
