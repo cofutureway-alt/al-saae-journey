@@ -245,13 +245,25 @@ const QuizWizard = ({ open, onOpenChange, unitId, courseId, quiz, onSaved }: Pro
       setStep(1);
       return;
     }
+    // On question steps, require at least 1 question in the current form.
+    if ((formCounts[step] ?? 0) < 1) {
+      setShowCountError(true);
+      toast.error("يجب إضافة سؤال واحد على الأقل لهذا النموذج");
+      return;
+    }
+    setShowCountError(false);
     if (step < totalSteps - 1) setStep(step + 1);
   };
 
   const handleFinish = async () => {
+    if ((formCounts[step] ?? 0) < 1) {
+      setShowCountError(true);
+      toast.error("يجب إضافة سؤال واحد على الأقل لهذا النموذج");
+      return;
+    }
     onSaved();
     onOpenChange(false);
-    toast.success("تم إغلاق المعالج");
+    toast.success("تم حفظ الاختبار بنجاح");
   };
 
   const onSubmit = handleSubmit(() => handleNext());
