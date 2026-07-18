@@ -86,7 +86,7 @@ const QuizTake = () => {
       setQuiz(q);
       if (a.status !== "in_progress") {
         // Redirect to details page
-        navigate(`/courses/${q.course_id}/quizzes/${q.id}`, { replace: true });
+        navigate(`/courses/${q.course_id}/learn/quiz/${q.id}`, { replace: true });
         return;
       }
       const qs = await getAttemptQuestions(attemptId);
@@ -206,7 +206,7 @@ const QuizTake = () => {
     try {
       await submitAttempt(attemptId);
     } catch {}
-    if (quiz) navigate(`/courses/${quiz.course_id}/quizzes/${quiz.id}`, { replace: true });
+    if (quiz) navigate(`/courses/${quiz.course_id}/learn/quiz/${quiz.id}`, { replace: true });
   };
 
   const goto = (i: number) => {
@@ -307,7 +307,7 @@ const QuizTake = () => {
     try {
       await submitAttempt(attemptId);
       toast.success("تم تسليم الاختبار");
-      if (quiz) navigate(`/courses/${quiz.course_id}/quizzes/${quiz.id}`, { replace: true });
+      if (quiz) navigate(`/courses/${quiz.course_id}/learn/quiz/${quiz.id}`, { replace: true });
     } catch (e: any) {
       toast.error(e?.message || "تعذّر تسليم الاختبار");
     } finally {
