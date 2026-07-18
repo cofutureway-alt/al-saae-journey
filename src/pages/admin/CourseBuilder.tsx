@@ -19,6 +19,7 @@ import {
   PlayCircle,
   Info,
   Settings,
+  ClipboardList,
 } from "lucide-react";
 import {
   DndContext,
@@ -68,6 +69,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import LessonModal, { type LessonRecord } from "@/components/admin/LessonModal";
+import QuizWizard, { type QuizRecord } from "@/components/admin/QuizWizard";
 
 // ---------- Types ----------
 interface Course {
