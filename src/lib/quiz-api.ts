@@ -164,3 +164,55 @@ export async function listUnitQuizzes(unitId: string) {
     end_at: string | null;
   }>;
 }
+
+export interface GradingUpdate {
+  question_id: string;
+  is_correct: boolean | null;
+}
+
+export async function adminSaveGrading(
+  attemptId: string,
+  updates: GradingUpdate[],
+): Promise<QuizAttempt> {
+  const { data, error } = await sb.rpc("admin_save_grading", {
+    _attempt_id: attemptId,
+    _updates: updates,
+  });
+  if (error) throw error;
+  return data as QuizAttempt;
+}
+
+export async function adminSaveFeedback(
+  attemptId: string,
+  feedback: string,
+): Promise<QuizAttempt> {
+  const { data, error } = await sb.rpc("admin_save_feedback", {
+    _attempt_id: attemptId,
+    _feedback: feedback,
+  });
+  if (error) throw error;
+  return data as QuizAttempt;
+}
+
+export async function getOfficialResult(
+  quizId: string,
+  userId: string,
+): Promise<QuizAttempt | null> {
+  const { data, error } = await sb.rpc("get_official_result", {
+    _quiz_id: quizId,
+    _user_id: userId,
+  });
+  if (error) throw error;
+  return (data as QuizAttempt | null) ?? null;
+}
+
+export async function fetchQuizPassPercentage(quizId: string): Promise<number> {
+  const { data, error } = await (supabase as any)
+    .from("quizzes")
+    .select("pass_percentage")
+    .eq("id", quizId)
+    .maybeSingle();
+  if (error) throw error;
+  return (data?.pass_percentage ?? 50) as number;
+}
+
