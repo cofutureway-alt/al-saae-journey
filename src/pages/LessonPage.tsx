@@ -575,20 +575,25 @@ const LessonPage = () => {
         </main>
 
         {/* Desktop curriculum */}
-        <aside className="hidden lg:block border-r border-border bg-card/40">
-          <div className="sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto">
-            <CurriculumPanel
-              course={course}
-              units={units}
-              currentLessonId={lesson.id}
-              completedIds={completedIds}
-              percent={percent}
-              completedCount={completedCount}
-              totalLessons={totalLessons}
-              courseId={courseId!}
-            />
-          </div>
-        </aside>
+        {!sidebarCollapsed && (
+          <aside className="hidden lg:block border-r border-border bg-card/40">
+            <div className="sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto">
+              <CurriculumPanel
+                course={course}
+                units={units}
+                currentLessonId={lesson.id}
+                completedIds={completedIds}
+                passedQuizIds={passedQuizIds}
+                percent={percent}
+                completedCount={completedCount}
+                totalItems={totalItems}
+                courseId={courseId!}
+                collapsedUnits={collapsedUnits}
+                onToggleUnit={toggleUnit}
+              />
+            </div>
+          </aside>
+        )}
       </div>
 
       {/* Mobile drawer */}
