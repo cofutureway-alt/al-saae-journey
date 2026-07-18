@@ -100,6 +100,9 @@ const LessonPage = () => {
   const [saving, setSaving] = useState(false);
   const [viewerFile, setViewerFile] = useState<ViewerFile | null>(null);
   const [watchPct, setWatchPct] = useState(0);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [collapsedUnits, setCollapsedUnits] = useState<Record<string, boolean>>({});
+  const [passedQuizIds, setPassedQuizIds] = useState<Set<string>>(new Set());
   const { settings: playerSettings } = usePlayerSettings();
 
   const load = useCallback(async () => {
@@ -138,7 +141,7 @@ const LessonPage = () => {
       return;
     }
 
-    // Curriculum (enrolled/admin can read full lessons)
+    // Curriculum
     const { data: unitsData } = await supabase
       .from("units")
       .select("id, title, position")
@@ -157,11 +160,36 @@ const LessonPage = () => {
       lessons = (lData as CurriculumLesson[]) ?? [];
     }
 
+    // Quizzes per unit
+    const quizzesByUnit: Record<string, CurriculumQuiz[]> = {};
+    const allQuizIds: string[] = [];
+    if (unitIds.length) {
+      const results = await Promise.all(
+        unitIds.map((uid) => listUnitQuizzes(uid).catch(() => [])),
+      );
+      unitIds.forEach((uid, i) => {
+        const list = (results[i] ?? []).map((q: any) => ({
+          id: q.id,
+          title: q.title,
+          order_index: q.order_index,
+          unit_id: uid,
+          duration_minutes: q.duration_minutes,
+        }));
+        quizzesByUnit[uid] = list;
+        list.forEach((q) => allQuizIds.push(q.id));
+      });
+    }
+
     setUnits(
-      uList.map((u) => ({
-        ...u,
-        lessons: lessons.filter((l) => l.unit_id === u.id),
-      })),
+      uList.map((u) => {
+        const uLessons = lessons.filter((l) => l.unit_id === u.id);
+        const uQuizzes = quizzesByUnit[u.id] ?? [];
+        const items: CurriculumItem[] = [
+          ...uLessons.map((l) => ({ kind: "lesson" as const, order: l.position, lesson: l })),
+          ...uQuizzes.map((q) => ({ kind: "quiz" as const, order: q.order_index, quiz: q })),
+        ].sort((a, b) => a.order - b.order);
+        return { ...u, lessons: uLessons, quizzes: uQuizzes, items };
+      }),
     );
 
     // Current lesson (full row, includes video_url)
@@ -180,7 +208,7 @@ const LessonPage = () => {
       .order("created_at");
     setFiles((fData ?? []) as ViewerFile[]);
 
-    // Progress
+    // Progress: lessons + passed quizzes
     if (user) {
       const { data: pData } = await supabase
         .from("lesson_progress")
@@ -188,6 +216,18 @@ const LessonPage = () => {
         .eq("course_id", courseId)
         .eq("user_id", user.id);
       setCompletedIds(new Set((pData ?? []).map((p: any) => p.lesson_id)));
+
+      if (allQuizIds.length) {
+        const { data: attempts } = await (supabase as any)
+          .from("quiz_attempts")
+          .select("quiz_id, passed")
+          .eq("user_id", user.id)
+          .eq("passed", true)
+          .in("quiz_id", allQuizIds);
+        setPassedQuizIds(new Set((attempts ?? []).map((a: any) => a.quiz_id)));
+      } else {
+        setPassedQuizIds(new Set());
+      }
     }
 
     setLoading(false);
@@ -207,9 +247,18 @@ const LessonPage = () => {
   const prevLesson = currentIndex > 0 ? orderedLessons[currentIndex - 1] : undefined;
 
   const totalLessons = orderedLessons.length;
-  const completedCount = completedIds.size;
-  const percent = totalLessons ? Math.round((completedCount / totalLessons) * 100) : 0;
+  const totalQuizzes = useMemo(
+    () => units.reduce((acc, u) => acc + u.quizzes.length, 0),
+    [units],
+  );
+  const totalItems = totalLessons + totalQuizzes;
+  const completedCount = completedIds.size + passedQuizIds.size;
+  const percent = totalItems ? Math.round((completedCount / totalItems) * 100) : 0;
   const isCompleted = lesson ? completedIds.has(lesson.id) : false;
+
+  const toggleUnit = (unitId: string) =>
+    setCollapsedUnits((prev) => ({ ...prev, [unitId]: !prev[unitId] }));
+
 
   const gateActive = playerSettings.completion_gate_enabled && !isAdmin;
   const requiredPct = playerSettings.completion_required_percentage;
