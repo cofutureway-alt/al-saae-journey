@@ -5,7 +5,11 @@ import {
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
+  ChevronDown,
+  ChevronLeft,
   ChevronRight,
+  ClipboardCheck,
+  Clock,
   Eye,
   File as FileIcon,
   FileImage,
@@ -15,6 +19,8 @@ import {
   Loader2,
   Lock,
   Menu,
+  PanelRightClose,
+  PanelRightOpen,
   PlayCircle,
   Presentation,
   Sparkles,
@@ -32,6 +38,7 @@ import LessonVideoPlayer from "@/components/lesson/LessonVideoPlayer";
 import CircularProgress from "@/components/lesson/CircularProgress";
 import { usePlayerSettings } from "@/hooks/use-player-settings";
 import FileViewer, { type ViewerFile } from "@/components/lesson/FileViewer";
+import { listUnitQuizzes } from "@/lib/quiz-api";
 
 interface Lesson {
   id: string;
@@ -50,11 +57,25 @@ interface CurriculumLesson {
   unit_id: string;
 }
 
+interface CurriculumQuiz {
+  id: string;
+  title: string;
+  order_index: number;
+  unit_id: string;
+  duration_minutes: number;
+}
+
+type CurriculumItem =
+  | { kind: "lesson"; order: number; lesson: CurriculumLesson }
+  | { kind: "quiz"; order: number; quiz: CurriculumQuiz };
+
 interface CurriculumUnit {
   id: string;
   title: string;
   position: number;
   lessons: CurriculumLesson[];
+  quizzes: CurriculumQuiz[];
+  items: CurriculumItem[];
 }
 
 interface CourseLite {
