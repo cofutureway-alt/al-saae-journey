@@ -6,7 +6,6 @@ import {
   ArrowRight,
   CheckCircle2,
   ChevronDown,
-  ChevronLeft,
   ChevronRight,
   ClipboardCheck,
   Clock,
