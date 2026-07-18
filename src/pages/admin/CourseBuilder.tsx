@@ -471,11 +471,17 @@ const CourseBuilder = () => {
   const [editingLesson, setEditingLesson] = useState<LessonRecord | null>(null);
   const [deletingLesson, setDeletingLesson] = useState<LessonRecord | null>(null);
 
+  const [quizWizardOpen, setQuizWizardOpen] = useState(false);
+  const [quizUnitId, setQuizUnitId] = useState<string | null>(null);
+  const [editingQuiz, setEditingQuiz] = useState<QuizRecord | null>(null);
+  const [deletingQuiz, setDeletingQuiz] = useState<QuizRecord | null>(null);
+
   const [publishOpen, setPublishOpen] = useState(false);
 
   const [activeDrag, setActiveDrag] = useState<
     | { type: "unit"; unit: Unit }
     | { type: "lesson"; lesson: LessonRecord }
+    | { type: "quiz"; quiz: QuizRecord }
     | null
   >(null);
 
