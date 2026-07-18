@@ -162,6 +162,19 @@ export function useStudentStats() {
             if (l.completed) done += 1;
           }),
         );
+
+        // Include quizzes: each quiz weighs equally to a lesson.
+        // Contribution = 100 if attempted (any status), else 0.
+        const courseUnitIds = new Set(courseUnits.map((u) => u.id));
+        const courseQuizzes = quizList.filter((q) => courseUnitIds.has(q.unit_id));
+        courseQuizzes.forEach((q) => {
+          total += 1;
+          if (attemptedQuizSet.has(q.id)) {
+            sum += 100;
+            done += 1;
+          }
+        });
+
         globalSum += sum;
         globalTotal += total;
         completedLessonsCount += done;
