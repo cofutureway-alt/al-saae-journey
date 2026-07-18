@@ -140,7 +140,7 @@ const ImportQuestionsModal = ({
           const { error: optErr } = await supabase.from("quiz_question_options").insert(
             opts.map((o) => ({
               question_id: inserted.id,
-              content: o.content,
+              content: o.content as never,
               is_correct: o.is_correct,
               order_index: o.order_index,
             })),
