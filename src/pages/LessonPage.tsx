@@ -629,10 +629,13 @@ const LessonPage = () => {
                 units={units}
                 currentLessonId={lesson.id}
                 completedIds={completedIds}
+                passedQuizIds={passedQuizIds}
                 percent={percent}
                 completedCount={completedCount}
-                totalLessons={totalLessons}
+                totalItems={totalItems}
                 courseId={courseId!}
+                collapsedUnits={collapsedUnits}
+                onToggleUnit={toggleUnit}
                 onNavigate={() => setDrawerOpen(false)}
               />
             </motion.aside>
