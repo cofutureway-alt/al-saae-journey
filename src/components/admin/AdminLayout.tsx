@@ -5,6 +5,7 @@ import {
   BarChart3,
   BookMarked,
   BookOpen,
+  ClipboardCheck,
   Layers,
   LogOut,
   Menu,
@@ -27,6 +28,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 
 const nav = [
   { to: "/admin", label: "الإحصائيات", icon: BarChart3, end: true },
+  { to: "/admin/quiz-attempts", label: "محاولات الاختبارات", icon: ClipboardCheck },
   { to: "/admin/courses", label: "الدورات", icon: BookOpen },
   { to: "/admin/stages", label: "المراحل", icon: Layers },
   { to: "/admin/subjects", label: "المواد الدراسية", icon: BookMarked },
