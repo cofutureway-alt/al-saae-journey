@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
-// ============ Phase 8: weighted completion formula ============
+// ============ Phase 17: weighted completion incl. quizzes ============
 // For each lesson: contribution = 100 if completed, else watch_percentage (0 if none)
-// Course/overall percent = sum(contribution) / (total_lessons * 100) * 100
+// For each quiz: contribution = 100 if student has ANY attempt, else 0
+// Course percent = sum(contribution across lessons + quizzes) / ((lessons + quizzes) * 100) * 100
 
 export interface StudentCourseStat {
   id: string;
@@ -84,12 +85,34 @@ export function useStudentStats() {
       const uList = (units ?? []) as any[];
       const unitIds = uList.map((u) => u.id);
 
-      const { data: lessons } = unitIds.length
-        ? await supabase
-            .from("lessons_public")
-            .select("id, unit_id, title, position")
-            .in("unit_id", unitIds)
+      const [{ data: lessons }, { data: quizzes }] = await Promise.all([
+        unitIds.length
+          ? supabase
+              .from("lessons_public")
+              .select("id, unit_id, title, position")
+              .in("unit_id", unitIds)
+          : Promise.resolve({ data: [] as any[] }),
+        unitIds.length
+          ? (supabase as any)
+              .from("quizzes")
+              .select("id, unit_id")
+              .in("unit_id", unitIds)
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
+
+      const quizList = (quizzes ?? []) as { id: string; unit_id: string }[];
+      const quizIds = quizList.map((q) => q.id);
+
+      const { data: attempts } = quizIds.length
+        ? await (supabase as any)
+            .from("quiz_attempts")
+            .select("quiz_id")
+            .eq("user_id", uid)
+            .in("quiz_id", quizIds)
         : { data: [] as any[] };
+      const attemptedQuizSet = new Set<string>(
+        ((attempts ?? []) as any[]).map((a) => a.quiz_id),
+      );
 
       const unitToCourse = new Map<string, string>();
       uList.forEach((u) => unitToCourse.set(u.id, u.course_id));

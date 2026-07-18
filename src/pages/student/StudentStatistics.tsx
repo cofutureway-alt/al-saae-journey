@@ -199,7 +199,7 @@ const CourseRow = ({ course, index }: { course: StudentCourseStat; index: number
                       u.lessons.map((l) => (
                         <Link
                           key={l.id}
-                          to={`/courses/${course.id}/learn/${l.id}`}
+                          to={`/courses/${course.id}/learn/lesson/${l.id}`}
                           className="flex items-center gap-3 p-2.5 rounded-lg bg-background border border-border/50 hover:border-primary/40 transition-colors group"
                         >
                           <div

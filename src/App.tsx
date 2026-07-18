@@ -21,12 +21,14 @@ import CourseInfoEditor from "./pages/admin/CourseInfoEditor";
 import CourseBuilder from "./pages/admin/CourseBuilder";
 import Courses from "./pages/Courses";
 import CourseDetails from "./pages/CourseDetails";
-import LessonPage from "./pages/LessonPage";
+import CourseContentPage, {
+  LegacyLessonRedirect,
+  LegacyQuizRedirect,
+} from "./pages/CourseContentPage";
 import MyCourses from "./pages/student/MyCourses";
 import StudentStatistics from "./pages/student/StudentStatistics";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminVideoPlayerSettings from "./pages/admin/AdminVideoPlayerSettings";
-import QuizDetails from "./pages/QuizDetails";
 import QuizTake from "./pages/QuizTake";
 import AdminQuizAttempts from "./pages/admin/AdminQuizAttempts";
 import MyQuizAttempts from "./pages/student/MyQuizAttempts";
@@ -48,10 +50,19 @@ const App = () => (
             <Route path="/courses" element={<Courses />} />
             <Route path="/courses/:id" element={<CourseDetails />} />
             <Route
+              path="/courses/:courseId/learn/:contentType/:contentId"
+              element={
+                <RequireAuth>
+                  <CourseContentPage />
+                </RequireAuth>
+              }
+            />
+            {/* Legacy redirects for old links */}
+            <Route
               path="/courses/:courseId/learn/:lessonId"
               element={
                 <RequireAuth>
-                  <LessonPage />
+                  <LegacyLessonRedirect />
                 </RequireAuth>
               }
             />
@@ -59,7 +70,7 @@ const App = () => (
               path="/courses/:courseId/quizzes/:quizId"
               element={
                 <RequireAuth>
-                  <QuizDetails />
+                  <LegacyQuizRedirect />
                 </RequireAuth>
               }
             />
