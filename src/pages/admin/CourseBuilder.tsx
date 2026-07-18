@@ -627,9 +627,16 @@ const CourseBuilder = () => {
     load();
   };
 
-  // ---- Drag & drop ----
-  const findUnitByLessonId = (lessonId: string) =>
-    units.find((u) => u.lessons.some((l) => l.id === lessonId));
+  // ---- Drag & drop (content items share same order sequence) ----
+  const findUnitByContentId = (kind: "lesson" | "quiz", itemId: string) =>
+    units.find((u) => u.content.some((c) => c.kind === kind && c.id === itemId));
+
+  const parseDragId = (raw: string): { kind: "lesson" | "quiz" | "unit"; id: string } | null => {
+    if (raw.startsWith("lesson:")) return { kind: "lesson", id: raw.slice(7) };
+    if (raw.startsWith("quiz:")) return { kind: "quiz", id: raw.slice(5) };
+    if (raw.startsWith("unit:")) return { kind: "unit", id: raw.slice(5) };
+    return null;
+  };
 
   const onDragStart = (e: DragStartEvent) => {
     const data = e.active.data.current as any;
@@ -638,6 +645,8 @@ const CourseBuilder = () => {
       if (unit) setActiveDrag({ type: "unit", unit });
     } else if (data?.type === "lesson") {
       setActiveDrag({ type: "lesson", lesson: data.lesson });
+    } else if (data?.type === "quiz") {
+      setActiveDrag({ type: "quiz", quiz: data.quiz });
     }
   };
 
@@ -645,19 +654,20 @@ const CourseBuilder = () => {
     const { active, over } = e;
     if (!over) return;
     const activeData = active.data.current as any;
-    if (activeData?.type !== "lesson") return;
+    if (activeData?.type !== "lesson" && activeData?.type !== "quiz") return;
 
-    const activeLessonId = String(active.id).replace("lesson:", "");
-    const overId = String(over.id);
-    const activeUnit = findUnitByLessonId(activeLessonId);
+    const parsedActive = parseDragId(String(active.id));
+    const parsedOver = parseDragId(String(over.id));
+    if (!parsedActive || parsedActive.kind === "unit") return;
+
+    const activeUnit = findUnitByContentId(parsedActive.kind, parsedActive.id);
     if (!activeUnit) return;
 
     let targetUnitId: string | null = null;
-    if (overId.startsWith("unit:")) {
-      targetUnitId = overId.replace("unit:", "");
-    } else if (overId.startsWith("lesson:")) {
-      const overLessonId = overId.replace("lesson:", "");
-      const overUnit = findUnitByLessonId(overLessonId);
+    if (parsedOver?.kind === "unit") {
+      targetUnitId = parsedOver.id;
+    } else if (parsedOver) {
+      const overUnit = findUnitByContentId(parsedOver.kind, parsedOver.id);
       targetUnitId = overUnit?.id ?? null;
     }
     if (!targetUnitId || targetUnitId === activeUnit.id) return;
@@ -666,13 +676,23 @@ const CourseBuilder = () => {
       const from = prev.find((u) => u.id === activeUnit.id);
       const to = prev.find((u) => u.id === targetUnitId);
       if (!from || !to) return prev;
-      const lesson = from.lessons.find((l) => l.id === activeLessonId);
-      if (!lesson) return prev;
+      const item = from.content.find(
+        (c) => c.kind === parsedActive.kind && c.id === parsedActive.id,
+      );
+      if (!item) return prev;
+      const movedItem: ContentItem =
+        item.kind === "lesson"
+          ? { ...item, lesson: { ...item.lesson, unit_id: to.id } }
+          : { ...item, quiz: { ...item.quiz, unit_id: to.id } };
       return prev.map((u) => {
         if (u.id === from.id)
-          return { ...u, lessons: u.lessons.filter((l) => l.id !== activeLessonId) };
-        if (u.id === to.id)
-          return { ...u, lessons: [...u.lessons, { ...lesson, unit_id: to.id }] };
+          return {
+            ...u,
+            content: u.content.filter(
+              (c) => !(c.kind === parsedActive.kind && c.id === parsedActive.id),
+            ),
+          };
+        if (u.id === to.id) return { ...u, content: [...u.content, movedItem] };
         return u;
       });
     });
@@ -687,15 +707,26 @@ const CourseBuilder = () => {
             supabase.from("units").update({ position: i }).eq("id", u.id),
           ),
         );
-        u.lessons.forEach((l, li) => {
-          ops.push(
-            Promise.resolve(
-              supabase
-                .from("lessons")
-                .update({ position: li, unit_id: u.id })
-                .eq("id", l.id),
-            ),
-          );
+        u.content.forEach((c, idx) => {
+          if (c.kind === "lesson") {
+            ops.push(
+              Promise.resolve(
+                supabase
+                  .from("lessons")
+                  .update({ position: idx, unit_id: u.id })
+                  .eq("id", c.id),
+              ),
+            );
+          } else {
+            ops.push(
+              Promise.resolve(
+                supabase
+                  .from("quizzes")
+                  .update({ order_index: idx, unit_id: u.id })
+                  .eq("id", c.id),
+              ),
+            );
+          }
         });
       });
       const results = await Promise.all(ops);
@@ -720,24 +751,28 @@ const CourseBuilder = () => {
       return;
     }
 
-    if (activeData?.type === "lesson") {
-      const activeLessonId = String(active.id).replace("lesson:", "");
-      const activeUnit = findUnitByLessonId(activeLessonId);
+    if (activeData?.type === "lesson" || activeData?.type === "quiz") {
+      const parsedActive = parseDragId(String(active.id));
+      if (!parsedActive || parsedActive.kind === "unit") return;
+
+      const activeUnit = findUnitByContentId(parsedActive.kind, parsedActive.id);
       if (!activeUnit) return;
 
-      const overId = String(over.id);
       let next = [...units];
-
-      if (overId.startsWith("lesson:")) {
-        const overLessonId = overId.replace("lesson:", "");
-        const overUnit = findUnitByLessonId(overLessonId);
+      const parsedOver = parseDragId(String(over.id));
+      if (parsedOver && parsedOver.kind !== "unit") {
+        const overUnit = findUnitByContentId(parsedOver.kind, parsedOver.id);
         if (overUnit && overUnit.id === activeUnit.id) {
-          const oldIdx = activeUnit.lessons.findIndex((l) => l.id === activeLessonId);
-          const newIdx = activeUnit.lessons.findIndex((l) => l.id === overLessonId);
+          const oldIdx = activeUnit.content.findIndex(
+            (c) => c.kind === parsedActive.kind && c.id === parsedActive.id,
+          );
+          const newIdx = activeUnit.content.findIndex(
+            (c) => c.kind === parsedOver.kind && c.id === parsedOver.id,
+          );
           if (oldIdx !== newIdx && oldIdx >= 0 && newIdx >= 0) {
             next = units.map((u) =>
               u.id === activeUnit.id
-                ? { ...u, lessons: arrayMove(u.lessons, oldIdx, newIdx) }
+                ? { ...u, content: arrayMove(u.content, oldIdx, newIdx) }
                 : u,
             );
             setUnits(next);
@@ -774,11 +809,30 @@ const CourseBuilder = () => {
     setEditingLesson(lesson);
     setLessonModalOpen(true);
   };
+  const openAddQuiz = (unitId: string) => {
+    setQuizUnitId(unitId);
+    setEditingQuiz(null);
+    setQuizWizardOpen(true);
+  };
+  const openEditQuiz = (quiz: QuizRecord) => {
+    setQuizUnitId(quiz.unit_id);
+    setEditingQuiz(quiz);
+    setQuizWizardOpen(true);
+  };
+  const deleteQuiz = async () => {
+    if (!deletingQuiz) return;
+    await markSaving(async () => {
+      const { error } = await supabase.from("quizzes").delete().eq("id", deletingQuiz.id);
+      if (error) throw error;
+    });
+    setDeletingQuiz(null);
+    load();
+  };
 
   const nextLessonPosition = useMemo(() => {
     if (!lessonUnitId) return 0;
     const u = units.find((x) => x.id === lessonUnitId);
-    return u?.lessons.length ?? 0;
+    return u?.content.length ?? 0;
   }, [units, lessonUnitId]);
 
   if (loading) {
