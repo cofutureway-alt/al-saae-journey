@@ -661,4 +661,49 @@ const LessonRow = ({
   );
 };
 
+const QuizRow = ({
+  quiz,
+  index,
+  unlocked,
+  courseId,
+}: {
+  quiz: QuizLite;
+  index: number;
+  unlocked: boolean;
+  courseId: string;
+}) => {
+  const content = (
+    <div
+      className={`group flex items-center gap-3 p-3 rounded-lg transition-colors border border-dashed border-primary/30 ${
+        unlocked ? "hover:bg-primary/5 cursor-pointer" : "opacity-70 cursor-not-allowed"
+      }`}
+    >
+      <span className="w-7 text-center text-xs font-semibold text-muted-foreground">
+        {String(index + 1).padStart(2, "0")}
+      </span>
+      <div className="w-8 h-8 rounded-md flex items-center justify-center shrink-0 bg-primary/15 text-primary">
+        {unlocked ? <ClipboardCheck className="w-4 h-4" /> : <Lock className="w-3.5 h-3.5" />}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-medium truncate">{quiz.title}</div>
+        <div className="text-[11px] text-muted-foreground inline-flex items-center gap-1">
+          <Clock className="w-3 h-3" />
+          {quiz.duration_minutes} دقيقة · اختبار
+        </div>
+      </div>
+      <Badge variant="outline" className="text-[10px] border-primary/40 text-primary shrink-0">
+        اختبار
+      </Badge>
+    </div>
+  );
+
+  if (!unlocked) return content;
+  return (
+    <Link to={`/courses/${courseId}/quizzes/${quiz.id}`} className="block">
+      {content}
+    </Link>
+  );
+};
+
+
 export default CourseDetails;
