@@ -349,6 +349,19 @@ const LessonPage = () => {
         <Button
           variant="outline"
           size="icon"
+          className="hidden lg:inline-flex"
+          onClick={() => setSidebarCollapsed((v) => !v)}
+          title={sidebarCollapsed ? "إظهار المنهج" : "إخفاء المنهج"}
+        >
+          {sidebarCollapsed ? (
+            <PanelRightOpen className="w-5 h-5" />
+          ) : (
+            <PanelRightClose className="w-5 h-5" />
+          )}
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
           className="lg:hidden"
           onClick={() => setDrawerOpen(true)}
         >
@@ -356,7 +369,9 @@ const LessonPage = () => {
         </Button>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px]">
+      <div
+        className={`grid grid-cols-1 ${sidebarCollapsed ? "" : "lg:grid-cols-[1fr_360px]"}`}
+      >
         {/* Main content */}
         <main className="p-3 md:p-6 space-y-5 min-w-0">
           <LessonVideoPlayer
