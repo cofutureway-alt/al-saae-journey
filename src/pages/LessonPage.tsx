@@ -656,20 +656,26 @@ const CurriculumPanel = ({
   units,
   currentLessonId,
   completedIds,
+  passedQuizIds,
   percent,
   completedCount,
-  totalLessons,
+  totalItems,
   courseId,
+  collapsedUnits,
+  onToggleUnit,
   onNavigate,
 }: {
   course: CourseLite;
   units: CurriculumUnit[];
   currentLessonId: string;
   completedIds: Set<string>;
+  passedQuizIds: Set<string>;
   percent: number;
   completedCount: number;
-  totalLessons: number;
+  totalItems: number;
   courseId: string;
+  collapsedUnits: Record<string, boolean>;
+  onToggleUnit: (unitId: string) => void;
   onNavigate?: () => void;
 }) => {
   return (
@@ -680,72 +686,131 @@ const CurriculumPanel = ({
         <div className="flex items-center justify-between text-xs mb-1.5">
           <span className="text-muted-foreground">التقدّم</span>
           <span className="font-bold tabular-nums">
-            {completedCount}/{totalLessons} · {percent}%
+            {completedCount}/{totalItems} · {percent}%
           </span>
         </div>
         <Progress value={percent} className="h-2" />
       </div>
 
       <div className="space-y-3">
-        {units.map((u, ui) => (
-          <div key={u.id} className="space-y-1">
-            <div className="flex items-center gap-2 px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              <span className="w-6 h-6 rounded bg-primary/10 text-primary inline-flex items-center justify-center text-[10px]">
-                {ui + 1}
-              </span>
-              <span className="truncate">{u.title}</span>
-            </div>
-            {u.lessons.length === 0 ? (
-              <div className="px-2 py-2 text-xs text-muted-foreground">
-                لا توجد دروس
-              </div>
-            ) : (
-              u.lessons.map((l) => {
-                const isCurrent = l.id === currentLessonId;
-                const isDone = completedIds.has(l.id);
-                return (
-                  <Link
-                    key={l.id}
-                    to={`/courses/${courseId}/learn/${l.id}`}
-                    onClick={onNavigate}
-                    className={`relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
-                      isCurrent
-                        ? "bg-primary/10 text-foreground"
-                        : "hover:bg-accent text-foreground/80"
-                    }`}
+        {units.map((u, ui) => {
+          const collapsed = !!collapsedUnits[u.id];
+          return (
+            <div key={u.id} className="space-y-1">
+              <button
+                onClick={() => onToggleUnit(u.id)}
+                className="w-full flex items-center gap-2 px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider hover:bg-accent/50 rounded-md transition-colors"
+              >
+                <span className="w-6 h-6 rounded bg-primary/10 text-primary inline-flex items-center justify-center text-[10px]">
+                  {ui + 1}
+                </span>
+                <span className="flex-1 min-w-0 truncate text-right">{u.title}</span>
+                <span className="text-[10px] opacity-70 tabular-nums shrink-0">
+                  {u.lessons.length + u.quizzes.length}
+                </span>
+                <motion.span animate={{ rotate: collapsed ? -90 : 0 }}>
+                  <ChevronDown className="w-4 h-4" />
+                </motion.span>
+              </button>
+
+              <AnimatePresence initial={false}>
+                {!collapsed && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
                   >
-                    {isCurrent && (
-                      <motion.span
-                        layoutId="lesson-active-indicator"
-                        className="absolute inset-y-1 right-0 w-1 rounded-full bg-primary"
-                      />
+                    {u.items.length === 0 ? (
+                      <div className="px-2 py-2 text-xs text-muted-foreground">
+                        لا يوجد محتوى
+                      </div>
+                    ) : (
+                      u.items.map((it) => {
+                        if (it.kind === "lesson") {
+                          const l = it.lesson;
+                          const isCurrent = l.id === currentLessonId;
+                          const isDone = completedIds.has(l.id);
+                          return (
+                            <Link
+                              key={`l-${l.id}`}
+                              to={`/courses/${courseId}/learn/${l.id}`}
+                              onClick={onNavigate}
+                              className={`relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
+                                isCurrent
+                                  ? "bg-primary/10 text-foreground"
+                                  : "hover:bg-accent text-foreground/80"
+                              }`}
+                            >
+                              {isCurrent && (
+                                <motion.span
+                                  layoutId="lesson-active-indicator"
+                                  className="absolute inset-y-1 right-0 w-1 rounded-full bg-primary"
+                                />
+                              )}
+                              <div
+                                className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${
+                                  isDone
+                                    ? "bg-emerald-500 text-white"
+                                    : isCurrent
+                                      ? "bg-primary text-primary-foreground"
+                                      : "bg-muted text-muted-foreground"
+                                }`}
+                              >
+                                {isDone ? (
+                                  <CheckCircle2 className="w-4 h-4" />
+                                ) : isCurrent ? (
+                                  <PlayCircle className="w-4 h-4" />
+                                ) : (
+                                  <PlayCircle className="w-3.5 h-3.5 opacity-40" />
+                                )}
+                              </div>
+                              <span className="flex-1 min-w-0 truncate font-medium">
+                                {l.title}
+                              </span>
+                            </Link>
+                          );
+                        }
+                        const q = it.quiz;
+                        const isDone = passedQuizIds.has(q.id);
+                        return (
+                          <Link
+                            key={`q-${q.id}`}
+                            to={`/courses/${courseId}/quizzes/${q.id}`}
+                            onClick={onNavigate}
+                            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-accent text-foreground/80 border border-dashed border-primary/25"
+                          >
+                            <div
+                              className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${
+                                isDone
+                                  ? "bg-emerald-500 text-white"
+                                  : "bg-primary/15 text-primary"
+                              }`}
+                            >
+                              {isDone ? (
+                                <CheckCircle2 className="w-4 h-4" />
+                              ) : (
+                                <ClipboardCheck className="w-4 h-4" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="truncate font-medium">{q.title}</div>
+                              <div className="text-[10px] text-muted-foreground inline-flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                اختبار · {q.duration_minutes} د
+                              </div>
+                            </div>
+                          </Link>
+                        );
+                      })
                     )}
-                    <div
-                      className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${
-                        isDone
-                          ? "bg-emerald-500 text-white"
-                          : isCurrent
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      {isDone ? (
-                        <CheckCircle2 className="w-4 h-4" />
-                      ) : isCurrent ? (
-                        <PlayCircle className="w-4 h-4" />
-                      ) : (
-                        <Lock className="w-3.5 h-3.5 opacity-40" />
-                      )}
-                    </div>
-                    <span className="flex-1 min-w-0 truncate font-medium">
-                      {l.title}
-                    </span>
-                  </Link>
-                );
-              })
-            )}
-          </div>
-        ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
