@@ -227,6 +227,77 @@ const LessonItem = ({
   );
 };
 
+// ---------- Sortable quiz row ----------
+const QuizItem = ({
+  quiz,
+  onEdit,
+  onDelete,
+  isOverlay,
+}: {
+  quiz: QuizRecord;
+  onEdit: () => void;
+  onDelete: () => void;
+  isOverlay?: boolean;
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: `quiz:${quiz.id}`, data: { type: "quiz", quiz } });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging && !isOverlay ? 0.4 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`group flex items-center gap-2 p-2.5 rounded-lg border border-amber-500/30 bg-amber-500/5 hover:border-amber-500/60 hover:bg-amber-500/10 transition-colors ${
+        isOverlay ? "shadow-2xl border-amber-500/70" : ""
+      }`}
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing p-1"
+        aria-label="اسحب لإعادة الترتيب"
+      >
+        <GripVertical className="w-4 h-4" />
+      </button>
+      <div className="w-7 h-7 rounded-md bg-amber-500/15 flex items-center justify-center shrink-0">
+        <ClipboardList className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-medium truncate">{quiz.title}</div>
+      </div>
+      <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-700 dark:text-amber-400 shrink-0">
+        اختبار
+      </Badge>
+      {!isOverlay && (
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+          <Button variant="ghost" size="icon" onClick={onEdit} className="h-8 w-8">
+            <Pencil className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onDelete}
+            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ---------- Sortable unit card ----------
 const UnitCard = ({
   unit,
@@ -235,8 +306,11 @@ const UnitCard = ({
   onEdit,
   onDelete,
   onAddLesson,
+  onAddQuiz,
   onEditLesson,
   onDeleteLesson,
+  onEditQuiz,
+  onDeleteQuiz,
 }: {
   unit: Unit;
   expanded: boolean;
@@ -244,8 +318,11 @@ const UnitCard = ({
   onEdit: () => void;
   onDelete: () => void;
   onAddLesson: () => void;
+  onAddQuiz: () => void;
   onEditLesson: (l: LessonRecord) => void;
   onDeleteLesson: (l: LessonRecord) => void;
+  onEditQuiz: (q: QuizRecord) => void;
+  onDeleteQuiz: (q: QuizRecord) => void;
 }) => {
   const {
     attributes,
@@ -261,6 +338,9 @@ const UnitCard = ({
     transition,
     opacity: isDragging ? 0.5 : 1,
   };
+
+  const lessonCount = unit.content.filter((c) => c.kind === "lesson").length;
+  const quizCount = unit.content.filter((c) => c.kind === "quiz").length;
 
   return (
     <div
@@ -284,7 +364,7 @@ const UnitCard = ({
           <div className="flex-1 min-w-0">
             <div className="font-bold text-foreground truncate">{unit.title}</div>
             <div className="text-xs text-muted-foreground">
-              {unit.lessons.length} دروس
+              {lessonCount} دروس · {quizCount} اختبارات
             </div>
           </div>
           <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
@@ -321,29 +401,49 @@ const UnitCard = ({
           >
             <div className="px-4 pb-4 space-y-2 border-t border-border/60 pt-3">
               <SortableContext
-                items={unit.lessons.map((l) => `lesson:${l.id}`)}
+                items={unit.content.map((c) => `${c.kind}:${c.id}`)}
                 strategy={verticalListSortingStrategy}
               >
                 <div className="space-y-2 min-h-[8px]">
-                  {unit.lessons.map((l) => (
-                    <LessonItem
-                      key={l.id}
-                      lesson={l}
-                      onEdit={() => onEditLesson(l)}
-                      onDelete={() => onDeleteLesson(l)}
-                    />
-                  ))}
-                  {unit.lessons.length === 0 && (
+                  {unit.content.map((c) =>
+                    c.kind === "lesson" ? (
+                      <LessonItem
+                        key={`l-${c.id}`}
+                        lesson={c.lesson}
+                        onEdit={() => onEditLesson(c.lesson)}
+                        onDelete={() => onDeleteLesson(c.lesson)}
+                      />
+                    ) : (
+                      <QuizItem
+                        key={`q-${c.id}`}
+                        quiz={c.quiz}
+                        onEdit={() => onEditQuiz(c.quiz)}
+                        onDelete={() => onDeleteQuiz(c.quiz)}
+                      />
+                    ),
+                  )}
+                  {unit.content.length === 0 && (
                     <div className="text-center text-xs text-muted-foreground py-6 border border-dashed rounded-lg">
-                      اسحب درسًا هنا أو أضف درسًا جديدًا
+                      أضف درسًا أو اختبارًا لهذه الوحدة
                     </div>
                   )}
                 </div>
               </SortableContext>
-              <Button variant="outline" size="sm" onClick={onAddLesson} className="w-full mt-2">
-                <Plus className="w-4 h-4 ml-2" />
-                إضافة درس
-              </Button>
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                <Button variant="outline" size="sm" onClick={onAddLesson}>
+                  <Plus className="w-4 h-4 ml-2" />
+                  إضافة درس
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onAddQuiz}
+                  className="border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
+                >
+                  <ClipboardList className="w-4 h-4 ml-2" />
+                  إضافة اختبار
+                </Button>
+              </div>
             </div>
           </motion.div>
         )}
