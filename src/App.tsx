@@ -28,6 +28,8 @@ import AdminSettings from "./pages/admin/AdminSettings";
 import AdminVideoPlayerSettings from "./pages/admin/AdminVideoPlayerSettings";
 import QuizDetails from "./pages/QuizDetails";
 import QuizTake from "./pages/QuizTake";
+import AdminQuizAttempts from "./pages/admin/AdminQuizAttempts";
+import MyQuizAttempts from "./pages/student/MyQuizAttempts";
 
 const queryClient = new QueryClient();
 
