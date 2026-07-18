@@ -19,6 +19,7 @@ import {
   PlayCircle,
   Info,
   Settings,
+  ClipboardList,
 } from "lucide-react";
 import {
   DndContext,
@@ -68,6 +69,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import LessonModal, { type LessonRecord } from "@/components/admin/LessonModal";
+import QuizWizard, { type QuizRecord } from "@/components/admin/QuizWizard";
 
 // ---------- Types ----------
 interface Course {
@@ -76,12 +78,16 @@ interface Course {
   status: "draft" | "published";
 }
 
+type ContentItem =
+  | { kind: "lesson"; id: string; order: number; lesson: LessonRecord }
+  | { kind: "quiz"; id: string; order: number; quiz: QuizRecord };
+
 interface Unit {
   id: string;
   title: string;
   description: string | null;
   position: number;
-  lessons: LessonRecord[];
+  content: ContentItem[];
 }
 
 // ---------- Autosave indicator ----------
@@ -221,6 +227,77 @@ const LessonItem = ({
   );
 };
 
+// ---------- Sortable quiz row ----------
+const QuizItem = ({
+  quiz,
+  onEdit,
+  onDelete,
+  isOverlay,
+}: {
+  quiz: QuizRecord;
+  onEdit: () => void;
+  onDelete: () => void;
+  isOverlay?: boolean;
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: `quiz:${quiz.id}`, data: { type: "quiz", quiz } });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging && !isOverlay ? 0.4 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`group flex items-center gap-2 p-2.5 rounded-lg border border-amber-500/30 bg-amber-500/5 hover:border-amber-500/60 hover:bg-amber-500/10 transition-colors ${
+        isOverlay ? "shadow-2xl border-amber-500/70" : ""
+      }`}
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing p-1"
+        aria-label="اسحب لإعادة الترتيب"
+      >
+        <GripVertical className="w-4 h-4" />
+      </button>
+      <div className="w-7 h-7 rounded-md bg-amber-500/15 flex items-center justify-center shrink-0">
+        <ClipboardList className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-medium truncate">{quiz.title}</div>
+      </div>
+      <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-700 dark:text-amber-400 shrink-0">
+        اختبار
+      </Badge>
+      {!isOverlay && (
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+          <Button variant="ghost" size="icon" onClick={onEdit} className="h-8 w-8">
+            <Pencil className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onDelete}
+            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ---------- Sortable unit card ----------
 const UnitCard = ({
   unit,
@@ -229,8 +306,11 @@ const UnitCard = ({
   onEdit,
   onDelete,
   onAddLesson,
+  onAddQuiz,
   onEditLesson,
   onDeleteLesson,
+  onEditQuiz,
+  onDeleteQuiz,
 }: {
   unit: Unit;
   expanded: boolean;
@@ -238,8 +318,11 @@ const UnitCard = ({
   onEdit: () => void;
   onDelete: () => void;
   onAddLesson: () => void;
+  onAddQuiz: () => void;
   onEditLesson: (l: LessonRecord) => void;
   onDeleteLesson: (l: LessonRecord) => void;
+  onEditQuiz: (q: QuizRecord) => void;
+  onDeleteQuiz: (q: QuizRecord) => void;
 }) => {
   const {
     attributes,
@@ -255,6 +338,9 @@ const UnitCard = ({
     transition,
     opacity: isDragging ? 0.5 : 1,
   };
+
+  const lessonCount = unit.content.filter((c) => c.kind === "lesson").length;
+  const quizCount = unit.content.filter((c) => c.kind === "quiz").length;
 
   return (
     <div
@@ -278,7 +364,7 @@ const UnitCard = ({
           <div className="flex-1 min-w-0">
             <div className="font-bold text-foreground truncate">{unit.title}</div>
             <div className="text-xs text-muted-foreground">
-              {unit.lessons.length} دروس
+              {lessonCount} دروس · {quizCount} اختبارات
             </div>
           </div>
           <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
@@ -315,29 +401,49 @@ const UnitCard = ({
           >
             <div className="px-4 pb-4 space-y-2 border-t border-border/60 pt-3">
               <SortableContext
-                items={unit.lessons.map((l) => `lesson:${l.id}`)}
+                items={unit.content.map((c) => `${c.kind}:${c.id}`)}
                 strategy={verticalListSortingStrategy}
               >
                 <div className="space-y-2 min-h-[8px]">
-                  {unit.lessons.map((l) => (
-                    <LessonItem
-                      key={l.id}
-                      lesson={l}
-                      onEdit={() => onEditLesson(l)}
-                      onDelete={() => onDeleteLesson(l)}
-                    />
-                  ))}
-                  {unit.lessons.length === 0 && (
+                  {unit.content.map((c) =>
+                    c.kind === "lesson" ? (
+                      <LessonItem
+                        key={`l-${c.id}`}
+                        lesson={c.lesson}
+                        onEdit={() => onEditLesson(c.lesson)}
+                        onDelete={() => onDeleteLesson(c.lesson)}
+                      />
+                    ) : (
+                      <QuizItem
+                        key={`q-${c.id}`}
+                        quiz={c.quiz}
+                        onEdit={() => onEditQuiz(c.quiz)}
+                        onDelete={() => onDeleteQuiz(c.quiz)}
+                      />
+                    ),
+                  )}
+                  {unit.content.length === 0 && (
                     <div className="text-center text-xs text-muted-foreground py-6 border border-dashed rounded-lg">
-                      اسحب درسًا هنا أو أضف درسًا جديدًا
+                      أضف درسًا أو اختبارًا لهذه الوحدة
                     </div>
                   )}
                 </div>
               </SortableContext>
-              <Button variant="outline" size="sm" onClick={onAddLesson} className="w-full mt-2">
-                <Plus className="w-4 h-4 ml-2" />
-                إضافة درس
-              </Button>
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                <Button variant="outline" size="sm" onClick={onAddLesson}>
+                  <Plus className="w-4 h-4 ml-2" />
+                  إضافة درس
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onAddQuiz}
+                  className="border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
+                >
+                  <ClipboardList className="w-4 h-4 ml-2" />
+                  إضافة اختبار
+                </Button>
+              </div>
             </div>
           </motion.div>
         )}
@@ -365,11 +471,17 @@ const CourseBuilder = () => {
   const [editingLesson, setEditingLesson] = useState<LessonRecord | null>(null);
   const [deletingLesson, setDeletingLesson] = useState<LessonRecord | null>(null);
 
+  const [quizWizardOpen, setQuizWizardOpen] = useState(false);
+  const [quizUnitId, setQuizUnitId] = useState<string | null>(null);
+  const [editingQuiz, setEditingQuiz] = useState<QuizRecord | null>(null);
+  const [deletingQuiz, setDeletingQuiz] = useState<QuizRecord | null>(null);
+
   const [publishOpen, setPublishOpen] = useState(false);
 
   const [activeDrag, setActiveDrag] = useState<
     | { type: "unit"; unit: Unit }
     | { type: "lesson"; lesson: LessonRecord }
+    | { type: "quiz"; quiz: QuizRecord }
     | null
   >(null);
 
@@ -403,20 +515,50 @@ const CourseBuilder = () => {
     }
     setCourse(c as Course);
 
-    const { data: u } = await supabase
-      .from("units")
-      .select("id, title, description, position, lessons(id, title, description, video_provider, video_url, unit_id, position)")
-      .eq("course_id", id)
-      .order("position");
-    const mapped: Unit[] = (u ?? []).map((row: any) => ({
-      id: row.id,
-      title: row.title,
-      description: row.description,
-      position: row.position,
-      lessons: [...(row.lessons ?? [])].sort((a: any, b: any) => a.position - b.position),
-    }));
+    const [{ data: u }, { data: qz }] = await Promise.all([
+      supabase
+        .from("units")
+        .select(
+          "id, title, description, position, lessons(id, title, description, video_provider, video_url, unit_id, position)",
+        )
+        .eq("course_id", id)
+        .order("position"),
+      supabase
+        .from("quizzes")
+        .select("*")
+        .eq("course_id", id),
+    ]);
+
+    const quizzesByUnit = new Map<string, QuizRecord[]>();
+    (qz ?? []).forEach((q: any) => {
+      const arr = quizzesByUnit.get(q.unit_id) ?? [];
+      arr.push(q as QuizRecord);
+      quizzesByUnit.set(q.unit_id, arr);
+    });
+
+    const mapped: Unit[] = (u ?? []).map((row: any) => {
+      const lessonItems: ContentItem[] = (row.lessons ?? []).map((l: any) => ({
+        kind: "lesson" as const,
+        id: l.id,
+        order: l.position,
+        lesson: l as LessonRecord,
+      }));
+      const quizItems: ContentItem[] = (quizzesByUnit.get(row.id) ?? []).map((q) => ({
+        kind: "quiz" as const,
+        id: q.id,
+        order: q.order_index,
+        quiz: q,
+      }));
+      const content = [...lessonItems, ...quizItems].sort((a, b) => a.order - b.order);
+      return {
+        id: row.id,
+        title: row.title,
+        description: row.description,
+        position: row.position,
+        content,
+      };
+    });
     setUnits(mapped);
-    // expand all by default
     setExpanded((prev) => {
       const next = { ...prev };
       mapped.forEach((u) => {
@@ -485,9 +627,16 @@ const CourseBuilder = () => {
     load();
   };
 
-  // ---- Drag & drop ----
-  const findUnitByLessonId = (lessonId: string) =>
-    units.find((u) => u.lessons.some((l) => l.id === lessonId));
+  // ---- Drag & drop (content items share same order sequence) ----
+  const findUnitByContentId = (kind: "lesson" | "quiz", itemId: string) =>
+    units.find((u) => u.content.some((c) => c.kind === kind && c.id === itemId));
+
+  const parseDragId = (raw: string): { kind: "lesson" | "quiz" | "unit"; id: string } | null => {
+    if (raw.startsWith("lesson:")) return { kind: "lesson", id: raw.slice(7) };
+    if (raw.startsWith("quiz:")) return { kind: "quiz", id: raw.slice(5) };
+    if (raw.startsWith("unit:")) return { kind: "unit", id: raw.slice(5) };
+    return null;
+  };
 
   const onDragStart = (e: DragStartEvent) => {
     const data = e.active.data.current as any;
@@ -496,6 +645,8 @@ const CourseBuilder = () => {
       if (unit) setActiveDrag({ type: "unit", unit });
     } else if (data?.type === "lesson") {
       setActiveDrag({ type: "lesson", lesson: data.lesson });
+    } else if (data?.type === "quiz") {
+      setActiveDrag({ type: "quiz", quiz: data.quiz });
     }
   };
 
@@ -503,19 +654,20 @@ const CourseBuilder = () => {
     const { active, over } = e;
     if (!over) return;
     const activeData = active.data.current as any;
-    if (activeData?.type !== "lesson") return;
+    if (activeData?.type !== "lesson" && activeData?.type !== "quiz") return;
 
-    const activeLessonId = String(active.id).replace("lesson:", "");
-    const overId = String(over.id);
-    const activeUnit = findUnitByLessonId(activeLessonId);
+    const parsedActive = parseDragId(String(active.id));
+    const parsedOver = parseDragId(String(over.id));
+    if (!parsedActive || parsedActive.kind === "unit") return;
+
+    const activeUnit = findUnitByContentId(parsedActive.kind, parsedActive.id);
     if (!activeUnit) return;
 
     let targetUnitId: string | null = null;
-    if (overId.startsWith("unit:")) {
-      targetUnitId = overId.replace("unit:", "");
-    } else if (overId.startsWith("lesson:")) {
-      const overLessonId = overId.replace("lesson:", "");
-      const overUnit = findUnitByLessonId(overLessonId);
+    if (parsedOver?.kind === "unit") {
+      targetUnitId = parsedOver.id;
+    } else if (parsedOver) {
+      const overUnit = findUnitByContentId(parsedOver.kind, parsedOver.id);
       targetUnitId = overUnit?.id ?? null;
     }
     if (!targetUnitId || targetUnitId === activeUnit.id) return;
@@ -524,13 +676,23 @@ const CourseBuilder = () => {
       const from = prev.find((u) => u.id === activeUnit.id);
       const to = prev.find((u) => u.id === targetUnitId);
       if (!from || !to) return prev;
-      const lesson = from.lessons.find((l) => l.id === activeLessonId);
-      if (!lesson) return prev;
+      const item = from.content.find(
+        (c) => c.kind === parsedActive.kind && c.id === parsedActive.id,
+      );
+      if (!item) return prev;
+      const movedItem: ContentItem =
+        item.kind === "lesson"
+          ? { ...item, lesson: { ...item.lesson, unit_id: to.id } }
+          : { ...item, quiz: { ...item.quiz, unit_id: to.id } };
       return prev.map((u) => {
         if (u.id === from.id)
-          return { ...u, lessons: u.lessons.filter((l) => l.id !== activeLessonId) };
-        if (u.id === to.id)
-          return { ...u, lessons: [...u.lessons, { ...lesson, unit_id: to.id }] };
+          return {
+            ...u,
+            content: u.content.filter(
+              (c) => !(c.kind === parsedActive.kind && c.id === parsedActive.id),
+            ),
+          };
+        if (u.id === to.id) return { ...u, content: [...u.content, movedItem] };
         return u;
       });
     });
@@ -545,15 +707,26 @@ const CourseBuilder = () => {
             supabase.from("units").update({ position: i }).eq("id", u.id),
           ),
         );
-        u.lessons.forEach((l, li) => {
-          ops.push(
-            Promise.resolve(
-              supabase
-                .from("lessons")
-                .update({ position: li, unit_id: u.id })
-                .eq("id", l.id),
-            ),
-          );
+        u.content.forEach((c, idx) => {
+          if (c.kind === "lesson") {
+            ops.push(
+              Promise.resolve(
+                supabase
+                  .from("lessons")
+                  .update({ position: idx, unit_id: u.id })
+                  .eq("id", c.id),
+              ),
+            );
+          } else {
+            ops.push(
+              Promise.resolve(
+                supabase
+                  .from("quizzes")
+                  .update({ order_index: idx, unit_id: u.id })
+                  .eq("id", c.id),
+              ),
+            );
+          }
         });
       });
       const results = await Promise.all(ops);
@@ -578,24 +751,28 @@ const CourseBuilder = () => {
       return;
     }
 
-    if (activeData?.type === "lesson") {
-      const activeLessonId = String(active.id).replace("lesson:", "");
-      const activeUnit = findUnitByLessonId(activeLessonId);
+    if (activeData?.type === "lesson" || activeData?.type === "quiz") {
+      const parsedActive = parseDragId(String(active.id));
+      if (!parsedActive || parsedActive.kind === "unit") return;
+
+      const activeUnit = findUnitByContentId(parsedActive.kind, parsedActive.id);
       if (!activeUnit) return;
 
-      const overId = String(over.id);
       let next = [...units];
-
-      if (overId.startsWith("lesson:")) {
-        const overLessonId = overId.replace("lesson:", "");
-        const overUnit = findUnitByLessonId(overLessonId);
+      const parsedOver = parseDragId(String(over.id));
+      if (parsedOver && parsedOver.kind !== "unit") {
+        const overUnit = findUnitByContentId(parsedOver.kind, parsedOver.id);
         if (overUnit && overUnit.id === activeUnit.id) {
-          const oldIdx = activeUnit.lessons.findIndex((l) => l.id === activeLessonId);
-          const newIdx = activeUnit.lessons.findIndex((l) => l.id === overLessonId);
+          const oldIdx = activeUnit.content.findIndex(
+            (c) => c.kind === parsedActive.kind && c.id === parsedActive.id,
+          );
+          const newIdx = activeUnit.content.findIndex(
+            (c) => c.kind === parsedOver.kind && c.id === parsedOver.id,
+          );
           if (oldIdx !== newIdx && oldIdx >= 0 && newIdx >= 0) {
             next = units.map((u) =>
               u.id === activeUnit.id
-                ? { ...u, lessons: arrayMove(u.lessons, oldIdx, newIdx) }
+                ? { ...u, content: arrayMove(u.content, oldIdx, newIdx) }
                 : u,
             );
             setUnits(next);
@@ -632,11 +809,30 @@ const CourseBuilder = () => {
     setEditingLesson(lesson);
     setLessonModalOpen(true);
   };
+  const openAddQuiz = (unitId: string) => {
+    setQuizUnitId(unitId);
+    setEditingQuiz(null);
+    setQuizWizardOpen(true);
+  };
+  const openEditQuiz = (quiz: QuizRecord) => {
+    setQuizUnitId(quiz.unit_id);
+    setEditingQuiz(quiz);
+    setQuizWizardOpen(true);
+  };
+  const deleteQuiz = async () => {
+    if (!deletingQuiz) return;
+    await markSaving(async () => {
+      const { error } = await supabase.from("quizzes").delete().eq("id", deletingQuiz.id);
+      if (error) throw error;
+    });
+    setDeletingQuiz(null);
+    load();
+  };
 
   const nextLessonPosition = useMemo(() => {
     if (!lessonUnitId) return 0;
     const u = units.find((x) => x.id === lessonUnitId);
-    return u?.lessons.length ?? 0;
+    return u?.content.length ?? 0;
   }, [units, lessonUnitId]);
 
   if (loading) {
@@ -780,8 +976,11 @@ const CourseBuilder = () => {
                   }}
                   onDelete={() => setDeletingUnit(u)}
                   onAddLesson={() => openAddLesson(u.id)}
+                  onAddQuiz={() => openAddQuiz(u.id)}
                   onEditLesson={openEditLesson}
                   onDeleteLesson={setDeletingLesson}
+                  onEditQuiz={openEditQuiz}
+                  onDeleteQuiz={setDeletingQuiz}
                 />
               ))}
             </div>
@@ -790,6 +989,13 @@ const CourseBuilder = () => {
             {activeDrag?.type === "lesson" ? (
               <LessonItem
                 lesson={activeDrag.lesson}
+                onEdit={() => {}}
+                onDelete={() => {}}
+                isOverlay
+              />
+            ) : activeDrag?.type === "quiz" ? (
+              <QuizItem
+                quiz={activeDrag.quiz}
                 onEdit={() => {}}
                 onDelete={() => {}}
                 isOverlay
@@ -824,6 +1030,48 @@ const CourseBuilder = () => {
           onSaved={load}
         />
       )}
+
+      {quizUnitId && id && (
+        <QuizWizard
+          open={quizWizardOpen}
+          onOpenChange={(v) => {
+            setQuizWizardOpen(v);
+            if (!v) load();
+          }}
+          unitId={quizUnitId}
+          courseId={id}
+          quiz={editingQuiz}
+          onSaved={load}
+        />
+      )}
+
+      {/* Delete quiz */}
+      <AlertDialog
+        open={!!deletingQuiz}
+        onOpenChange={(v) => !v && setDeletingQuiz(null)}
+      >
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>حذف الاختبار</AlertDialogTitle>
+            <AlertDialogDescription>
+              سيتم حذف "{deletingQuiz?.title}" وجميع أسئلته ومحاولات الطلاب.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                deleteQuiz();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              حذف
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
 
       {/* Delete unit */}
       <AlertDialog

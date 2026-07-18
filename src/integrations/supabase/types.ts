@@ -375,6 +375,78 @@ export type Database = {
         }
         Relationships: []
       }
+      quizzes: {
+        Row: {
+          attempt_result_policy: string
+          course_id: string
+          created_at: string
+          description: string | null
+          duration_minutes: number
+          end_at: string | null
+          forms_count: number
+          id: string
+          max_attempts: number
+          order_index: number
+          pass_percentage: number
+          randomize_enabled: boolean
+          start_at: string | null
+          title: string
+          unit_id: string
+          updated_at: string
+        }
+        Insert: {
+          attempt_result_policy?: string
+          course_id: string
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number
+          end_at?: string | null
+          forms_count?: number
+          id?: string
+          max_attempts?: number
+          order_index?: number
+          pass_percentage?: number
+          randomize_enabled?: boolean
+          start_at?: string | null
+          title: string
+          unit_id: string
+          updated_at?: string
+        }
+        Update: {
+          attempt_result_policy?: string
+          course_id?: string
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number
+          end_at?: string | null
+          forms_count?: number
+          id?: string
+          max_attempts?: number
+          order_index?: number
+          pass_percentage?: number
+          randomize_enabled?: boolean
+          start_at?: string | null
+          title?: string
+          unit_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quizzes_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quizzes_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stages: {
         Row: {
           created_at: string
@@ -555,6 +627,7 @@ export type Database = {
         Args: { _lesson_id: string; _user_id: string }
         Returns: boolean
       }
+      next_unit_order_index: { Args: { _unit_id: string }; Returns: number }
     }
     Enums: {
       app_role: "admin" | "student"
