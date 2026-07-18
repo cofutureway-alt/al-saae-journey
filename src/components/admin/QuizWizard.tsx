@@ -4,6 +4,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
+import QuestionsStep from "./quiz/QuestionsStep";
 import {
   Loader2,
   ClipboardList,
