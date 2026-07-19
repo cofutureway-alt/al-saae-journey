@@ -60,6 +60,7 @@ export function CardCanvas({ initialJson, onReady, onSelectionChange, className 
     (async () => {
       if (initialJson && Object.keys(initialJson).length > 0) {
         try {
+          await preloadFontsFromJson(initialJson);
           await c.loadFromJSON(initialJson);
           c.requestRenderAll();
         } catch (e) {
