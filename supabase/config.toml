@@ -1,1 +1,7 @@
 project_id = "pgzkwzgvjpnegribsxac"
+
+[functions.admin-create-student]
+verify_jwt = true
+
+[functions.admin-delete-student]
+verify_jwt = true
