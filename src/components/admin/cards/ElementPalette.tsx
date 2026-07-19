@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import type { Canvas } from "fabric";
 import {
   Square,
-  SquareRoundCorner,
+  Squircle,
   Circle as CircleIcon,
   Egg,
   Triangle as TriangleIcon,
