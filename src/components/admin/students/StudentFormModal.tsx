@@ -258,6 +258,53 @@ export default function StudentFormModal({ open, onOpenChange, mode, student, on
           </div>
         ) : (
           <div className="space-y-4">
+            {mode === "edit" && student && (
+              <div className="flex items-center gap-4 rounded-xl border border-border/50 p-3">
+                <Avatar className="w-16 h-16">
+                  <AvatarImage src={avatarUrl ?? undefined} />
+                  <AvatarFallback>{(student.full_name || "?").slice(0, 1)}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <div className="text-sm font-bold">الصورة الشخصية</div>
+                  <div className="text-xs text-muted-foreground">PNG/JPG - أقصى 3 ميجابايت</div>
+                </div>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) uploadAvatar(f);
+                    e.target.value = "";
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={avatarBusy}
+                >
+                  {avatarBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                  {avatarUrl ? "تغيير" : "رفع"}
+                </Button>
+                {avatarUrl && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="gap-1 text-destructive hover:text-destructive"
+                    onClick={deleteAvatar}
+                    disabled={avatarBusy}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    حذف
+                  </Button>
+                )}
+              </div>
+            )}
             {visibleFields.map((f) => (
               <DynamicRegistrationField
                 key={f.id}
