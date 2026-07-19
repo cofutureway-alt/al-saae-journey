@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Loader2, UserPlus, CheckCircle2, IdCard } from "lucide-react";
+import { Loader2, UserPlus, CheckCircle2, IdCard, Upload, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import DynamicRegistrationField from "@/components/auth/DynamicRegistrationField";
 import { useRegistrationFields } from "@/hooks/use-registration-fields";
 import {
@@ -13,6 +14,7 @@ import {
 } from "@/lib/registration-fields";
 import { isValidEgPhone, normalizeEgPhone, syntheticAuthEmail } from "@/lib/phone";
 import { adminCreateStudent, updateStudentProfile, type AdminStudentRow } from "@/lib/admin-students-api";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   open: boolean;
@@ -29,12 +31,16 @@ export default function StudentFormModal({ open, onOpenChange, mode, student, on
   const [submitting, setSubmitting] = useState(false);
   const [showPw, setShowPw] = useState<Record<string, boolean>>({});
   const [createdInfo, setCreatedInfo] = useState<{ student_id: string | null } | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const fileRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!open) return;
     setErrors({});
     setCreatedInfo(null);
     if (mode === "edit" && student) {
+      setAvatarUrl(student.avatar_url ?? null);
       setValues({
         full_name: student.full_name ?? "",
         phone_number: student.phone_number ?? "",
@@ -47,6 +53,7 @@ export default function StudentFormModal({ open, onOpenChange, mode, student, on
         ...(student.custom_fields ?? {}),
       });
     } else {
+      setAvatarUrl(null);
       setValues({});
     }
   }, [open, mode, student]);
@@ -57,6 +64,58 @@ export default function StudentFormModal({ open, onOpenChange, mode, student, on
     }
     return fields;
   }, [fields, mode]);
+
+  const uploadAvatar = async (file: File) => {
+    if (!student) return;
+    if (file.size > 3 * 1024 * 1024) {
+      toast.error("الحجم الأقصى للصورة 3 ميجابايت");
+      return;
+    }
+    setAvatarBusy(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${student.id}/avatar-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (error) throw error;
+      const { data: signed, error: signErr } = await supabase.storage
+        .from("avatars")
+        .createSignedUrl(path, 60 * 60 * 24 * 365 * 10);
+      if (signErr || !signed?.signedUrl) throw signErr || new Error("no url");
+      const url = signed.signedUrl;
+      await (supabase as any).from("profiles").update({ avatar_url: url }).eq("id", student.id);
+      setAvatarUrl(url);
+      onSaved();
+      toast.success("تم تحديث الصورة");
+    } catch (e: any) {
+      toast.error(e?.message || "تعذّر رفع الصورة");
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
+
+  const deleteAvatar = async () => {
+    if (!student) return;
+    setAvatarBusy(true);
+    try {
+      // Best-effort: remove existing files under the user's avatar folder
+      const { data: list } = await supabase.storage.from("avatars").list(student.id);
+      if (list && list.length) {
+        await supabase.storage
+          .from("avatars")
+          .remove(list.map((f) => `${student.id}/${f.name}`));
+      }
+      await (supabase as any).from("profiles").update({ avatar_url: null }).eq("id", student.id);
+      setAvatarUrl(null);
+      onSaved();
+      toast.success("تم حذف الصورة");
+    } catch (e: any) {
+      toast.error(e?.message || "تعذّر حذف الصورة");
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -199,6 +258,53 @@ export default function StudentFormModal({ open, onOpenChange, mode, student, on
           </div>
         ) : (
           <div className="space-y-4">
+            {mode === "edit" && student && (
+              <div className="flex items-center gap-4 rounded-xl border border-border/50 p-3">
+                <Avatar className="w-16 h-16">
+                  <AvatarImage src={avatarUrl ?? undefined} />
+                  <AvatarFallback>{(student.full_name || "?").slice(0, 1)}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <div className="text-sm font-bold">الصورة الشخصية</div>
+                  <div className="text-xs text-muted-foreground">PNG/JPG - أقصى 3 ميجابايت</div>
+                </div>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) uploadAvatar(f);
+                    e.target.value = "";
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={avatarBusy}
+                >
+                  {avatarBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                  {avatarUrl ? "تغيير" : "رفع"}
+                </Button>
+                {avatarUrl && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="gap-1 text-destructive hover:text-destructive"
+                    onClick={deleteAvatar}
+                    disabled={avatarBusy}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    حذف
+                  </Button>
+                )}
+              </div>
+            )}
             {visibleFields.map((f) => (
               <DynamicRegistrationField
                 key={f.id}
