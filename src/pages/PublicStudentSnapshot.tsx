@@ -83,6 +83,9 @@ export default function PublicStudentSnapshot() {
   const { qrToken } = useParams<{ qrToken: string }>();
   const [snap, setSnap] = useState<Snapshot | null>(null);
   const [status, setStatus] = useState<"loading" | "ok" | "notfound" | "error">("loading");
+  const [coursesQuery, setCoursesQuery] = useState("");
+  const [attemptsQuery, setAttemptsQuery] = useState("");
+  const [attemptsStatus, setAttemptsStatus] = useState<string>("all");
 
   useEffect(() => {
     let alive = true;
