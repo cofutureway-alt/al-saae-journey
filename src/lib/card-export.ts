@@ -73,14 +73,31 @@ export async function renderStudentFaceToDataUrl(
       await preloadFontsFromJson(design);
       await c.loadFromJSON(design);
       c.setDimensions({ width: CARD_WIDTH, height: CARD_HEIGHT });
+      // Fabric v7 may not restore unknown props onto instances — copy them back
+      const rawObjs: any[] = Array.isArray(design?.objects) ? design.objects : [];
+      const liveObjs = c.getObjects();
+      for (let i = 0; i < Math.min(rawObjs.length, liveObjs.length); i++) {
+        const raw = rawObjs[i];
+        const live: any = liveObjs[i];
+        if (raw?.__binding && !live.__binding) live.__binding = raw.__binding;
+        if (raw?.__isQrPlaceholder) live.__isQrPlaceholder = true;
+        if (raw?.__imagePlaceholder) live.__imagePlaceholder = true;
+        if (raw?.__gradient) live.__gradient = raw.__gradient;
+      }
     }
     // Walk objects, apply real student data
     const objs = c.getObjects().slice();
-    let bindingsFound = 0;
+    // Build label -> binding source lookup for legacy designs (no __binding stored)
+    const sources = await fetchBindingSources().catch(() => [] as any[]);
+    const byLabel = new Map(sources.map((s: any) => [`{{${s.label}}}`, s]));
     for (const obj of objs) {
-      const b = (obj as any).__binding;
+      let b = (obj as any).__binding;
+      // Legacy fallback: infer from placeholder text
+      if (!b && typeof (obj as any).text === "string") {
+        const hit = byLabel.get((obj as any).text.trim());
+        if (hit) b = { key: hit.key, label: hit.label, kind: hit.kind };
+      }
       if (!b) continue;
-      bindingsFound++;
       const objType = String((obj as any).type ?? "").toLowerCase();
       if (b.kind === "text" && (objType === "textbox" || objType === "text" || objType === "i-text" || typeof (obj as any).text === "string")) {
         const val = resolveValue(student, b.key) || "";
