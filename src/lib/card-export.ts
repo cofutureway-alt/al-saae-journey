@@ -190,10 +190,16 @@ export async function exportStudentsPdf(
     ]);
 
     if (i > 0) pdf.addPage();
-    // Front on top
-    pdf.addImage(frontUrl, "PNG", xOffset, margin, cardW, cardH, undefined, "FAST");
-    // Back on bottom
-    pdf.addImage(backUrl, "PNG", xOffset, margin + cardH + gap, cardW, cardH, undefined, "FAST");
+    const drawFramedCard = (url: string, y: number) => {
+      pdf.addImage(url, "PNG", xOffset, y, cardW, cardH, undefined, "FAST");
+      // Rounded border/frame around the card
+      pdf.setDrawColor(15, 23, 42); // slate-900
+      pdf.setLineWidth(0.4);
+      const radius = Math.min(cardW, cardH) * 0.045;
+      pdf.roundedRect(xOffset, y, cardW, cardH, radius, radius, "S");
+    };
+    drawFramedCard(frontUrl, margin);
+    drawFramedCard(backUrl, margin + cardH + gap);
   }
 
   opts.onProgress?.(total, total, "");
