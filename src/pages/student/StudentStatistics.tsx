@@ -60,7 +60,7 @@ const StudentStatistics = () => {
               delay={0}
             />
             <StatCard
-              label="الدروس المكتملة"
+              label="المحتوى المكتمل"
               value={stats.completedLessons}
               icon={ListChecks}
               accent="emerald"
@@ -121,7 +121,7 @@ const StudentStatistics = () => {
             <div className="p-5 md:p-6 border-b border-border/60">
               <h2 className="text-lg md:text-xl font-bold">دوراتي</h2>
               <p className="text-xs text-muted-foreground">
-                اضغط على الدورة لعرض تفاصيل الدروس والتقدّم داخل كل درس.
+                اضغط على الدورة لعرض الدروس والاختبارات والتقدّم داخل كل محتوى.
               </p>
             </div>
             <div className="divide-y divide-border/50">
@@ -368,7 +368,7 @@ const CourseRow = ({ course, index }: { course: StudentCourseStat; index: number
               </Badge>
             )}
             <span className="text-[11px] text-muted-foreground">
-              {course.completed_lessons}/{course.total_lessons} درس
+              {course.completed_lessons}/{course.total_lessons} محتوى
             </span>
           </div>
         </div>
