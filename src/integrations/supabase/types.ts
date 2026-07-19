@@ -363,6 +363,7 @@ export type Database = {
           governorate: string | null
           guardian_phone: string | null
           id: string
+          is_banned: boolean
           phone_number: string | null
           registration_type: string | null
           role: Database["public"]["Enums"]["app_role"]
@@ -380,6 +381,7 @@ export type Database = {
           governorate?: string | null
           guardian_phone?: string | null
           id: string
+          is_banned?: boolean
           phone_number?: string | null
           registration_type?: string | null
           role?: Database["public"]["Enums"]["app_role"]
@@ -397,6 +399,7 @@ export type Database = {
           governorate?: string | null
           guardian_phone?: string | null
           id?: string
+          is_banned?: boolean
           phone_number?: string | null
           registration_type?: string | null
           role?: Database["public"]["Enums"]["app_role"]
@@ -909,6 +912,35 @@ export type Database = {
         Args: { _attempt_id: string; _delta: number; _question_id: string }
         Returns: undefined
       }
+      admin_get_student: { Args: { _uid: string }; Returns: Json }
+      admin_list_students: {
+        Args: {
+          _custom_filters?: Json
+          _known_filters?: Json
+          _limit?: number
+          _offset?: number
+          _search?: string
+        }
+        Returns: {
+          auth_email: string
+          avatar_url: string
+          created_at: string
+          custom_fields: Json
+          email: string
+          enrollments_count: number
+          full_name: string
+          gender: string
+          governorate: string
+          id: string
+          is_banned: boolean
+          phone_number: string
+          registration_type: string
+          stage_id: string
+          stage_name: string
+          student_id: string
+          total_count: number
+        }[]
+      }
       admin_save_feedback: {
         Args: { _attempt_id: string; _feedback: string }
         Returns: Json
@@ -916,6 +948,16 @@ export type Database = {
       admin_save_grading: {
         Args: { _attempt_id: string; _updates: Json }
         Returns: Json
+      }
+      admin_student_enrollments: {
+        Args: { _uid: string }
+        Returns: {
+          course_id: string
+          course_title: string
+          enrolled_at: string
+          stage_name: string
+          subject_name: string
+        }[]
       }
       get_attempt_details: { Args: { _attempt_id: string }; Returns: Json }
       get_attempt_questions: { Args: { _attempt_id: string }; Returns: Json }
@@ -1020,6 +1062,7 @@ export type Database = {
         Args: { p_lesson_file_id: string }
         Returns: number
       }
+      is_current_user_banned: { Args: never; Returns: boolean }
       is_enrolled_in_lesson_course: {
         Args: { _lesson_id: string; _user_id: string }
         Returns: boolean
