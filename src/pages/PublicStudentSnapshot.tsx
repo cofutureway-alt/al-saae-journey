@@ -313,6 +313,149 @@ export default function PublicStudentSnapshot() {
           </motion.section>
         )}
 
+        {/* Enrolled courses list */}
+        {snap.enrolled_courses !== undefined && (
+          <motion.section
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-2xl border border-border bg-card p-4 md:p-5 space-y-3"
+          >
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2 text-sm font-bold">
+                <ListChecks className="w-4 h-4 text-primary" />
+                الكورسات المسجّلة
+                <Badge variant="secondary" className="tabular-nums">
+                  {snap.enrolled_courses.length}
+                </Badge>
+              </div>
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  value={coursesQuery}
+                  onChange={(e) => setCoursesQuery(e.target.value)}
+                  placeholder="بحث بالكورس أو المرحلة أو المادة…"
+                  className="pr-9 h-9"
+                />
+              </div>
+            </div>
+            <div className="overflow-x-auto rounded-xl border border-border">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 text-xs text-muted-foreground">
+                  <tr>
+                    <th className="text-right px-3 py-2 font-bold">الكورس</th>
+                    <th className="text-right px-3 py-2 font-bold">المادة</th>
+                    <th className="text-right px-3 py-2 font-bold">المرحلة</th>
+                    <th className="text-right px-3 py-2 font-bold">تاريخ التسجيل</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredCourses.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="text-center text-muted-foreground py-6">
+                        لا توجد بيانات.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredCourses.map((c) => (
+                      <tr key={c.course_id} className="border-t border-border">
+                        <td className="px-3 py-2 font-semibold">{c.course_title ?? "—"}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{c.subject_name ?? "—"}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{c.stage_name ?? "—"}</td>
+                        <td className="px-3 py-2 text-muted-foreground tabular-nums" dir="ltr">
+                          {c.enrolled_at ? new Date(c.enrolled_at).toLocaleDateString() : "—"}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </motion.section>
+        )}
+
+        {/* Quiz attempts list */}
+        {snap.quiz_attempts !== undefined && (
+          <motion.section
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-2xl border border-border bg-card p-4 md:p-5 space-y-3"
+          >
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2 text-sm font-bold">
+                <ClipboardList className="w-4 h-4 text-primary" />
+                محاولات الاختبارات
+                <Badge variant="secondary" className="tabular-nums">
+                  {snap.quiz_attempts.length}
+                </Badge>
+              </div>
+              <div className="flex gap-2 w-full sm:w-auto flex-wrap">
+                <div className="relative flex-1 sm:w-64">
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    value={attemptsQuery}
+                    onChange={(e) => setAttemptsQuery(e.target.value)}
+                    placeholder="بحث بالاختبار أو الكورس…"
+                    className="pr-9 h-9"
+                  />
+                </div>
+                <Select value={attemptsStatus} onValueChange={setAttemptsStatus}>
+                  <SelectTrigger className="h-9 w-full sm:w-40">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">كل الحالات</SelectItem>
+                    <SelectItem value="passed">ناجح</SelectItem>
+                    <SelectItem value="failed">راسب</SelectItem>
+                    <SelectItem value="needs_review">بانتظار المراجعة</SelectItem>
+                    <SelectItem value="graded">مصحّح</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="overflow-x-auto rounded-xl border border-border">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 text-xs text-muted-foreground">
+                  <tr>
+                    <th className="text-right px-3 py-2 font-bold">الاختبار</th>
+                    <th className="text-right px-3 py-2 font-bold">الكورس</th>
+                    <th className="text-right px-3 py-2 font-bold">المحاولة</th>
+                    <th className="text-right px-3 py-2 font-bold">النسبة</th>
+                    <th className="text-right px-3 py-2 font-bold">الحالة</th>
+                    <th className="text-right px-3 py-2 font-bold">التاريخ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredAttempts.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="text-center text-muted-foreground py-6">
+                        لا توجد محاولات مطابقة.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredAttempts.map((a) => (
+                      <tr key={a.attempt_id} className="border-t border-border">
+                        <td className="px-3 py-2 font-semibold">{a.quiz_title ?? "—"}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{a.course_title ?? "—"}</td>
+                        <td className="px-3 py-2 tabular-nums">#{a.attempt_number ?? "—"}</td>
+                        <td className="px-3 py-2 tabular-nums">
+                          {a.percentage != null ? `${a.percentage}%` : "—"}
+                        </td>
+                        <td className="px-3 py-2">
+                          <AttemptStatusBadge status={a.status} passed={a.passed} />
+                        </td>
+                        <td className="px-3 py-2 text-muted-foreground tabular-nums" dir="ltr">
+                          {a.submitted_at ? new Date(a.submitted_at).toLocaleDateString() : "—"}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </motion.section>
+        )}
+
+
         {/* Weak areas */}
         {(snap.weak_flags?.subjects || snap.weak_flags?.courses) && (
           <div className="grid md:grid-cols-2 gap-4">
