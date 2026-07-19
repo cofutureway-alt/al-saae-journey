@@ -11,6 +11,8 @@ import {
   LogOut,
   Menu,
   X,
+  PanelRightClose,
+  PanelRightOpen,
   Home,
   Settings2,
   User as UserIcon,
