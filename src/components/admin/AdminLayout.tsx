@@ -133,6 +133,17 @@ const AdminLayout = ({ children }: { children?: ReactNode }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("admin-sidebar-collapsed") === "1";
+  });
+  const toggleCollapsed = () => {
+    setCollapsed((v) => {
+      const nv = !v;
+      try { localStorage.setItem("admin-sidebar-collapsed", nv ? "1" : "0"); } catch {}
+      return nv;
+    });
+  };
 
   const initials =
     profile?.full_name
