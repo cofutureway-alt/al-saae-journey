@@ -12,6 +12,7 @@ import {
   X,
   Home,
   Settings2,
+  Users,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -28,12 +29,14 @@ import ThemeToggle from "@/components/ThemeToggle";
 
 const nav = [
   { to: "/admin", label: "الإحصائيات", icon: BarChart3, end: true },
+  { to: "/admin/students", label: "إدارة الطلاب", icon: Users },
   { to: "/admin/quiz-attempts", label: "محاولات الاختبارات", icon: ClipboardCheck },
   { to: "/admin/courses", label: "الدورات", icon: BookOpen },
   { to: "/admin/stages", label: "المراحل", icon: Layers },
   { to: "/admin/subjects", label: "المواد الدراسية", icon: BookMarked },
   { to: "/admin/settings", label: "الإعدادات", icon: Settings2 },
 ];
+
 
 const NavItem = ({
   to,
