@@ -76,10 +76,13 @@ export async function renderStudentFaceToDataUrl(
     }
     // Walk objects, apply real student data
     const objs = c.getObjects().slice();
+    let bindingsFound = 0;
     for (const obj of objs) {
       const b = (obj as any).__binding;
       if (!b) continue;
-      if (b.kind === "text" && (obj as any).type === "textbox") {
+      bindingsFound++;
+      const objType = String((obj as any).type ?? "").toLowerCase();
+      if (b.kind === "text" && (objType === "textbox" || objType === "text" || objType === "i-text" || typeof (obj as any).text === "string")) {
         const val = resolveValue(student, b.key) || "";
         (obj as any).set({ text: val });
         (obj as any).initDimensions?.();
