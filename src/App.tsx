@@ -37,6 +37,10 @@ import AdminRegistrationForm from "./pages/admin/AdminRegistrationForm";
 import MyAccount from "./pages/student/MyAccount";
 import AdminStudents from "./pages/admin/AdminStudents";
 import AdminStudentDetail from "./pages/admin/AdminStudentDetail";
+import AdminQrSettings from "./pages/admin/AdminQrSettings";
+import AdminCards from "./pages/admin/AdminCards";
+import CardBuilder from "./pages/admin/CardBuilder";
+import PublicStudentSnapshot from "./pages/PublicStudentSnapshot";
 
 
 const queryClient = new QueryClient();
@@ -55,6 +59,7 @@ const App = () => (
             <Route path="/signup" element={<Signup />} />
             <Route path="/courses" element={<Courses />} />
             <Route path="/courses/:id" element={<CourseDetails />} />
+            <Route path="/s/:qrToken" element={<PublicStudentSnapshot />} />
             <Route
               path="/courses/:courseId/learn/:contentType/:contentId"
               element={
@@ -124,6 +129,9 @@ const App = () => (
               <Route path="settings" element={<AdminSettings />} />
               <Route path="settings/video-player" element={<AdminVideoPlayerSettings />} />
               <Route path="settings/registration-form" element={<AdminRegistrationForm />} />
+              <Route path="settings/student-qr" element={<AdminQrSettings />} />
+              <Route path="cards" element={<AdminCards />} />
+              <Route path="cards/:templateId/edit" element={<CardBuilder />} />
               <Route path="account" element={<MyAccount />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
