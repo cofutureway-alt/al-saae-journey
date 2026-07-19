@@ -164,9 +164,9 @@ const AdminLayout = ({ children }: { children?: ReactNode }) => {
   return (
     <div className="min-h-screen bg-background flex w-full" dir="rtl">
       {/* Desktop sidebar */}
-      <aside className="hidden lg:block w-72 shrink-0 border-l border-border/60 bg-card/50 backdrop-blur-sm">
+      <aside className={`hidden lg:block ${collapsed ? "w-20" : "w-72"} shrink-0 border-l border-border/60 bg-card/50 backdrop-blur-sm transition-[width] duration-300`}>
         <div className="sticky top-0 h-screen">
-          <SidebarContent />
+          <SidebarContent collapsed={collapsed} />
         </div>
       </aside>
 
@@ -214,6 +214,15 @@ const AdminLayout = ({ children }: { children?: ReactNode }) => {
               onClick={() => setDrawerOpen(true)}
             >
               <Menu className="w-5 h-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="hidden lg:inline-flex"
+              onClick={toggleCollapsed}
+              title={collapsed ? "توسيع القائمة" : "طيّ القائمة"}
+            >
+              {collapsed ? <PanelRightOpen className="w-5 h-5" /> : <PanelRightClose className="w-5 h-5" />}
             </Button>
             <div className="text-sm text-muted-foreground hidden sm:block">
               مرحبًا بعودتك،{" "}
