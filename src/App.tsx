@@ -112,6 +112,9 @@ const App = () => (
               <Route index element={<AdminStatistics />} />
               <Route path="quiz-attempts" element={<AdminQuizAttempts />} />
               <Route path="quiz-statistics/:quizId" element={<QuizStatistics />} />
+              <Route path="students" element={<AdminStudents />} />
+              <Route path="students/:id" element={<AdminStudentDetail />} />
+
               <Route path="courses" element={<AdminCourses />} />
               <Route path="courses/new" element={<CourseInfoEditor />} />
               <Route path="courses/:id/edit" element={<CourseInfoEditor />} />
