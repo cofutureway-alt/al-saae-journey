@@ -364,23 +364,45 @@ export const cardCanvasHelpers = {
     }
   },
   setBackgroundColor(c: Canvas, color: string) {
-    c.backgroundColor = color;
+    // Remove any existing background image object
+    const objs = c.getObjects().filter((o: any) => o.__isBg);
+    objs.forEach((o) => c.remove(o));
     c.backgroundImage = undefined;
-    c.requestRenderAll();
+    c.backgroundColor = color;
+    c.renderAll();
   },
   async setBackgroundImage(c: Canvas, url: string) {
     try {
       const img = await FabricImage.fromURL(url, { crossOrigin: "anonymous" });
+      const iw = img.width || CARD_WIDTH;
+      const ih = img.height || CARD_HEIGHT;
+      // Cover fit
+      const scale = Math.max(CARD_WIDTH / iw, CARD_HEIGHT / ih);
+      const w = iw * scale;
+      const h = ih * scale;
       img.set({
-        left: 0,
-        top: 0,
+        left: (CARD_WIDTH - w) / 2,
+        top: (CARD_HEIGHT - h) / 2,
+        scaleX: scale,
+        scaleY: scale,
         selectable: false,
         evented: false,
-        scaleX: CARD_WIDTH / (img.width ?? CARD_WIDTH),
-        scaleY: CARD_HEIGHT / (img.height ?? CARD_HEIGHT),
+        hasControls: false,
+        hasBorders: false,
+        lockMovementX: true,
+        lockMovementY: true,
+        lockScalingX: true,
+        lockScalingY: true,
+        lockRotation: true,
       });
-      c.backgroundImage = img;
-      c.requestRenderAll();
+      (img as any).__isBg = true;
+      // Remove old background objects
+      const oldBg = c.getObjects().filter((o: any) => o.__isBg);
+      oldBg.forEach((o) => c.remove(o));
+      c.backgroundImage = undefined;
+      c.add(img);
+      c.sendObjectToBack(img);
+      c.renderAll();
     } catch (e) {
       console.error("bg image load failed", e);
       throw e;
