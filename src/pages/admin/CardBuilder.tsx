@@ -8,15 +8,16 @@ import {
   ArrowUpToLine,
   ArrowDown,
   ArrowDownToLine,
-  Circle as CircleIcon,
   Image as ImageIcon,
   Loader2,
   Monitor,
   Palette,
   Save,
-  Square,
+  Shapes,
   Trash2,
   Info,
+  PaintBucket,
+  Type,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +30,8 @@ import {
   CARD_WIDTH,
   CARD_HEIGHT,
 } from "@/components/admin/cards/CardCanvas";
+import { ElementPalette } from "@/components/admin/cards/ElementPalette";
+import { TextProperties } from "@/components/admin/cards/TextProperties";
 
 const CardBuilder = () => {
   const { templateId } = useParams<{ templateId: string }>();
