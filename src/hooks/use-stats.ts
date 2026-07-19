@@ -120,6 +120,8 @@ export function useStudentStats() {
 
       const uList = (units ?? []) as any[];
       const unitIds = uList.map((u) => u.id);
+      const unitToCourse = new Map<string, string>();
+      uList.forEach((u) => unitToCourse.set(u.id, u.course_id));
 
       const [lessonsResult, quizzesArrays] = await Promise.all([
         unitIds.length
@@ -165,9 +167,6 @@ export function useStudentStats() {
       const attemptedQuizSet = new Set<string>(
         ((attempts ?? []) as any[]).map((a) => a.quiz_id),
       );
-
-      const unitToCourse = new Map<string, string>();
-      uList.forEach((u) => unitToCourse.set(u.id, u.course_id));
 
       const completedByLesson = new Set<string>((lessonProgress ?? []).map((p: any) => p.lesson_id));
       const watchByLesson = new Map<string, number>();
