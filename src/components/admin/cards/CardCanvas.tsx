@@ -101,7 +101,9 @@ export function CardCanvas({ initialJson, onReady, onSelectionChange, className 
           width: CARD_WIDTH * scale,
           height: CARD_HEIGHT * scale,
           margin: "0 auto",
+          overflow: "hidden",
         }}
+        className="shadow-2xl rounded-xl bg-white"
       >
         <div
           style={{
@@ -109,8 +111,9 @@ export function CardCanvas({ initialJson, onReady, onSelectionChange, className 
             height: CARD_HEIGHT,
             transform: `scale(${scale})`,
             transformOrigin: "top left",
+            overflow: "hidden",
+            position: "relative",
           }}
-          className="shadow-2xl rounded-xl overflow-hidden bg-white"
         >
           <canvas ref={elRef} width={CARD_WIDTH} height={CARD_HEIGHT} />
         </div>
