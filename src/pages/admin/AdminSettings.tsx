@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { Settings2, PlaySquare, Sparkles, ChevronLeft } from "lucide-react";
+import { Settings2, PlaySquare, Sparkles, ChevronLeft, FormInput } from "lucide-react";
 
 const AdminSettings = () => {
   return (
