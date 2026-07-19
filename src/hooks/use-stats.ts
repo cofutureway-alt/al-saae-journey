@@ -342,6 +342,19 @@ export interface TopCourseRow {
   enrollment_count: number;
 }
 
+export interface MostFailedQuizRow {
+  quiz_id: string;
+  quiz_title: string;
+  course_id: string;
+  course_title: string;
+  stage_id: string | null;
+  stage_name: string | null;
+  subject_id: string | null;
+  subject_name: string | null;
+  failed_count: number;
+  total_official: number;
+}
+
 export interface AdminStats {
   publishedCourses: number;
   studentsCount: number;
@@ -350,6 +363,7 @@ export interface AdminStats {
   totalQuizzes: number;
   totalQuestions: number;
   topCourses: TopCourseRow[];
+  mostFailedQuizzes: MostFailedQuizRow[];
 }
 
 export function useAdminStats() {
@@ -367,6 +381,7 @@ export function useAdminStats() {
         { count: totalQuestions },
         { data: enrollments },
         { data: courses },
+        { data: mostFailed },
       ] = await Promise.all([
         supabase
           .from("courses")
@@ -382,6 +397,7 @@ export function useAdminStats() {
         (supabase as any).from("quiz_questions").select("id", { count: "exact", head: true }),
         supabase.from("enrollments").select("course_id"),
         supabase.from("courses").select("id, title, thumbnail_url, created_at, stages(name)"),
+        (supabase as any).rpc("get_most_failed_quizzes", { _limit: 10 }),
       ]);
 
       const counts = new Map<string, number>();
@@ -416,6 +432,7 @@ export function useAdminStats() {
           totalQuizzes: totalQuizzes ?? 0,
           totalQuestions: totalQuestions ?? 0,
           topCourses: enriched,
+          mostFailedQuizzes: (mostFailed ?? []) as MostFailedQuizRow[],
         });
     })();
     return () => {

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { listQuizAttempts, type QuizAttemptRow } from "@/lib/quiz-attempts-api";
@@ -31,6 +32,10 @@ interface Option { id: string; name: string }
 interface CourseOption extends Option { stage_id: string | null; subject_id: string | null }
 
 export default function AdminQuizAttempts() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const quizId = searchParams.get("quizId") || undefined;
+  const [quizTitle, setQuizTitle] = useState<string | null>(null);
+
   const [rows, setRows] = useState<QuizAttemptRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -56,6 +61,13 @@ export default function AdminQuizAttempts() {
     return () => clearTimeout(t);
   }, [search]);
 
+  // Load quiz title when filtered by quizId
+  useEffect(() => {
+    if (!quizId) { setQuizTitle(null); return; }
+    (supabase as any).from("quizzes").select("title").eq("id", quizId).maybeSingle()
+      .then(({ data }: any) => setQuizTitle(data?.title ?? null));
+  }, [quizId]);
+
   // Load filter option lists once
   useEffect(() => {
     (async () => {
@@ -71,7 +83,7 @@ export default function AdminQuizAttempts() {
   }, []);
 
   // Reset paging when filters change
-  useEffect(() => { setPage(0); }, [debouncedSearch, courseId, stageId, subjectId, needsReviewOnly]);
+  useEffect(() => { setPage(0); }, [debouncedSearch, courseId, stageId, subjectId, needsReviewOnly, quizId]);
 
   // Fetch rows
   useEffect(() => {
@@ -82,6 +94,7 @@ export default function AdminQuizAttempts() {
       courseId: courseId === ALL ? undefined : courseId,
       stageId: stageId === ALL ? undefined : stageId,
       subjectId: subjectId === ALL ? undefined : subjectId,
+      quizId,
       needsReviewOnly,
       limit: PAGE_SIZE,
       offset: page * PAGE_SIZE,
@@ -94,7 +107,7 @@ export default function AdminQuizAttempts() {
       .catch(() => { if (!cancelled) { setRows([]); setTotal(0); } })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [debouncedSearch, courseId, stageId, subjectId, needsReviewOnly, page]);
+  }, [debouncedSearch, courseId, stageId, subjectId, needsReviewOnly, page, quizId]);
 
   const filteredCourses = useMemo(() => {
     return courses.filter(
@@ -104,17 +117,25 @@ export default function AdminQuizAttempts() {
     );
   }, [courses, stageId, subjectId]);
 
+  const clearQuizFilter = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete("quizId");
+    setSearchParams(next, { replace: true });
+  };
+
   const activeFilterCount =
     (debouncedSearch ? 1 : 0) +
     (courseId !== ALL ? 1 : 0) +
     (stageId !== ALL ? 1 : 0) +
     (subjectId !== ALL ? 1 : 0) +
-    (needsReviewOnly ? 1 : 0);
+    (needsReviewOnly ? 1 : 0) +
+    (quizId ? 1 : 0);
 
   const clearAll = () => {
     setSearch(""); setDebouncedSearch("");
     setCourseId(ALL); setStageId(ALL); setSubjectId(ALL);
     setNeedsReviewOnly(false);
+    clearQuizFilter();
   };
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -170,6 +191,19 @@ export default function AdminQuizAttempts() {
           <p className="text-muted-foreground text-sm">
             {loading ? "…" : `${total} محاولة مطابقة${activeFilterCount ? " للفلاتر الحالية" : ""}`}
           </p>
+          {quizId && (
+            <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-semibold">
+              الاختبار: {quizTitle ?? "…"}
+              <button
+                type="button"
+                onClick={clearQuizFilter}
+                className="hover:opacity-80"
+                aria-label="مسح فلتر الاختبار"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Mobile filter trigger */}
@@ -253,6 +287,7 @@ export default function AdminQuizAttempts() {
             stageId: stageId === ALL ? undefined : stageId,
             subjectId: subjectId === ALL ? undefined : subjectId,
             needsReviewOnly,
+            quizId,
             limit: PAGE_SIZE,
             offset: page * PAGE_SIZE,
           }).then((data) => {

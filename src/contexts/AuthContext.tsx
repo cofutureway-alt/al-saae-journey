@@ -10,6 +10,10 @@ export interface Profile {
   role: AppRole;
   avatar_url: string | null;
   created_at: string;
+  phone_number: string | null;
+  guardian_phone: string | null;
+  email: string | null;
+  auth_email: string | null;
 }
 
 interface AuthContextValue {
@@ -30,7 +34,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const loadProfile = async (uid: string) => {
-    const { data } = await supabase
+    const { data } = await (supabase as any)
       .from("profiles")
       .select("*")
       .eq("id", uid)
@@ -43,7 +47,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    // Set the listener FIRST — synchronous handler, defer async work
     const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession);
       setUser(newSession?.user ?? null);
@@ -54,7 +57,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     });
 
-    // Then hydrate the existing session
     supabase.auth.getSession().then(({ data: { session: existing } }) => {
       setSession(existing);
       setUser(existing?.user ?? null);
@@ -85,3 +87,17 @@ export const useAuth = () => {
   if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
 };
+
+// Best label to display for the user (name > phone > real email > auth email)
+export function displayIdentity(profile: Profile | null, userEmail?: string | null): string {
+  if (!profile) return userEmail || "";
+  return (
+    profile.phone_number ||
+    profile.email ||
+    (profile.auth_email && !profile.auth_email.endsWith("@internal.noemail.local")
+      ? profile.auth_email
+      : "") ||
+    userEmail ||
+    ""
+  );
+}
