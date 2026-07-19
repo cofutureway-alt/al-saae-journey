@@ -12,6 +12,7 @@ import {
   X,
   Home,
   Settings2,
+  User as UserIcon,
   Users,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -218,6 +219,10 @@ const AdminLayout = ({ children }: { children?: ReactNode }) => {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate("/admin/account")}>
+                <UserIcon className="w-4 h-4 ml-2" />
+                الملف الشخصي
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
                 <LogOut className="w-4 h-4 ml-2" />
                 تسجيل الخروج
