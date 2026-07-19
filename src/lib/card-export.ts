@@ -3,6 +3,7 @@ import jsPDF from "jspdf";
 import { CARD_WIDTH, CARD_HEIGHT, CUSTOM_PROPS } from "@/components/admin/cards/CardCanvas";
 import { preloadFontsFromJson } from "@/lib/card-fonts";
 import { generateQrDataUrl } from "@/lib/card-qr";
+import { fetchBindingSources, type BindingSource } from "@/lib/card-bindings";
 
 export interface ExportStudent {
   id: string;
