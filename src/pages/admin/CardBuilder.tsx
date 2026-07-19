@@ -35,6 +35,8 @@ import {
   CARD_WIDTH,
   CARD_HEIGHT,
   CUSTOM_PROPS,
+  applySampleData,
+  restoreFromSample,
 } from "@/components/admin/cards/CardCanvas";
 import { ElementPalette } from "@/components/admin/cards/ElementPalette";
 import { TextProperties } from "@/components/admin/cards/TextProperties";
