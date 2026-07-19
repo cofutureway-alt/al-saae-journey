@@ -59,6 +59,8 @@ export function useMyCourses() {
       });
 
       const lessonsCount: Record<string, number> = {};
+      const quizzesCount: Record<string, number> = {};
+      const quizToCourse: Record<string, string> = {};
       if (unitIds.length) {
         const { data: lessons } = await supabase
           .from("lessons_public")
@@ -68,6 +70,18 @@ export function useMyCourses() {
           const cId = unitToCourse[l.unit_id];
           if (cId) lessonsCount[cId] = (lessonsCount[cId] ?? 0) + 1;
         });
+
+        const { data: quizzes } = await (supabase as any)
+          .from("quizzes")
+          .select("id, unit_id")
+          .in("unit_id", unitIds);
+        (quizzes ?? []).forEach((q: any) => {
+          const cId = unitToCourse[q.unit_id];
+          if (cId) {
+            quizzesCount[cId] = (quizzesCount[cId] ?? 0) + 1;
+            quizToCourse[q.id] = cId;
+          }
+        });
       }
 
       const { data: progress } = await supabase
@@ -76,17 +90,36 @@ export function useMyCourses() {
         .eq("user_id", user.id)
         .in("course_id", courseIds);
 
-      const done: Record<string, number> = {};
+      const doneLessons: Record<string, number> = {};
       (progress ?? []).forEach((p: any) => {
-        done[p.course_id] = (done[p.course_id] ?? 0) + 1;
+        doneLessons[p.course_id] = (doneLessons[p.course_id] ?? 0) + 1;
       });
+
+      const doneQuizzes: Record<string, Set<string>> = {};
+      const allQuizIds = Object.keys(quizToCourse);
+      if (allQuizIds.length) {
+        const { data: attempts } = await (supabase as any)
+          .from("quiz_attempts")
+          .select("quiz_id")
+          .eq("user_id", user.id)
+          .in("quiz_id", allQuizIds);
+        (attempts ?? []).forEach((a: any) => {
+          const cId = quizToCourse[a.quiz_id];
+          if (!cId) return;
+          if (!doneQuizzes[cId]) doneQuizzes[cId] = new Set();
+          doneQuizzes[cId].add(a.quiz_id);
+        });
+      }
 
       if (cancelled) return;
       setCourses(
         rows.map((e: any) => {
           const c = e.courses;
-          const total = lessonsCount[c.id] ?? 0;
-          const completed = done[c.id] ?? 0;
+          const totalLessons = lessonsCount[c.id] ?? 0;
+          const totalQuizzes = quizzesCount[c.id] ?? 0;
+          const total = totalLessons + totalQuizzes;
+          const completed =
+            (doneLessons[c.id] ?? 0) + (doneQuizzes[c.id]?.size ?? 0);
           return {
             id: c.id,
             title: c.title,

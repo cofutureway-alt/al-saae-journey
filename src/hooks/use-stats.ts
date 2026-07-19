@@ -28,6 +28,12 @@ export interface StudentCourseStat {
       watch_percentage: number;
       completed: boolean;
     }[];
+    quizzes: {
+      id: string;
+      title: string;
+      position: number;
+      attempted: boolean;
+    }[];
   }[];
 }
 
@@ -124,12 +130,12 @@ export function useStudentStats() {
         unitIds.length
           ? (supabase as any)
               .from("quizzes")
-              .select("id, unit_id")
+              .select("id, unit_id, title, position")
               .in("unit_id", unitIds)
           : Promise.resolve({ data: [] as any[] }),
       ]);
 
-      const quizList = (quizzes ?? []) as { id: string; unit_id: string }[];
+      const quizList = (quizzes ?? []) as { id: string; unit_id: string; title: string; position: number }[];
       const quizIds = quizList.map((q) => q.id);
 
       const [{ data: attempts }, { data: quizMeta }] = await Promise.all([
@@ -185,7 +191,16 @@ export function useStudentStats() {
                   completed: done,
                 };
               });
-            return { id: u.id, title: u.title, position: u.position, lessons: uLessons };
+            const uQuizzes = quizList
+              .filter((q) => q.unit_id === u.id)
+              .sort((a, b) => a.position - b.position)
+              .map((q) => ({
+                id: q.id,
+                title: q.title,
+                position: q.position,
+                attempted: attemptedQuizSet.has(q.id),
+              }));
+            return { id: u.id, title: u.title, position: u.position, lessons: uLessons, quizzes: uQuizzes };
           });
 
         let sum = 0;
@@ -202,15 +217,15 @@ export function useStudentStats() {
 
         // Include quizzes: each quiz weighs equally to a lesson.
         // Contribution = 100 if attempted (any status), else 0.
-        const courseUnitIds = new Set(courseUnits.map((u) => u.id));
-        const courseQuizzes = quizList.filter((q) => courseUnitIds.has(q.unit_id));
-        courseQuizzes.forEach((q) => {
-          total += 1;
-          if (attemptedQuizSet.has(q.id)) {
-            sum += 100;
-            done += 1;
-          }
-        });
+        courseUnits.forEach((u) =>
+          u.quizzes.forEach((q) => {
+            total += 1;
+            if (q.attempted) {
+              sum += 100;
+              done += 1;
+            }
+          }),
+        );
 
         globalSum += sum;
         globalTotal += total;
