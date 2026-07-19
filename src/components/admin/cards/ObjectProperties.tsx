@@ -95,7 +95,8 @@ export function ObjectProperties({ canvas, obj, onChange, hideFill }: Props) {
       )}
 
       {/* Fill (solid or gradient) */}
-      <div>
+      {!hideFill && (
+      <div>{/* fill-block-start */}
         <div className="flex items-center justify-between mb-1.5">
           <Label className="text-xs flex items-center gap-1.5">
             <PaintBucket className="w-3 h-3" /> التعبئة
