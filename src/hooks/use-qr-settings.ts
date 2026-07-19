@@ -8,7 +8,9 @@ export interface QrDisplaySettings {
   show_stage: boolean;
   show_phone: boolean;
   show_enrolled_courses_count: boolean;
+  show_enrolled_courses_list: boolean;
   show_quiz_stats: boolean;
+  show_quiz_attempts_list: boolean;
   show_weak_subjects: boolean;
   show_weak_courses: boolean;
 }
@@ -20,7 +22,9 @@ export const DEFAULT_QR_SETTINGS: QrDisplaySettings = {
   show_stage: true,
   show_phone: false,
   show_enrolled_courses_count: true,
+  show_enrolled_courses_list: true,
   show_quiz_stats: true,
+  show_quiz_attempts_list: true,
   show_weak_subjects: true,
   show_weak_courses: true,
 };
