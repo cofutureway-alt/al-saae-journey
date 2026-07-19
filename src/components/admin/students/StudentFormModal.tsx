@@ -40,6 +40,7 @@ export default function StudentFormModal({ open, onOpenChange, mode, student, on
     setErrors({});
     setCreatedInfo(null);
     if (mode === "edit" && student) {
+      setAvatarUrl(student.avatar_url ?? null);
       setValues({
         full_name: student.full_name ?? "",
         phone_number: student.phone_number ?? "",
@@ -52,6 +53,7 @@ export default function StudentFormModal({ open, onOpenChange, mode, student, on
         ...(student.custom_fields ?? {}),
       });
     } else {
+      setAvatarUrl(null);
       setValues({});
     }
   }, [open, mode, student]);
