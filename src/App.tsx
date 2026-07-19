@@ -33,6 +33,8 @@ import QuizTake from "./pages/QuizTake";
 import AdminQuizAttempts from "./pages/admin/AdminQuizAttempts";
 import MyQuizAttempts from "./pages/student/MyQuizAttempts";
 import QuizStatistics from "./pages/admin/QuizStatistics";
+import AdminRegistrationForm from "./pages/admin/AdminRegistrationForm";
+import MyAccount from "./pages/student/MyAccount";
 
 const queryClient = new QueryClient();
 
