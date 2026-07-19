@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Loader2, UserPlus, CheckCircle2, IdCard } from "lucide-react";
+import { Loader2, UserPlus, CheckCircle2, IdCard, Upload, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import DynamicRegistrationField from "@/components/auth/DynamicRegistrationField";
 import { useRegistrationFields } from "@/hooks/use-registration-fields";
 import {
@@ -13,6 +14,7 @@ import {
 } from "@/lib/registration-fields";
 import { isValidEgPhone, normalizeEgPhone, syntheticAuthEmail } from "@/lib/phone";
 import { adminCreateStudent, updateStudentProfile, type AdminStudentRow } from "@/lib/admin-students-api";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   open: boolean;
