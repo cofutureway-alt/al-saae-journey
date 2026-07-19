@@ -24,7 +24,7 @@ interface Props {
 }
 
 /** Style + geometry controls for any (non-text) object; text gets its own panel. */
-export function ObjectProperties({ canvas, obj, onChange }: Props) {
+export function ObjectProperties({ canvas, obj, onChange, hideFill }: Props) {
   const [useGradient, setUseGradient] = useState(!!obj.__gradient);
   const g = obj.__gradient ?? { angle: 90, stops: [{ offset: 0, color: "#3b82f6" }, { offset: 1, color: "#8b5cf6" }] };
   const [angle, setAngle] = useState<number>(g.angle);
