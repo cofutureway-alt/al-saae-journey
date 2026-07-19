@@ -89,8 +89,8 @@ export async function renderStudentFaceToDataUrl(
     // Walk objects, apply real student data
     const objs = c.getObjects().slice();
     // Build label -> binding source lookup for legacy designs (no __binding stored)
-    const sources = await fetchBindingSources().catch(() => [] as any[]);
-    const byLabel = new Map(sources.map((s: any) => [`{{${s.label}}}`, s]));
+    const sources: BindingSource[] = await fetchBindingSources().catch(() => []);
+    const byLabel = new Map<string, BindingSource>(sources.map((s) => [`{{${s.label}}}`, s] as [string, BindingSource]));
     for (const obj of objs) {
       let b = (obj as any).__binding;
       // Legacy fallback: infer from placeholder text
