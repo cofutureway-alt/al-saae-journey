@@ -39,6 +39,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .select("*")
       .eq("id", uid)
       .maybeSingle();
+    if (data && (data as any).is_banned === true) {
+      await supabase.auth.signOut();
+      setProfile(null);
+      return;
+    }
     setProfile((data as Profile) ?? null);
   };
 
