@@ -72,9 +72,9 @@ const Login = () => {
       email: authEmail,
       password,
     });
-    setLoading(false);
 
     if (error) {
+      setLoading(false);
       if (error.message.toLowerCase().includes("invalid")) {
         toast.error("بيانات الدخول غير صحيحة");
       } else {
@@ -83,6 +83,15 @@ const Login = () => {
       return;
     }
 
+    // Ban gate — must run before we surface success or navigate
+    const { data: banned } = await (supabase as any).rpc("is_current_user_banned");
+    if (banned === true) {
+      await supabase.auth.signOut();
+      setLoading(false);
+      toast.error("حسابك مقيد، يرجى التواصل مع الدعم لحل المشكلة.");
+      return;
+    }
+    setLoading(false);
     toast.success("تم تسجيل الدخول بنجاح");
 
     let destination = from;
