@@ -193,14 +193,18 @@ const CardBuilder = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-4">
+      <div className="grid grid-cols-1 2xl:grid-cols-[minmax(0,1fr)_320px] gap-4">
         {/* Canvas */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl border border-border bg-muted/20 p-4 md:p-6 min-h-[400px] flex items-center"
+          className="rounded-2xl border border-border bg-card p-3 md:p-5 min-h-[360px] flex items-center overflow-x-auto"
         >
-          <div className="w-full">
+          <div className="w-full min-w-0">
+            <div className="mb-3 flex items-center justify-between gap-3 text-xs text-muted-foreground">
+              <span className="font-bold text-foreground">مساحة تصميم الكارت</span>
+              <span dir="ltr" className="font-mono">{CARD_WIDTH} × {CARD_HEIGHT}px</span>
+            </div>
             <CardCanvas
               initialJson={design}
               onReady={(c) => {
@@ -209,6 +213,9 @@ const CardBuilder = () => {
               }}
               onSelectionChange={onSelectionChange}
             />
+            <div className="mt-3 text-center text-xs text-muted-foreground">
+              يتم عرض الكارت بالكامل داخل الإطار بدون قص، مع الحفاظ على المقاس الأصلي عند الحفظ.
+            </div>
           </div>
         </motion.div>
 

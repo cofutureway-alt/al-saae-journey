@@ -62,12 +62,12 @@ export function CardCanvas({ initialJson, onReady, onSelectionChange, className 
         try {
           await preloadFontsFromJson(initialJson);
           await c.loadFromJSON(initialJson);
-          // loadFromJSON can override canvas dimensions — force back to card size
-          c.setDimensions({ width: CARD_WIDTH, height: CARD_HEIGHT });
-          c.requestRenderAll();
+          normalizeLoadedCanvas(c);
         } catch (e) {
           console.error("Fabric load failed", e);
         }
+      } else {
+        lockCanvasSize(c);
       }
       onReady?.(c);
     })();
@@ -84,8 +84,8 @@ export function CardCanvas({ initialJson, onReady, onSelectionChange, className 
     const compute = () => {
       const el = wrapRef.current;
       if (!el) return;
-      const w = el.clientWidth;
-      const s = Math.min(1, w / CARD_WIDTH);
+      const availableWidth = Math.max(320, el.clientWidth - 8);
+      const s = Math.min(1, availableWidth / CARD_WIDTH);
       setScale(s);
     };
     compute();
@@ -95,15 +95,18 @@ export function CardCanvas({ initialJson, onReady, onSelectionChange, className 
   }, []);
 
   return (
-    <div ref={wrapRef} className={className}>
+    <div ref={wrapRef} className={className} dir="ltr">
       <div
         style={{
           width: CARD_WIDTH * scale,
           height: CARD_HEIGHT * scale,
           margin: "0 auto",
           overflow: "hidden",
+          direction: "ltr",
+          isolation: "isolate",
+          boxSizing: "content-box",
         }}
-        className="shadow-2xl rounded-xl bg-white"
+        className="rounded-md border-2 border-primary bg-card shadow-2xl"
       >
         <div
           style={{
@@ -113,6 +116,7 @@ export function CardCanvas({ initialJson, onReady, onSelectionChange, className 
             transformOrigin: "top left",
             overflow: "hidden",
             position: "relative",
+            direction: "ltr",
           }}
         >
           <canvas ref={elRef} width={CARD_WIDTH} height={CARD_HEIGHT} />
@@ -125,6 +129,76 @@ export function CardCanvas({ initialJson, onReady, onSelectionChange, className 
 const CX = CARD_WIDTH / 2;
 const CY = CARD_HEIGHT / 2;
 const DEFAULT_FILL = "#3b82f6";
+
+function lockCanvasSize(c: Canvas) {
+  c.setDimensions({ width: CARD_WIDTH, height: CARD_HEIGHT });
+  c.setViewportTransform([1, 0, 0, 1, 0, 0]);
+  c.calcOffset();
+  c.requestRenderAll();
+}
+
+function fitImageToCard(img: FabricImage) {
+  const iw = img.width || CARD_WIDTH;
+  const ih = img.height || CARD_HEIGHT;
+
+  img.set({
+    originX: "left",
+    originY: "top",
+    left: 0,
+    top: 0,
+    scaleX: CARD_WIDTH / iw,
+    scaleY: CARD_HEIGHT / ih,
+    angle: 0,
+    flipX: false,
+    flipY: false,
+    skewX: 0,
+    skewY: 0,
+    selectable: false,
+    evented: false,
+    excludeFromExport: false,
+    hasControls: false,
+    hasBorders: false,
+    lockMovementX: true,
+    lockMovementY: true,
+    lockScalingX: true,
+    lockScalingY: true,
+    lockRotation: true,
+  });
+}
+
+function normalizeLoadedCanvas(c: Canvas) {
+  lockCanvasSize(c);
+
+  const backgroundObjects = c.getObjects().filter((obj: any, index) => {
+    if (obj.type !== "image") return false;
+    if (obj.__isBg) return true;
+    if (index === 0 && obj.selectable === false && obj.evented === false) return true;
+    const rawW = obj.width || CARD_WIDTH;
+    const rawH = obj.height || CARD_HEIGHT;
+    const renderedW = rawW * (obj.scaleX || 1);
+    const renderedH = rawH * (obj.scaleY || 1);
+    const looksLikeFullCard = renderedW >= CARD_WIDTH * 0.75 && renderedH >= CARD_HEIGHT * 0.75;
+    return index === 0 && looksLikeFullCard && obj.selectable === false;
+  }) as FabricImage[];
+
+  const bg = backgroundObjects[backgroundObjects.length - 1];
+  if (bg) {
+    backgroundObjects.forEach((obj) => c.remove(obj));
+    fitImageToCard(bg);
+    c.backgroundImage = bg;
+  } else if (c.backgroundImage) {
+    fitImageToCard(c.backgroundImage as FabricImage);
+  }
+
+  c.getObjects().forEach((obj: any) => {
+    if (obj.type === "textbox") {
+      obj.set({ direction: obj.direction ?? "rtl", textAlign: obj.textAlign ?? "right" });
+      obj.initDimensions?.();
+    }
+  });
+
+  c.requestRenderAll();
+}
 
 function center(obj: any, w: number, h: number) {
   obj.set({ left: CX - w / 2, top: CY - h / 2 });
@@ -374,40 +448,18 @@ export const cardCanvasHelpers = {
     objs.forEach((o) => c.remove(o));
     c.backgroundImage = undefined;
     c.backgroundColor = color;
-    c.renderAll();
+    lockCanvasSize(c);
   },
   async setBackgroundImage(c: Canvas, url: string) {
     try {
       const img = await FabricImage.fromURL(url, { crossOrigin: "anonymous" });
-      const iw = img.width || CARD_WIDTH;
-      const ih = img.height || CARD_HEIGHT;
-      // Cover fit
-      const scale = Math.max(CARD_WIDTH / iw, CARD_HEIGHT / ih);
-      const w = iw * scale;
-      const h = ih * scale;
-      img.set({
-        left: (CARD_WIDTH - w) / 2,
-        top: (CARD_HEIGHT - h) / 2,
-        scaleX: scale,
-        scaleY: scale,
-        selectable: false,
-        evented: false,
-        hasControls: false,
-        hasBorders: false,
-        lockMovementX: true,
-        lockMovementY: true,
-        lockScalingX: true,
-        lockScalingY: true,
-        lockRotation: true,
-      });
+      fitImageToCard(img);
       (img as any).__isBg = true;
       // Remove old background objects
       const oldBg = c.getObjects().filter((o: any) => o.__isBg);
       oldBg.forEach((o) => c.remove(o));
-      c.backgroundImage = undefined;
-      c.add(img);
-      c.sendObjectToBack(img);
-      c.renderAll();
+      c.backgroundImage = img;
+      lockCanvasSize(c);
     } catch (e) {
       console.error("bg image load failed", e);
       throw e;
@@ -431,6 +483,7 @@ export async function renderCardToDataURL(json: any): Promise<string> {
     if (json && Object.keys(json).length > 0) {
       await preloadFontsFromJson(json);
       await c.loadFromJSON(json);
+      normalizeLoadedCanvas(c);
     }
     c.renderAll();
     const url = c.toDataURL({ format: "png", multiplier: 0.5 });
