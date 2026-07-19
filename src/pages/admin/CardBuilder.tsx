@@ -203,7 +203,10 @@ const CardBuilder = () => {
           <div className="w-full">
             <CardCanvas
               initialJson={design}
-              onReady={(c) => (canvasRef.current = c)}
+              onReady={(c) => {
+                canvasRef.current = c;
+                setCanvas(c);
+              }}
               onSelectionChange={onSelectionChange}
             />
           </div>
