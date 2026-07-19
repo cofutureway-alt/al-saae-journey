@@ -139,7 +139,7 @@ export async function renderStudentFaceToDataUrl(
         objType === "rect" &&
         Math.abs(((obj as any).width ?? 0) * ((obj as any).scaleX ?? 1) - ((obj as any).height ?? 0) * ((obj as any).scaleY ?? 1)) <= 3 &&
         ((obj as any).width ?? 0) >= 120 &&
-        ((obj as any).strokeDashArray || ((obj as any).stroke && ((obj as any).strokeWidth ?? 0) >= 2));
+        Array.isArray((obj as any).strokeDashArray);
       if (isLegacyQrSquare) b = QR_BINDING;
       // Legacy fallback: infer from placeholder text
       if (!b && typeof (obj as any).text === "string") {
