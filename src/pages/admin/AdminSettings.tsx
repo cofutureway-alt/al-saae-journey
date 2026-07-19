@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { Settings2, PlaySquare, Sparkles, ChevronLeft, FormInput } from "lucide-react";
+import { Settings2, PlaySquare, Sparkles, ChevronLeft, FormInput, QrCode } from "lucide-react";
 
 const AdminSettings = () => {
   return (
@@ -57,6 +57,30 @@ const AdminSettings = () => {
                 <div className="font-bold text-lg mb-1">إعدادات نموذج التسجيل</div>
                 <p className="text-sm text-muted-foreground">
                   أضف، احذف، وأعد ترتيب الحقول التي يراها الطالب عند إنشاء حساب.
+                </p>
+              </div>
+              <ChevronLeft className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+            </div>
+          </Link>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+        >
+          <Link
+            to="/admin/settings/student-qr"
+            className="group block h-full rounded-2xl border border-border/60 bg-card p-6 hover:border-primary/50 hover:shadow-lg transition-all"
+          >
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <QrCode className="w-6 h-6" />
+              </div>
+              <div className="flex-1">
+                <div className="font-bold text-lg mb-1">إعدادات QR الطلاب</div>
+                <p className="text-sm text-muted-foreground">
+                  اختر البيانات التي تظهر عند مسح كود الطالب من الصفحة العامة.
                 </p>
               </div>
               <ChevronLeft className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />

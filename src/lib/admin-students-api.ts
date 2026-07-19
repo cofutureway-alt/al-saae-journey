@@ -18,6 +18,7 @@ export interface AdminStudentRow {
   custom_fields: Record<string, any> | null;
   enrollments_count: number;
   total_count: number;
+  qr_token?: string | null;
 }
 
 export interface StudentsQuery {

@@ -38,6 +38,7 @@ import {
   type AdminStudentRow,
 } from "@/lib/admin-students-api";
 import StudentFormModal from "@/components/admin/students/StudentFormModal";
+import StudentQrCard from "@/components/admin/students/StudentQrCard";
 import { useRegistrationFields } from "@/hooks/use-registration-fields";
 import {
   classifyGroups, LEVEL_META, type GroupClassification,
@@ -280,6 +281,14 @@ export default function AdminStudentDetail() {
               <div className="text-xs text-muted-foreground">{s.label}</div>
             </div>
           ))}
+        </div>
+
+        <div className="mt-6">
+          <StudentQrCard
+            qrToken={student.qr_token ?? null}
+            studentId={student.id}
+            onTokenChanged={(t) => setStudent({ ...student, qr_token: t })}
+          />
         </div>
       </motion.div>
 

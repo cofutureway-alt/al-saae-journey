@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      card_templates: {
+        Row: {
+          back_design: Json
+          created_at: string
+          front_design: Json
+          id: string
+          is_default: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          back_design?: Json
+          created_at?: string
+          front_design?: Json
+          id?: string
+          is_default?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          back_design?: Json
+          created_at?: string
+          front_design?: Json
+          id?: string
+          is_default?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       courses: {
         Row: {
           created_at: string
@@ -365,6 +395,7 @@ export type Database = {
           id: string
           is_banned: boolean
           phone_number: string | null
+          qr_token: string
           registration_type: string | null
           role: Database["public"]["Enums"]["app_role"]
           stage_id: string | null
@@ -383,6 +414,7 @@ export type Database = {
           id: string
           is_banned?: boolean
           phone_number?: string | null
+          qr_token?: string
           registration_type?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           stage_id?: string | null
@@ -401,6 +433,7 @@ export type Database = {
           id?: string
           is_banned?: boolean
           phone_number?: string | null
+          qr_token?: string
           registration_type?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           stage_id?: string | null
@@ -415,6 +448,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      qr_display_settings: {
+        Row: {
+          id: number
+          show_avatar: boolean
+          show_enrolled_courses_count: boolean
+          show_full_name: boolean
+          show_phone: boolean
+          show_quiz_stats: boolean
+          show_stage: boolean
+          show_student_id: boolean
+          show_weak_courses: boolean
+          show_weak_subjects: boolean
+          updated_at: string
+        }
+        Insert: {
+          id: number
+          show_avatar?: boolean
+          show_enrolled_courses_count?: boolean
+          show_full_name?: boolean
+          show_phone?: boolean
+          show_quiz_stats?: boolean
+          show_stage?: boolean
+          show_student_id?: boolean
+          show_weak_courses?: boolean
+          show_weak_subjects?: boolean
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          show_avatar?: boolean
+          show_enrolled_courses_count?: boolean
+          show_full_name?: boolean
+          show_phone?: boolean
+          show_quiz_stats?: boolean
+          show_stage?: boolean
+          show_student_id?: boolean
+          show_weak_courses?: boolean
+          show_weak_subjects?: boolean
+          updated_at?: string
+        }
+        Relationships: []
       }
       quiz_answers: {
         Row: {
@@ -941,6 +1016,7 @@ export type Database = {
           total_count: number
         }[]
       }
+      admin_regenerate_qr_token: { Args: { _uid: string }; Returns: string }
       admin_save_feedback: {
         Args: { _attempt_id: string; _feedback: string }
         Returns: Json
@@ -1033,6 +1109,7 @@ export type Database = {
         }[]
       }
       get_quiz_for_student: { Args: { _quiz_id: string }; Returns: Json }
+      get_student_qr_snapshot: { Args: { _token: string }; Returns: Json }
       get_unit_quizzes: {
         Args: { _unit_id: string }
         Returns: {
