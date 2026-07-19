@@ -36,6 +36,7 @@ const nav = [
   { to: "/admin/stages", label: "المراحل", icon: Layers },
   { to: "/admin/subjects", label: "المواد الدراسية", icon: BookMarked },
   { to: "/admin/settings", label: "الإعدادات", icon: Settings2 },
+  { to: "/admin/account", label: "الملف الشخصي", icon: UserIcon },
 ];
 
 
