@@ -11,6 +11,8 @@ import {
   LogOut,
   Menu,
   X,
+  PanelRightClose,
+  PanelRightOpen,
   Home,
   Settings2,
   User as UserIcon,
@@ -48,19 +50,22 @@ const NavItem = ({
   icon: Icon,
   end,
   onNavigate,
+  collapsed,
 }: {
   to: string;
   label: string;
   icon: typeof BarChart3;
   end?: boolean;
   onNavigate?: () => void;
+  collapsed?: boolean;
 }) => (
   <NavLink
     to={to}
     end={end}
     onClick={onNavigate}
+    title={collapsed ? label : undefined}
     className={({ isActive }) =>
-      `group relative flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all ${
+      `group relative flex items-center gap-3 rounded-xl ${collapsed ? "justify-center px-2" : "px-4"} py-3 text-sm font-medium transition-all ${
         isActive
           ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
           : "text-foreground/70 hover:bg-accent hover:text-foreground"
@@ -77,38 +82,47 @@ const NavItem = ({
           />
         )}
         <Icon className="w-5 h-5 shrink-0" />
-        <span>{label}</span>
+        {!collapsed && <span className="truncate">{label}</span>}
       </>
     )}
   </NavLink>
 );
 
-const SidebarContent = ({ onNavigate }: { onNavigate?: () => void }) => (
+const SidebarContent = ({
+  onNavigate,
+  collapsed,
+}: {
+  onNavigate?: () => void;
+  collapsed?: boolean;
+}) => (
   <div className="flex h-full flex-col">
-    <div className="px-6 py-6 border-b border-border/60">
-      <NavLink to="/" className="flex items-center gap-3 group">
+    <div className={`${collapsed ? "px-3" : "px-6"} py-6 border-b border-border/60`}>
+      <NavLink to="/" className={`flex items-center ${collapsed ? "justify-center" : "gap-3"} group`}>
         <img src="/logo.png" alt="شعار الساعي" className="h-11 w-11 rounded-lg object-contain" />
-        <div>
-          <div className="font-bold text-foreground leading-tight">لوحة الإدارة</div>
-          <div className="text-xs text-muted-foreground">إدارة المنصة</div>
-        </div>
+        {!collapsed && (
+          <div>
+            <div className="font-bold text-foreground leading-tight">لوحة الإدارة</div>
+            <div className="text-xs text-muted-foreground">إدارة المنصة</div>
+          </div>
+        )}
       </NavLink>
     </div>
 
-    <nav className="flex-1 space-y-1 p-4">
+    <nav className={`flex-1 space-y-1 ${collapsed ? "p-2" : "p-4"} overflow-y-auto`}>
       {nav.map((item) => (
-        <NavItem key={item.to} {...item} onNavigate={onNavigate} />
+        <NavItem key={item.to} {...item} onNavigate={onNavigate} collapsed={collapsed} />
       ))}
     </nav>
 
-    <div className="p-4 border-t border-border/60">
+    <div className={`${collapsed ? "p-2" : "p-4"} border-t border-border/60`}>
       <NavLink
         to="/"
         onClick={onNavigate}
-        className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-foreground/70 hover:bg-accent hover:text-foreground transition-colors"
+        title={collapsed ? "العودة للموقع" : undefined}
+        className={`flex items-center ${collapsed ? "justify-center px-2" : "gap-3 px-4"} py-3 rounded-xl text-sm text-foreground/70 hover:bg-accent hover:text-foreground transition-colors`}
       >
         <Home className="w-5 h-5" />
-        <span>العودة للموقع</span>
+        {!collapsed && <span>العودة للموقع</span>}
       </NavLink>
     </div>
   </div>
@@ -119,6 +133,17 @@ const AdminLayout = ({ children }: { children?: ReactNode }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("admin-sidebar-collapsed") === "1";
+  });
+  const toggleCollapsed = () => {
+    setCollapsed((v) => {
+      const nv = !v;
+      try { localStorage.setItem("admin-sidebar-collapsed", nv ? "1" : "0"); } catch {}
+      return nv;
+    });
+  };
 
   const initials =
     profile?.full_name
@@ -139,9 +164,9 @@ const AdminLayout = ({ children }: { children?: ReactNode }) => {
   return (
     <div className="min-h-screen bg-background flex w-full" dir="rtl">
       {/* Desktop sidebar */}
-      <aside className="hidden lg:block w-72 shrink-0 border-l border-border/60 bg-card/50 backdrop-blur-sm">
+      <aside className={`hidden lg:block ${collapsed ? "w-20" : "w-72"} shrink-0 border-l border-border/60 bg-card/50 backdrop-blur-sm transition-[width] duration-300`}>
         <div className="sticky top-0 h-screen">
-          <SidebarContent />
+          <SidebarContent collapsed={collapsed} />
         </div>
       </aside>
 
@@ -189,6 +214,15 @@ const AdminLayout = ({ children }: { children?: ReactNode }) => {
               onClick={() => setDrawerOpen(true)}
             >
               <Menu className="w-5 h-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="hidden lg:inline-flex"
+              onClick={toggleCollapsed}
+              title={collapsed ? "توسيع القائمة" : "طيّ القائمة"}
+            >
+              {collapsed ? <PanelRightOpen className="w-5 h-5" /> : <PanelRightClose className="w-5 h-5" />}
             </Button>
             <div className="text-sm text-muted-foreground hidden sm:block">
               مرحبًا بعودتك،{" "}
