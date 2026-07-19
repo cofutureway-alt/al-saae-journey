@@ -10,11 +10,24 @@ import {
   Path,
   Textbox,
   FabricImage,
+  Gradient,
 } from "fabric";
 import { loadFont, preloadFontsFromJson } from "@/lib/card-fonts";
+import { generateQrDataUrl } from "@/lib/card-qr";
+import { placeholderForBinding, sampleFor, type BindingSource } from "@/lib/card-bindings";
 
 export const CARD_WIDTH = 1011;
 export const CARD_HEIGHT = 638;
+
+// Custom properties we persist through toJSON/loadFromJSON
+export const CUSTOM_PROPS = [
+  "__isBg",
+  "__binding",           // { key, label, kind }
+  "__imagePlaceholder",  // boolean, marks a shape as an image slot
+  "__isQrPlaceholder",   // boolean
+  "__gradient",          // { angle, stops:[{offset,color}] }  (for shapes/text)
+  "__origText",          // preserved static text so we can unbind/exit-sample
+];
 
 export interface CardCanvasHandle {
   canvas: Canvas | null;
