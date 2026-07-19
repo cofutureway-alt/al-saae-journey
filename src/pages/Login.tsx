@@ -1,52 +1,76 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { z } from "zod";
 import { motion } from "framer-motion";
-import { Loader2, Mail, Lock, Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { Loader2, Mail, Lock, Eye, EyeOff, ArrowLeft, Phone } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import AuthLayout from "@/components/auth/AuthLayout";
-
-const loginSchema = z.object({
-  email: z.string().trim().email({ message: "البريد الإلكتروني غير صالح" }).max(255),
-  password: z.string().min(6, { message: "كلمة المرور يجب ألا تقل عن 6 أحرف" }).max(72),
-});
+import { isValidEgPhone, looksLikePhone, normalizeEgPhone, syntheticAuthEmail } from "@/lib/phone";
 
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [errors, setErrors] = useState<{ identifier?: string; password?: string }>({});
 
   const params = new URLSearchParams(location.search);
   const redirectParam = params.get("redirect");
   const from = redirectParam ?? (location.state as { from?: string } | null)?.from ?? "/";
 
+  // Detect if the identifier looks like a phone (any digit-only pattern) vs email
+  const identifierMode: "phone" | "email" | "unknown" = useMemo(() => {
+    const v = identifier.trim();
+    if (!v) return "unknown";
+    if (/^[+\d\s\-()]+$/.test(v)) return "phone";
+    if (v.includes("@")) return "email";
+    return "unknown";
+  }, [identifier]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
 
-    const parsed = loginSchema.safeParse({ email, password });
-    if (!parsed.success) {
-      const fieldErrors: typeof errors = {};
-      parsed.error.issues.forEach((i) => {
-        const key = i.path[0] as keyof typeof errors;
-        fieldErrors[key] = i.message;
-      });
-      setErrors(fieldErrors);
+    const fe: typeof errors = {};
+    const idTrim = identifier.trim();
+    if (!idTrim) fe.identifier = "أدخل رقم الهاتف أو البريد الإلكتروني";
+    else if (identifierMode === "phone" && !isValidEgPhone(idTrim))
+      fe.identifier = "رقم هاتف غير صالح";
+    else if (identifierMode === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(idTrim))
+      fe.identifier = "بريد إلكتروني غير صالح";
+    if (password.length < 6) fe.password = "كلمة المرور يجب ألا تقل عن 6 أحرف";
+    if (Object.keys(fe).length) {
+      setErrors(fe);
       return;
     }
 
     setLoading(true);
+    let authEmail: string;
+    if (identifierMode === "phone") {
+      const canonical = normalizeEgPhone(idTrim);
+      // Ask the server which auth email is associated with this phone
+      const { data: resolved, error: resolveErr } = await (supabase as any).rpc(
+        "resolve_login_email",
+        { _identifier: canonical },
+      );
+      if (resolveErr) {
+        // Fallback: synthetic email if user has no real email set
+        authEmail = syntheticAuthEmail(canonical);
+      } else {
+        authEmail = (resolved as string) || syntheticAuthEmail(canonical);
+      }
+    } else {
+      authEmail = idTrim.toLowerCase();
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: parsed.data.email,
-      password: parsed.data.password,
+      email: authEmail,
+      password,
     });
     setLoading(false);
 
@@ -61,7 +85,6 @@ const Login = () => {
 
     toast.success("تم تسجيل الدخول بنجاح");
 
-    // Role-aware default destination when no explicit redirect
     let destination = from;
     if (!redirectParam && (!location.state || !(location.state as any)?.from)) {
       const { data: prof } = await supabase
@@ -73,6 +96,8 @@ const Login = () => {
     }
     navigate(destination, { replace: true });
   };
+
+  const Icon = identifierMode === "phone" ? Phone : Mail;
 
   return (
     <AuthLayout
@@ -89,22 +114,29 @@ const Login = () => {
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="email" className="text-sm font-bold">البريد الإلكتروني</Label>
+          <Label htmlFor="identifier" className="text-sm font-bold">
+            رقم الهاتف أو البريد الإلكتروني
+          </Label>
           <div className="relative">
-            <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            <Icon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
             <Input
-              id="email"
-              type="email"
-              dir="ltr"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="name@example.com"
+              id="identifier"
+              type="text"
+              dir={identifierMode === "email" ? "ltr" : "auto"}
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              placeholder="01012345678 أو name@example.com"
               className="pr-10 text-right"
               disabled={loading}
-              autoComplete="email"
+              autoComplete="username"
             />
           </div>
-          {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
+          {errors.identifier && <p className="text-xs text-destructive">{errors.identifier}</p>}
+          {!errors.identifier && identifierMode === "phone" && looksLikePhone(identifier) && (
+            <p className="text-xs text-muted-foreground">
+              سيتم تسجيل الدخول باستخدام رقم الهاتف
+            </p>
+          )}
         </div>
 
         <div className="space-y-2">

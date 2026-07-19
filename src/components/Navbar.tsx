@@ -90,8 +90,11 @@ const Navbar = () => {
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel className="text-xs font-normal">
               <div className="font-bold">{profile?.full_name || "مستخدم"}</div>
-              <div className="text-muted-foreground truncate">{user.email}</div>
+              <div className="text-muted-foreground truncate" dir="ltr">
+                {profile?.phone_number || profile?.email || (user.email && !user.email.endsWith("@internal.noemail.local") ? user.email : "")}
+              </div>
             </DropdownMenuLabel>
+
             <DropdownMenuSeparator />
             {profile?.role === "admin" ? (
               <DropdownMenuItem onClick={() => { navigate("/admin"); setOpen(false); }} className="gap-2">
@@ -205,7 +208,7 @@ const Navbar = () => {
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-bold truncate">{profile?.full_name || "مستخدم"}</div>
-                        <div className="text-xs text-muted-foreground truncate">{user.email}</div>
+                        <div className="text-xs text-muted-foreground truncate" dir="ltr">{profile?.phone_number || profile?.email || (user.email && !user.email.endsWith("@internal.noemail.local") ? user.email : "")}</div>
                       </div>
                     </div>
                     <Link to={profile?.role === "admin" ? "/admin" : "/dashboard"} onClick={() => setOpen(false)}>

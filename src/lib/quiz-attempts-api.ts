@@ -32,6 +32,7 @@ export interface AttemptFilters {
   courseId?: string;
   stageId?: string;
   subjectId?: string;
+  quizId?: string;
   needsReviewOnly?: boolean;
   limit?: number;
   offset?: number;
@@ -44,6 +45,7 @@ export async function listQuizAttempts(f: AttemptFilters = {}): Promise<QuizAtte
     _stage_id: f.stageId ?? null,
     _subject_id: f.subjectId ?? null,
     _needs_review_only: f.needsReviewOnly ?? false,
+    _quiz_id: f.quizId ?? null,
     _limit: f.limit ?? 100,
     _offset: f.offset ?? 0,
   });
