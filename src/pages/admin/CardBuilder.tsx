@@ -267,28 +267,8 @@ const CardBuilder = () => {
             </div>
           </Panel>
 
-          <Panel icon={<Square className="w-4 h-4" />} title="عناصر أساسية">
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant="secondary"
-                onClick={() => canvasRef.current && cardCanvasHelpers.addRect(canvasRef.current)}
-                className="gap-2"
-              >
-                <Square className="w-4 h-4" />
-                مستطيل
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={() => canvasRef.current && cardCanvasHelpers.addCircle(canvasRef.current)}
-                className="gap-2"
-              >
-                <CircleIcon className="w-4 h-4" />
-                دائرة
-              </Button>
-            </div>
-            <p className="text-[11px] text-muted-foreground pt-1">
-              مكتبة العناصر الكاملة (نص، QR، صور، حقول بيانات…) ستضاف في المراحل القادمة.
-            </p>
+          <Panel icon={<Shapes className="w-4 h-4" />} title="مكتبة العناصر">
+            <ElementPalette canvas={canvasRef.current} />
           </Panel>
 
           <Panel icon={<Info className="w-4 h-4" />} title="خصائص العنصر المحدد">
