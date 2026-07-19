@@ -128,6 +128,21 @@ const CardBuilder = () => {
     };
   }, [canvas, face]);
 
+  // Apply/restore sample data on the live edit canvas
+  const sampleSnapRef = useRef<any | null>(null);
+  useEffect(() => {
+    const c = canvasRef.current;
+    if (!c || view !== "edit") return;
+    (async () => {
+      if (sample && !sampleSnapRef.current) {
+        sampleSnapRef.current = await applySampleData(c);
+      } else if (!sample && sampleSnapRef.current) {
+        await restoreFromSample(c, sampleSnapRef.current);
+        sampleSnapRef.current = null;
+      }
+    })();
+  }, [sample, canvas, view, face]);
+
   const switchFace = (next: Face) => {
     if (next === face) return;
     const snapshot = captureCurrent();
