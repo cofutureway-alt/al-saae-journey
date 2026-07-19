@@ -8,9 +8,11 @@ import {
   Focus,
   GraduationCap,
   IdCard,
+  ListChecks,
   Loader2,
   Phone,
   QrCode,
+  Search,
   ShieldAlert,
   Trophy,
   User,
@@ -19,7 +21,36 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { classifyGroups, LEVEL_META, type GroupClassification } from "@/lib/weak-analysis";
+
+interface EnrolledCourseRow {
+  course_id: string;
+  course_title: string | null;
+  stage_name: string | null;
+  subject_name: string | null;
+  enrolled_at: string | null;
+}
+
+interface QuizAttemptRow {
+  attempt_id: string;
+  quiz_title: string | null;
+  course_title: string | null;
+  subject_name: string | null;
+  stage_name: string | null;
+  attempt_number: number | null;
+  status: string | null;
+  percentage: number | null;
+  passed: boolean | null;
+  submitted_at: string | null;
+}
 
 interface Snapshot {
   found: true;
@@ -29,6 +60,8 @@ interface Snapshot {
   stage_name?: string | null;
   phone_number?: string | null;
   enrolled_courses_count?: number;
+  enrolled_courses?: EnrolledCourseRow[];
+  quiz_attempts?: QuizAttemptRow[];
   quiz_stats?: {
     total_attempts: number;
     unique_quizzes: number;
