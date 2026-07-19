@@ -1,5 +1,17 @@
 import { useEffect, useRef, useState } from "react";
-import { Canvas, Rect, Circle, Textbox, FabricImage } from "fabric";
+import {
+  Canvas,
+  Rect,
+  Circle,
+  Ellipse,
+  Triangle,
+  Polygon,
+  Line,
+  Path,
+  Textbox,
+  FabricImage,
+} from "fabric";
+import { loadFont, preloadFontsFromJson } from "@/lib/card-fonts";
 
 export const CARD_WIDTH = 1011;
 export const CARD_HEIGHT = 638;
@@ -48,6 +60,7 @@ export function CardCanvas({ initialJson, onReady, onSelectionChange, className 
     (async () => {
       if (initialJson && Object.keys(initialJson).length > 0) {
         try {
+          await preloadFontsFromJson(initialJson);
           await c.loadFromJSON(initialJson);
           c.requestRenderAll();
         } catch (e) {
@@ -104,31 +117,214 @@ export function CardCanvas({ initialJson, onReady, onSelectionChange, className 
   );
 }
 
+const CX = CARD_WIDTH / 2;
+const CY = CARD_HEIGHT / 2;
+const DEFAULT_FILL = "#3b82f6";
+
+function center(obj: any, w: number, h: number) {
+  obj.set({ left: CX - w / 2, top: CY - h / 2 });
+}
+
+function place(c: Canvas, obj: any) {
+  c.add(obj);
+  c.setActiveObject(obj);
+  c.requestRenderAll();
+}
+
+function polyPoints(sides: number, radius: number, startAngle = -Math.PI / 2) {
+  const pts: { x: number; y: number }[] = [];
+  for (let i = 0; i < sides; i++) {
+    const a = startAngle + (i * 2 * Math.PI) / sides;
+    pts.push({ x: radius + radius * Math.cos(a), y: radius + radius * Math.sin(a) });
+  }
+  return pts;
+}
+
+function starPoints(points: number, outer: number, inner: number) {
+  const pts: { x: number; y: number }[] = [];
+  const step = Math.PI / points;
+  for (let i = 0; i < points * 2; i++) {
+    const r = i % 2 === 0 ? outer : inner;
+    const a = -Math.PI / 2 + i * step;
+    pts.push({ x: outer + r * Math.cos(a), y: outer + r * Math.sin(a) });
+  }
+  return pts;
+}
+
 // Helpers exposed for the builder toolbar
 export const cardCanvasHelpers = {
   addRect(c: Canvas) {
-    const r = new Rect({
-      left: CARD_WIDTH / 2 - 100,
-      top: CARD_HEIGHT / 2 - 60,
-      width: 200,
-      height: 120,
-      fill: "#3b82f6",
-      rx: 8,
-      ry: 8,
-    });
-    c.add(r);
-    c.setActiveObject(r);
-    c.requestRenderAll();
+    const w = 200, h = 120;
+    const r = new Rect({ width: w, height: h, fill: DEFAULT_FILL });
+    center(r, w, h);
+    place(c, r);
+  },
+  addRoundedRect(c: Canvas) {
+    const w = 220, h = 130;
+    const r = new Rect({ width: w, height: h, rx: 20, ry: 20, fill: DEFAULT_FILL });
+    center(r, w, h);
+    place(c, r);
+  },
+  addSquare(c: Canvas) {
+    const s = 150;
+    const r = new Rect({ width: s, height: s, fill: DEFAULT_FILL });
+    center(r, s, s);
+    place(c, r);
   },
   addCircle(c: Canvas) {
-    const cir = new Circle({
-      left: CARD_WIDTH / 2 - 60,
-      top: CARD_HEIGHT / 2 - 60,
-      radius: 60,
-      fill: "#f59e0b",
+    const rad = 70;
+    const cir = new Circle({ radius: rad, fill: "#f59e0b" });
+    center(cir, rad * 2, rad * 2);
+    place(c, cir);
+  },
+  addEllipse(c: Canvas) {
+    const rx = 100, ry = 60;
+    const e = new Ellipse({ rx, ry, fill: DEFAULT_FILL });
+    center(e, rx * 2, ry * 2);
+    place(c, e);
+  },
+  addTriangle(c: Canvas) {
+    const w = 150, h = 140;
+    const t = new Triangle({ width: w, height: h, fill: DEFAULT_FILL });
+    center(t, w, h);
+    place(c, t);
+  },
+  addRightTriangle(c: Canvas) {
+    const s = 150;
+    const p = new Polygon(
+      [{ x: 0, y: 0 }, { x: 0, y: s }, { x: s, y: s }],
+      { fill: DEFAULT_FILL },
+    );
+    center(p, s, s);
+    place(c, p);
+  },
+  addDiamond(c: Canvas) {
+    const s = 150;
+    const p = new Polygon(
+      [{ x: s / 2, y: 0 }, { x: s, y: s / 2 }, { x: s / 2, y: s }, { x: 0, y: s / 2 }],
+      { fill: DEFAULT_FILL },
+    );
+    center(p, s, s);
+    place(c, p);
+  },
+  addPentagon(c: Canvas) {
+    const r = 80;
+    const p = new Polygon(polyPoints(5, r), { fill: DEFAULT_FILL });
+    center(p, r * 2, r * 2);
+    place(c, p);
+  },
+  addHexagon(c: Canvas) {
+    const r = 80;
+    const p = new Polygon(polyPoints(6, r, 0), { fill: DEFAULT_FILL });
+    center(p, r * 2, r * 2);
+    place(c, p);
+  },
+  addStar(c: Canvas) {
+    const outer = 80, inner = 34;
+    const p = new Polygon(starPoints(5, outer, inner), { fill: "#f59e0b" });
+    center(p, outer * 2, outer * 2);
+    place(c, p);
+  },
+  addHeart(c: Canvas) {
+    const path = new Path(
+      "M 75,30 A 20,20 0,0,1 115,30 A 20,20 0,0,1 155,30 Q 155,80 115,120 Q 75,80 75,30 Z",
+      { fill: "#ef4444" },
+    );
+    center(path, 160, 130);
+    place(c, path);
+  },
+  addLine(c: Canvas) {
+    const l = new Line([0, 0, 220, 0], { stroke: "#111827", strokeWidth: 4 });
+    center(l, 220, 4);
+    place(c, l);
+  },
+  addDashedLine(c: Canvas) {
+    const l = new Line([0, 0, 220, 0], {
+      stroke: "#111827",
+      strokeWidth: 4,
+      strokeDashArray: [12, 8],
     });
-    c.add(cir);
-    c.setActiveObject(cir);
+    center(l, 220, 4);
+    place(c, l);
+  },
+  addArrow(c: Canvas) {
+    const p = new Path(
+      "M 0,20 L 160,20 L 160,5 L 200,30 L 160,55 L 160,40 L 0,40 Z",
+      { fill: DEFAULT_FILL },
+    );
+    center(p, 200, 60);
+    place(c, p);
+  },
+  addDoubleArrow(c: Canvas) {
+    const p = new Path(
+      "M 40,5 L 0,30 L 40,55 L 40,40 L 200,40 L 200,55 L 240,30 L 200,5 L 200,20 L 40,20 Z",
+      { fill: DEFAULT_FILL },
+    );
+    center(p, 240, 60);
+    place(c, p);
+  },
+  addChevron(c: Canvas) {
+    const p = new Path(
+      "M 0,0 L 140,0 L 200,50 L 140,100 L 0,100 L 60,50 Z",
+      { fill: DEFAULT_FILL },
+    );
+    center(p, 200, 100);
+    place(c, p);
+  },
+  addRing(c: Canvas) {
+    const p = new Path(
+      "M 80,0 A 80,80 0 1,0 80,160 A 80,80 0 1,0 80,0 Z M 80,40 A 40,40 0 1,1 80,120 A 40,40 0 1,1 80,40 Z",
+      { fill: DEFAULT_FILL, fillRule: "evenodd" as any },
+    );
+    center(p, 160, 160);
+    place(c, p);
+  },
+  addSpeechBubble(c: Canvas) {
+    const p = new Path(
+      "M 20,0 L 200,0 Q 220,0 220,20 L 220,90 Q 220,110 200,110 L 90,110 L 60,140 L 70,110 L 20,110 Q 0,110 0,90 L 0,20 Q 0,0 20,0 Z",
+      { fill: DEFAULT_FILL },
+    );
+    center(p, 220, 140);
+    place(c, p);
+  },
+  addRibbon(c: Canvas) {
+    const p = new Path(
+      "M 0,0 L 240,0 L 240,120 L 200,90 L 160,120 L 120,90 L 80,120 L 40,90 L 0,120 Z",
+      { fill: "#ef4444" },
+    );
+    center(p, 240, 120);
+    place(c, p);
+  },
+  addText(c: Canvas, opts?: { fontFamily?: string }) {
+    const family = opts?.fontFamily ?? "Tajawal";
+    const t = new Textbox("نص جديد", {
+      width: 420,
+      fontSize: 48,
+      fontFamily: family,
+      fill: "#0f172a",
+      textAlign: "right",
+      direction: "rtl" as any,
+    });
+    center(t, 420, 60);
+    place(c, t);
+  },
+  async setFontFamily(c: Canvas, obj: any, family: string) {
+    await loadFont(family);
+    obj.set({ fontFamily: family });
+    obj.initDimensions?.();
+    c.requestRenderAll();
+  },
+  setObjectFill(c: Canvas, obj: any, color: string) {
+    obj.set({ fill: color });
+    c.requestRenderAll();
+  },
+  setObjectStroke(c: Canvas, obj: any, color: string) {
+    obj.set({ stroke: color });
+    c.requestRenderAll();
+  },
+  setTextProp(c: Canvas, obj: any, patch: Record<string, any>) {
+    obj.set(patch);
+    obj.initDimensions?.();
     c.requestRenderAll();
   },
   bringForward(c: Canvas) {
@@ -206,6 +402,7 @@ export async function renderCardToDataURL(json: any): Promise<string> {
   });
   try {
     if (json && Object.keys(json).length > 0) {
+      await preloadFontsFromJson(json);
       await c.loadFromJSON(json);
     }
     c.renderAll();

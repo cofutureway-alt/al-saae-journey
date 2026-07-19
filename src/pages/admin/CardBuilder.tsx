@@ -8,15 +8,16 @@ import {
   ArrowUpToLine,
   ArrowDown,
   ArrowDownToLine,
-  Circle as CircleIcon,
   Image as ImageIcon,
   Loader2,
   Monitor,
   Palette,
   Save,
-  Square,
+  Shapes,
   Trash2,
   Info,
+  PaintBucket,
+  Type,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +30,8 @@ import {
   CARD_WIDTH,
   CARD_HEIGHT,
 } from "@/components/admin/cards/CardCanvas";
+import { ElementPalette } from "@/components/admin/cards/ElementPalette";
+import { TextProperties } from "@/components/admin/cards/TextProperties";
 
 const CardBuilder = () => {
   const { templateId } = useParams<{ templateId: string }>();
@@ -36,6 +39,7 @@ const CardBuilder = () => {
   const canvasRef = useRef<Canvas | null>(null);
   const bgFileRef = useRef<HTMLInputElement | null>(null);
 
+  const [canvas, setCanvas] = useState<Canvas | null>(null);
   const [tplName, setTplName] = useState("");
   const [design, setDesign] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -44,6 +48,7 @@ const CardBuilder = () => {
   const [bgColor, setBgColor] = useState("#0f172a");
   const [selected, setSelected] = useState<any | null>(null);
   const [selInfo, setSelInfo] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
+  const [selTick, setSelTick] = useState(0);
   const [isSmall, setIsSmall] = useState(false);
 
   useEffect(() => {
@@ -198,7 +203,10 @@ const CardBuilder = () => {
           <div className="w-full">
             <CardCanvas
               initialJson={design}
-              onReady={(c) => (canvasRef.current = c)}
+              onReady={(c) => {
+                canvasRef.current = c;
+                setCanvas(c);
+              }}
               onSelectionChange={onSelectionChange}
             />
           </div>
@@ -264,28 +272,8 @@ const CardBuilder = () => {
             </div>
           </Panel>
 
-          <Panel icon={<Square className="w-4 h-4" />} title="عناصر أساسية">
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant="secondary"
-                onClick={() => canvasRef.current && cardCanvasHelpers.addRect(canvasRef.current)}
-                className="gap-2"
-              >
-                <Square className="w-4 h-4" />
-                مستطيل
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={() => canvasRef.current && cardCanvasHelpers.addCircle(canvasRef.current)}
-                className="gap-2"
-              >
-                <CircleIcon className="w-4 h-4" />
-                دائرة
-              </Button>
-            </div>
-            <p className="text-[11px] text-muted-foreground pt-1">
-              مكتبة العناصر الكاملة (نص، QR، صور، حقول بيانات…) ستضاف في المراحل القادمة.
-            </p>
+          <Panel icon={<Shapes className="w-4 h-4" />} title="مكتبة العناصر">
+            <ElementPalette canvas={canvas} />
           </Panel>
 
           <Panel icon={<Info className="w-4 h-4" />} title="خصائص العنصر المحدد">
@@ -297,62 +285,62 @@ const CardBuilder = () => {
                   <Field label="العرض" value={`${selInfo.width}px`} />
                   <Field label="الارتفاع" value={`${selInfo.height}px`} />
                 </div>
+
+                {selected.type === "textbox" ? (
+                  <TextProperties
+                    canvas={canvas}
+                    obj={selected}
+                    onChange={() => setSelTick((n) => n + 1)}
+                    key={selTick}
+                  />
+                ) : (
+                  <div>
+                    <Label className="text-xs flex items-center gap-1.5">
+                      <PaintBucket className="w-3 h-3" /> لون التعبئة
+                    </Label>
+                    <div className="flex items-center gap-1.5 mt-1.5">
+                      <input
+                        type="color"
+                        value={typeof selected.fill === "string" ? selected.fill : "#3b82f6"}
+                        onChange={(e) => {
+                          canvas && cardCanvasHelpers.setObjectFill(canvas, selected, e.target.value);
+                          setSelTick((n) => n + 1);
+                        }}
+                        className="w-9 h-9 rounded-md border border-border cursor-pointer bg-transparent"
+                      />
+                      <Input
+                        value={typeof selected.fill === "string" ? selected.fill : "#3b82f6"}
+                        onChange={(e) => {
+                          canvas && cardCanvasHelpers.setObjectFill(canvas, selected, e.target.value);
+                          setSelTick((n) => n + 1);
+                        }}
+                        className="h-9 font-mono text-xs"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() =>
-                      canvasRef.current && cardCanvasHelpers.bringToFront(canvasRef.current)
-                    }
-                    className="gap-1.5"
-                  >
-                    <ArrowUpToLine className="w-3.5 h-3.5" />
-                    للأمام
+                  <Button size="sm" variant="outline" onClick={() => canvas && cardCanvasHelpers.bringToFront(canvas)} className="gap-1.5">
+                    <ArrowUpToLine className="w-3.5 h-3.5" /> للأمام
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() =>
-                      canvasRef.current && cardCanvasHelpers.bringForward(canvasRef.current)
-                    }
-                    className="gap-1.5"
-                  >
-                    <ArrowUp className="w-3.5 h-3.5" />
-                    مستوى أعلى
+                  <Button size="sm" variant="outline" onClick={() => canvas && cardCanvasHelpers.bringForward(canvas)} className="gap-1.5">
+                    <ArrowUp className="w-3.5 h-3.5" /> مستوى أعلى
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() =>
-                      canvasRef.current && cardCanvasHelpers.sendBackwards(canvasRef.current)
-                    }
-                    className="gap-1.5"
-                  >
-                    <ArrowDown className="w-3.5 h-3.5" />
-                    مستوى أدنى
+                  <Button size="sm" variant="outline" onClick={() => canvas && cardCanvasHelpers.sendBackwards(canvas)} className="gap-1.5">
+                    <ArrowDown className="w-3.5 h-3.5" /> مستوى أدنى
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() =>
-                      canvasRef.current && cardCanvasHelpers.sendToBack(canvasRef.current)
-                    }
-                    className="gap-1.5"
-                  >
-                    <ArrowDownToLine className="w-3.5 h-3.5" />
-                    للخلف
+                  <Button size="sm" variant="outline" onClick={() => canvas && cardCanvasHelpers.sendToBack(canvas)} className="gap-1.5">
+                    <ArrowDownToLine className="w-3.5 h-3.5" /> للخلف
                   </Button>
                 </div>
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={() =>
-                    canvasRef.current && cardCanvasHelpers.deleteActive(canvasRef.current)
-                  }
+                  onClick={() => canvas && cardCanvasHelpers.deleteActive(canvas)}
                   className="w-full gap-1.5"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  حذف العنصر
+                  <Trash2 className="w-3.5 h-3.5" /> حذف العنصر
                 </Button>
               </div>
             ) : (
