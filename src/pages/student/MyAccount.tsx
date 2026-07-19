@@ -70,8 +70,16 @@ const MyAccount = () => {
       toast.error("تعذّر رفع الصورة");
       return;
     }
-    const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-    const url = data.publicUrl;
+    // Bucket is private → create a long-lived signed URL (10 years)
+    const { data: signed, error: signErr } = await supabase.storage
+      .from("avatars")
+      .createSignedUrl(path, 60 * 60 * 24 * 365 * 10);
+    if (signErr || !signed?.signedUrl) {
+      setUploading(false);
+      toast.error("تعذّر إنشاء رابط الصورة");
+      return;
+    }
+    const url = signed.signedUrl;
     await (supabase as any).from("profiles").update({ avatar_url: url }).eq("id", user.id);
     setAvatarUrl(url);
     await refreshProfile();
