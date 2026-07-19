@@ -513,6 +513,19 @@ const StatTile = ({
   );
 };
 
+const AttemptStatusBadge = ({ status, passed }: { status: string | null; passed: boolean | null }) => {
+  if (status === "needs_review") {
+    return <Badge variant="outline" className="border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400">بانتظار المراجعة</Badge>;
+  }
+  if (status === "graded" && passed === true) {
+    return <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">ناجح</Badge>;
+  }
+  if (status === "graded" && passed === false) {
+    return <Badge className="bg-red-500/15 text-red-600 dark:text-red-400 border border-red-500/30">راسب</Badge>;
+  }
+  return <Badge variant="secondary">{status ?? "—"}</Badge>;
+};
+
 const WeakBlock = ({
   title,
   icon: Icon,
