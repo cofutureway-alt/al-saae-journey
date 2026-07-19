@@ -39,6 +39,7 @@ const CardBuilder = () => {
   const canvasRef = useRef<Canvas | null>(null);
   const bgFileRef = useRef<HTMLInputElement | null>(null);
 
+  const [canvas, setCanvas] = useState<Canvas | null>(null);
   const [tplName, setTplName] = useState("");
   const [design, setDesign] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -47,6 +48,7 @@ const CardBuilder = () => {
   const [bgColor, setBgColor] = useState("#0f172a");
   const [selected, setSelected] = useState<any | null>(null);
   const [selInfo, setSelInfo] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
+  const [selTick, setSelTick] = useState(0);
   const [isSmall, setIsSmall] = useState(false);
 
   useEffect(() => {
