@@ -107,7 +107,13 @@ const Navbar = () => {
                 لوحتي
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem disabled className="gap-2">
+            <DropdownMenuItem
+              onClick={() => {
+                navigate(profile?.role === "admin" ? "/admin/account" : "/dashboard/account");
+                setOpen(false);
+              }}
+              className="gap-2"
+            >
               <UserIcon className="w-4 h-4" />
               الملف الشخصي
             </DropdownMenuItem>
