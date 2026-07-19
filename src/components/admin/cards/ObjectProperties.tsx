@@ -19,6 +19,8 @@ interface Props {
   canvas: Canvas | null;
   obj: any;
   onChange: () => void;
+  /** Hide the fill/gradient controls (text panel provides its own). */
+  hideFill?: boolean;
 }
 
 /** Style + geometry controls for any (non-text) object; text gets its own panel. */
