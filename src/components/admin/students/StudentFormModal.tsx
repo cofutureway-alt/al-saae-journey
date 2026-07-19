@@ -31,6 +31,9 @@ export default function StudentFormModal({ open, onOpenChange, mode, student, on
   const [submitting, setSubmitting] = useState(false);
   const [showPw, setShowPw] = useState<Record<string, boolean>>({});
   const [createdInfo, setCreatedInfo] = useState<{ student_id: string | null } | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const fileRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!open) return;
