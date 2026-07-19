@@ -136,6 +136,7 @@ export function ObjectProperties({ canvas, obj, onChange, hideFill }: Props) {
           </div>
         )}
       </div>
+      )}
 
       {/* Opacity */}
       <div>
