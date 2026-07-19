@@ -356,36 +356,62 @@ export type Database = {
           auth_email: string | null
           avatar_url: string | null
           created_at: string
+          custom_fields: Json
           email: string | null
           full_name: string | null
+          gender: string | null
+          governorate: string | null
           guardian_phone: string | null
           id: string
           phone_number: string | null
+          registration_type: string | null
           role: Database["public"]["Enums"]["app_role"]
+          stage_id: string | null
+          student_id: string | null
         }
         Insert: {
           auth_email?: string | null
           avatar_url?: string | null
           created_at?: string
+          custom_fields?: Json
           email?: string | null
           full_name?: string | null
+          gender?: string | null
+          governorate?: string | null
           guardian_phone?: string | null
           id: string
           phone_number?: string | null
+          registration_type?: string | null
           role?: Database["public"]["Enums"]["app_role"]
+          stage_id?: string | null
+          student_id?: string | null
         }
         Update: {
           auth_email?: string | null
           avatar_url?: string | null
           created_at?: string
+          custom_fields?: Json
           email?: string | null
           full_name?: string | null
+          gender?: string | null
+          governorate?: string | null
           guardian_phone?: string | null
           id?: string
           phone_number?: string | null
+          registration_type?: string | null
           role?: Database["public"]["Enums"]["app_role"]
+          stage_id?: string | null
+          student_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "stages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       quiz_answers: {
         Row: {
@@ -681,6 +707,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      registration_form_fields: {
+        Row: {
+          created_at: string
+          field_key: string
+          field_type: string
+          id: string
+          is_locked: boolean
+          is_required: boolean
+          label: string
+          options: Json | null
+          order_index: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          field_key: string
+          field_type: string
+          id?: string
+          is_locked?: boolean
+          is_required?: boolean
+          label: string
+          options?: Json | null
+          order_index?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          field_key?: string
+          field_type?: string
+          id?: string
+          is_locked?: boolean
+          is_required?: boolean
+          label?: string
+          options?: Json | null
+          order_index?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       stages: {
         Row: {

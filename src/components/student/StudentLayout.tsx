@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { BarChart3, BookOpen, ClipboardList, Home, LogOut, Menu, X } from "lucide-react";
+import { BarChart3, BookOpen, ClipboardList, Home, LogOut, Menu, UserCircle2, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -202,6 +202,10 @@ const StudentLayout = () => {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate("/dashboard/account")}>
+                <UserCircle2 className="w-4 h-4 ml-2" />
+                حسابي
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
                 <LogOut className="w-4 h-4 ml-2" />
                 تسجيل الخروج

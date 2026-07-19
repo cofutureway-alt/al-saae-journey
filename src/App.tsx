@@ -33,6 +33,8 @@ import QuizTake from "./pages/QuizTake";
 import AdminQuizAttempts from "./pages/admin/AdminQuizAttempts";
 import MyQuizAttempts from "./pages/student/MyQuizAttempts";
 import QuizStatistics from "./pages/admin/QuizStatistics";
+import AdminRegistrationForm from "./pages/admin/AdminRegistrationForm";
+import MyAccount from "./pages/student/MyAccount";
 
 const queryClient = new QueryClient();
 
@@ -94,6 +96,7 @@ const App = () => (
               <Route index element={<MyCourses />} />
               <Route path="statistics" element={<StudentStatistics />} />
               <Route path="quiz-attempts" element={<MyQuizAttempts />} />
+              <Route path="account" element={<MyAccount />} />
             </Route>
             <Route
               path="/admin"
@@ -114,6 +117,7 @@ const App = () => (
               <Route path="subjects" element={<AdminSubjects />} />
               <Route path="settings" element={<AdminSettings />} />
               <Route path="settings/video-player" element={<AdminVideoPlayerSettings />} />
+              <Route path="settings/registration-form" element={<AdminRegistrationForm />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
