@@ -133,13 +133,20 @@ export async function renderStudentFaceToDataUrl(
     for (const obj of objs) {
       let b = (obj as any).__binding;
       if (!b && (obj as any).__isQrPlaceholder) b = QR_BINDING;
+      const objType = String((obj as any).type ?? "").toLowerCase();
+      const isLegacyQrSquare =
+        !b &&
+        objType === "rect" &&
+        Math.abs(((obj as any).width ?? 0) * ((obj as any).scaleX ?? 1) - ((obj as any).height ?? 0) * ((obj as any).scaleY ?? 1)) <= 3 &&
+        ((obj as any).width ?? 0) >= 120 &&
+        ((obj as any).strokeDashArray || ((obj as any).stroke && ((obj as any).strokeWidth ?? 0) >= 2));
+      if (isLegacyQrSquare) b = QR_BINDING;
       // Legacy fallback: infer from placeholder text
       if (!b && typeof (obj as any).text === "string") {
         const hit = byLabel.get((obj as any).text.trim());
         if (hit) b = { key: hit.key, label: hit.label, kind: hit.kind };
       }
       if (!b) continue;
-      const objType = String((obj as any).type ?? "").toLowerCase();
       if (b.kind === "text" && (objType === "textbox" || objType === "text" || objType === "i-text" || typeof (obj as any).text === "string")) {
         const val = resolveValue(student, b.key) || "";
         (obj as any).set({ text: val });
