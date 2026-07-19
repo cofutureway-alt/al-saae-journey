@@ -65,6 +65,58 @@ export default function StudentFormModal({ open, onOpenChange, mode, student, on
     return fields;
   }, [fields, mode]);
 
+  const uploadAvatar = async (file: File) => {
+    if (!student) return;
+    if (file.size > 3 * 1024 * 1024) {
+      toast.error("الحجم الأقصى للصورة 3 ميجابايت");
+      return;
+    }
+    setAvatarBusy(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${student.id}/avatar-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (error) throw error;
+      const { data: signed, error: signErr } = await supabase.storage
+        .from("avatars")
+        .createSignedUrl(path, 60 * 60 * 24 * 365 * 10);
+      if (signErr || !signed?.signedUrl) throw signErr || new Error("no url");
+      const url = signed.signedUrl;
+      await (supabase as any).from("profiles").update({ avatar_url: url }).eq("id", student.id);
+      setAvatarUrl(url);
+      onSaved();
+      toast.success("تم تحديث الصورة");
+    } catch (e: any) {
+      toast.error(e?.message || "تعذّر رفع الصورة");
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
+
+  const deleteAvatar = async () => {
+    if (!student) return;
+    setAvatarBusy(true);
+    try {
+      // Best-effort: remove existing files under the user's avatar folder
+      const { data: list } = await supabase.storage.from("avatars").list(student.id);
+      if (list && list.length) {
+        await supabase.storage
+          .from("avatars")
+          .remove(list.map((f) => `${student.id}/${f.name}`));
+      }
+      await (supabase as any).from("profiles").update({ avatar_url: null }).eq("id", student.id);
+      setAvatarUrl(null);
+      onSaved();
+      toast.success("تم حذف الصورة");
+    } catch (e: any) {
+      toast.error(e?.message || "تعذّر حذف الصورة");
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
+
   const validate = () => {
     const e: Record<string, string> = {};
     for (const f of fields) {
