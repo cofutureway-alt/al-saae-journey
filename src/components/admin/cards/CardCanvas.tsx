@@ -10,11 +10,24 @@ import {
   Path,
   Textbox,
   FabricImage,
+  Gradient,
 } from "fabric";
 import { loadFont, preloadFontsFromJson } from "@/lib/card-fonts";
+import { generateQrDataUrl } from "@/lib/card-qr";
+import { placeholderForBinding, sampleFor, type BindingSource } from "@/lib/card-bindings";
 
 export const CARD_WIDTH = 1011;
 export const CARD_HEIGHT = 638;
+
+// Custom properties we persist through toJSON/loadFromJSON
+export const CUSTOM_PROPS = [
+  "__isBg",
+  "__binding",           // { key, label, kind }
+  "__imagePlaceholder",  // boolean, marks a shape as an image slot
+  "__isQrPlaceholder",   // boolean
+  "__gradient",          // { angle, stops:[{offset,color}] }  (for shapes/text)
+  "__origText",          // preserved static text so we can unbind/exit-sample
+];
 
 export interface CardCanvasHandle {
   canvas: Canvas | null;
@@ -387,6 +400,37 @@ export const cardCanvasHelpers = {
     center(t, 420, 60);
     place(c, t);
   },
+  addImagePlaceholder(c: Canvas) {
+    const w = 220, h = 220;
+    const r = new Rect({
+      width: w,
+      height: h,
+      rx: 12,
+      ry: 12,
+      fill: "#e2e8f0",
+      stroke: "#94a3b8",
+      strokeDashArray: [10, 8],
+      strokeWidth: 3,
+    });
+    (r as any).__imagePlaceholder = true;
+    center(r, w, h);
+    place(c, r);
+  },
+  addQrPlaceholder(c: Canvas) {
+    const s = 180;
+    const r = new Rect({
+      width: s,
+      height: s,
+      fill: "#f1f5f9",
+      stroke: "#0f172a",
+      strokeDashArray: [8, 6],
+      strokeWidth: 3,
+    });
+    (r as any).__isQrPlaceholder = true;
+    (r as any).__binding = { key: "qr_token", label: "رمز QR", kind: "qr" };
+    center(r, s, s);
+    place(c, r);
+  },
   async setFontFamily(c: Canvas, obj: any, family: string) {
     await loadFont(family);
     obj.set({ fontFamily: family });
@@ -394,6 +438,8 @@ export const cardCanvasHelpers = {
     c.requestRenderAll();
   },
   setObjectFill(c: Canvas, obj: any, color: string) {
+    // Clear any gradient marker; go back to solid
+    (obj as any).__gradient = undefined;
     obj.set({ fill: color });
     c.requestRenderAll();
   },
@@ -406,44 +452,80 @@ export const cardCanvasHelpers = {
     obj.initDimensions?.();
     c.requestRenderAll();
   },
+  setObjectProp(c: Canvas, obj: any, patch: Record<string, any>) {
+    obj.set(patch);
+    obj.setCoords?.();
+    c.requestRenderAll();
+  },
+  applyGradient(c: Canvas, obj: any, cfg: { angle: number; stops: { offset: number; color: string }[] }) {
+    const w = (obj.width ?? 100) * (obj.scaleX ?? 1);
+    const h = (obj.height ?? 100) * (obj.scaleY ?? 1);
+    const rad = ((cfg.angle % 360) * Math.PI) / 180;
+    // gradient endpoints across the object's bounding box, coordSpace: object-local
+    const dx = Math.cos(rad);
+    const dy = Math.sin(rad);
+    const halfDiag = (Math.abs(dx) * w + Math.abs(dy) * h) / 2;
+    const cx = (obj.width ?? 100) / 2;
+    const cy = (obj.height ?? 100) / 2;
+    const x1 = cx - dx * halfDiag / (obj.scaleX ?? 1);
+    const y1 = cy - dy * halfDiag / (obj.scaleY ?? 1);
+    const x2 = cx + dx * halfDiag / (obj.scaleX ?? 1);
+    const y2 = cy + dy * halfDiag / (obj.scaleY ?? 1);
+    const g = new Gradient({
+      type: "linear",
+      coords: { x1, y1, x2, y2 },
+      colorStops: cfg.stops.map((s) => ({ offset: s.offset, color: s.color })),
+      gradientUnits: "pixels",
+    });
+    obj.set({ fill: g });
+    (obj as any).__gradient = { angle: cfg.angle, stops: cfg.stops };
+    c.requestRenderAll();
+  },
+  async bindObject(c: Canvas, obj: any, src: BindingSource) {
+    if (obj.type === "textbox") {
+      if ((obj as any).__origText === undefined) (obj as any).__origText = obj.text;
+      obj.set({ text: placeholderForBinding(src.label) });
+      obj.initDimensions?.();
+    }
+    (obj as any).__binding = { key: src.key, label: src.label, kind: src.kind };
+    if (src.kind === "qr") {
+      (obj as any).__isQrPlaceholder = true;
+    }
+    if (src.kind === "image") {
+      (obj as any).__imagePlaceholder = true;
+    }
+    c.requestRenderAll();
+  },
+  unbindObject(c: Canvas, obj: any) {
+    (obj as any).__binding = undefined;
+    if (obj.type === "textbox" && (obj as any).__origText !== undefined) {
+      obj.set({ text: (obj as any).__origText });
+      (obj as any).__origText = undefined;
+      obj.initDimensions?.();
+    }
+    c.requestRenderAll();
+  },
   bringForward(c: Canvas) {
     const a = c.getActiveObject();
-    if (a) {
-      c.bringObjectForward(a);
-      c.requestRenderAll();
-    }
+    if (a) { c.bringObjectForward(a); c.requestRenderAll(); }
   },
   sendBackwards(c: Canvas) {
     const a = c.getActiveObject();
-    if (a) {
-      c.sendObjectBackwards(a);
-      c.requestRenderAll();
-    }
+    if (a) { c.sendObjectBackwards(a); c.requestRenderAll(); }
   },
   bringToFront(c: Canvas) {
     const a = c.getActiveObject();
-    if (a) {
-      c.bringObjectToFront(a);
-      c.requestRenderAll();
-    }
+    if (a) { c.bringObjectToFront(a); c.requestRenderAll(); }
   },
   sendToBack(c: Canvas) {
     const a = c.getActiveObject();
-    if (a) {
-      c.sendObjectToBack(a);
-      c.requestRenderAll();
-    }
+    if (a) { c.sendObjectToBack(a); c.requestRenderAll(); }
   },
   deleteActive(c: Canvas) {
     const a = c.getActiveObject();
-    if (a) {
-      c.remove(a);
-      c.discardActiveObject();
-      c.requestRenderAll();
-    }
+    if (a) { c.remove(a); c.discardActiveObject(); c.requestRenderAll(); }
   },
   setBackgroundColor(c: Canvas, color: string) {
-    // Remove any existing background image object
     const objs = c.getObjects().filter((o: any) => o.__isBg);
     objs.forEach((o) => c.remove(o));
     c.backgroundImage = undefined;
@@ -455,7 +537,6 @@ export const cardCanvasHelpers = {
       const img = await FabricImage.fromURL(url, { crossOrigin: "anonymous" });
       fitImageToCard(img);
       (img as any).__isBg = true;
-      // Remove old background objects
       const oldBg = c.getObjects().filter((o: any) => o.__isBg);
       oldBg.forEach((o) => c.remove(o));
       c.backgroundImage = img;
@@ -465,7 +546,66 @@ export const cardCanvasHelpers = {
       throw e;
     }
   },
+  serialize(c: Canvas): any {
+    return (c as any).toJSON(CUSTOM_PROPS);
+  },
 };
+
+/**
+ * Apply live sample data to every bound object in place. Call restoreFromSample
+ * with the returned snapshot to revert.
+ */
+export async function applySampleData(c: Canvas): Promise<any> {
+  const snapshot = (c as any).toJSON(CUSTOM_PROPS);
+  const objs = c.getObjects().slice();
+  for (const obj of objs) {
+    const b = (obj as any).__binding;
+    if (!b) continue;
+    if (b.kind === "text" && obj.type === "textbox") {
+      (obj as any).set({ text: sampleFor(b.key, `[${b.label}]`) });
+      (obj as any).initDimensions?.();
+    } else if (b.kind === "qr") {
+      // Replace placeholder with a real QR image at same bounds
+      const dataUrl = await generateQrDataUrl(sampleFor(b.key, "sample-token"));
+      const img = await FabricImage.fromURL(dataUrl, { crossOrigin: "anonymous" });
+      const w = (obj.width ?? 180) * (obj.scaleX ?? 1);
+      const h = (obj.height ?? 180) * (obj.scaleY ?? 1);
+      img.set({
+        left: obj.left, top: obj.top, angle: obj.angle,
+        scaleX: w / (img.width || 1), scaleY: h / (img.height || 1),
+      });
+      (img as any).__isSampleSwap = true;
+      c.remove(obj);
+      c.add(img);
+    } else if (b.kind === "image") {
+      // Silhouette placeholder swap: use an inline SVG data URL
+      const svg = `data:image/svg+xml;utf8,${encodeURIComponent(
+        `<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'><rect width='400' height='400' rx='24' fill='#e2e8f0'/><circle cx='200' cy='150' r='70' fill='#94a3b8'/><path d='M60 340 Q200 220 340 340 L340 400 L60 400 Z' fill='#94a3b8'/></svg>`,
+      )}`;
+      const img = await FabricImage.fromURL(svg, { crossOrigin: "anonymous" });
+      const w = (obj.width ?? 200) * (obj.scaleX ?? 1);
+      const h = (obj.height ?? 200) * (obj.scaleY ?? 1);
+      img.set({
+        left: obj.left, top: obj.top, angle: obj.angle,
+        scaleX: w / (img.width || 1), scaleY: h / (img.height || 1),
+      });
+      (img as any).__isSampleSwap = true;
+      c.remove(obj);
+      c.add(img);
+    }
+  }
+  c.discardActiveObject();
+  c.requestRenderAll();
+  return snapshot;
+}
+
+export async function restoreFromSample(c: Canvas, snapshot: any) {
+  await preloadFontsFromJson(snapshot);
+  await c.loadFromJSON(snapshot);
+  normalizeLoadedCanvas(c);
+  c.requestRenderAll();
+}
+
 
 /**
  * Renders a stored fabric JSON to a data URL for use as a static preview thumbnail.
