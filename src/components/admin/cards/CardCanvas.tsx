@@ -140,17 +140,14 @@ function lockCanvasSize(c: Canvas) {
 function fitImageToCard(img: FabricImage) {
   const iw = img.width || CARD_WIDTH;
   const ih = img.height || CARD_HEIGHT;
-  const scale = Math.max(CARD_WIDTH / iw, CARD_HEIGHT / ih);
-  const scaledWidth = iw * scale;
-  const scaledHeight = ih * scale;
 
   img.set({
     originX: "left",
     originY: "top",
-    left: (CARD_WIDTH - scaledWidth) / 2,
-    top: (CARD_HEIGHT - scaledHeight) / 2,
-    scaleX: scale,
-    scaleY: scale,
+    left: 0,
+    top: 0,
+    scaleX: CARD_WIDTH / iw,
+    scaleY: CARD_HEIGHT / ih,
     angle: 0,
     flipX: false,
     flipY: false,
