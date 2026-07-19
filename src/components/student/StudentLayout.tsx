@@ -202,6 +202,10 @@ const StudentLayout = () => {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate("/dashboard/account")}>
+                <UserCircle2 className="w-4 h-4 ml-2" />
+                حسابي
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
                 <LogOut className="w-4 h-4 ml-2" />
                 تسجيل الخروج
