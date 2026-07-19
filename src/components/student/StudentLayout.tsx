@@ -19,6 +19,7 @@ const nav = [
   { to: "/dashboard", label: "دوراتي", icon: BookOpen, end: true },
   { to: "/dashboard/quiz-attempts", label: "محاولات اختباراتي", icon: ClipboardList },
   { to: "/dashboard/statistics", label: "الإحصائيات", icon: BarChart3 },
+  { to: "/dashboard/account", label: "الملف الشخصي", icon: UserCircle2 },
 ];
 
 const NavItem = ({
