@@ -402,6 +402,7 @@ export async function renderCardToDataURL(json: any): Promise<string> {
   });
   try {
     if (json && Object.keys(json).length > 0) {
+      await preloadFontsFromJson(json);
       await c.loadFromJSON(json);
     }
     c.renderAll();
