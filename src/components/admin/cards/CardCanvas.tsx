@@ -1,5 +1,17 @@
 import { useEffect, useRef, useState } from "react";
-import { Canvas, Rect, Circle, Textbox, FabricImage } from "fabric";
+import {
+  Canvas,
+  Rect,
+  Circle,
+  Ellipse,
+  Triangle,
+  Polygon,
+  Line,
+  Path,
+  Textbox,
+  FabricImage,
+} from "fabric";
+import { loadFont, preloadFontsFromJson } from "@/lib/card-fonts";
 
 export const CARD_WIDTH = 1011;
 export const CARD_HEIGHT = 638;
