@@ -245,7 +245,7 @@ export default function PublicStudentSnapshot() {
         )}
 
         {/* Weak areas */}
-        {(weakSubjects.length > 0 || weakCourses.length > 0) && (
+        {(snap.weak_flags?.subjects || snap.weak_flags?.courses) && (
           <div className="grid md:grid-cols-2 gap-4">
             {snap.weak_flags?.subjects && (
               <WeakBlock
@@ -265,11 +265,6 @@ export default function PublicStudentSnapshot() {
             )}
           </div>
         )}
-
-        <div className="text-center text-xs text-muted-foreground pt-2">
-          هذه الصفحة عامّة ومحمية عبر رمز عشوائي غير قابل للتخمين. لإبطالها اطلب من الإدارة إعادة
-          توليد الرمز.
-        </div>
       </div>
     </div>
   );
