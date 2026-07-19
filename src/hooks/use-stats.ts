@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { listUnitQuizzes } from "@/lib/quiz-api";
 
 // ============ Phase 17: weighted completion incl. quizzes ============
 // For each lesson: contribution = 100 if completed, else watch_percentage (0 if none)
@@ -119,8 +120,10 @@ export function useStudentStats() {
 
       const uList = (units ?? []) as any[];
       const unitIds = uList.map((u) => u.id);
+      const unitToCourse = new Map<string, string>();
+      uList.forEach((u) => unitToCourse.set(u.id, u.course_id));
 
-      const [{ data: lessons }, { data: quizzes }] = await Promise.all([
+      const [lessonsResult, quizzesArrays] = await Promise.all([
         unitIds.length
           ? supabase
               .from("lessons_public")
@@ -128,14 +131,22 @@ export function useStudentStats() {
               .in("unit_id", unitIds)
           : Promise.resolve({ data: [] as any[] }),
         unitIds.length
-          ? (supabase as any)
-              .from("quizzes")
-              .select("id, unit_id, title, position")
-              .in("unit_id", unitIds)
-          : Promise.resolve({ data: [] as any[] }),
+          ? Promise.all(unitIds.map((unitId) => listUnitQuizzes(unitId).catch(() => [])))
+          : Promise.resolve([] as any[][]),
       ]);
 
-      const quizList = (quizzes ?? []) as { id: string; unit_id: string; title: string; position: number }[];
+      const lessons = lessonsResult.data ?? [];
+      const quizList = unitIds.flatMap((unitId, index) =>
+        ((quizzesArrays[index] ?? []) as any[]).map((q) => ({
+          id: q.id,
+          unit_id: unitId,
+          course_id: unitToCourse.get(unitId) ?? "",
+          title: q.title,
+          position: q.order_index ?? 0,
+          pass_percentage: q.pass_percentage ?? 50,
+          policy: "highest",
+        })),
+      );
       const quizIds = quizList.map((q) => q.id);
 
       const [{ data: attempts }, { data: quizMeta }] = await Promise.all([
@@ -156,9 +167,6 @@ export function useStudentStats() {
       const attemptedQuizSet = new Set<string>(
         ((attempts ?? []) as any[]).map((a) => a.quiz_id),
       );
-
-      const unitToCourse = new Map<string, string>();
-      uList.forEach((u) => unitToCourse.set(u.id, u.course_id));
 
       const completedByLesson = new Set<string>((lessonProgress ?? []).map((p: any) => p.lesson_id));
       const watchByLesson = new Map<string, number>();
@@ -259,6 +267,14 @@ export function useStudentStats() {
         string,
         { title: string; course_id: string; pass_percentage: number; policy: string }
       >();
+      quizList.forEach((q) => {
+        quizMetaById.set(q.id, {
+          title: q.title,
+          course_id: q.course_id,
+          pass_percentage: q.pass_percentage,
+          policy: q.policy,
+        });
+      });
       ((quizMeta ?? []) as any[]).forEach((q) => {
         quizMetaById.set(q.id, {
           title: q.title,

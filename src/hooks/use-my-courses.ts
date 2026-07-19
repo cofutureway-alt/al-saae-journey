@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { listUnitQuizzes } from "@/lib/quiz-api";
 
 export interface MyCourse {
   id: string;
@@ -71,16 +72,18 @@ export function useMyCourses() {
           if (cId) lessonsCount[cId] = (lessonsCount[cId] ?? 0) + 1;
         });
 
-        const { data: quizzes } = await (supabase as any)
-          .from("quizzes")
-          .select("id, unit_id")
-          .in("unit_id", unitIds);
-        (quizzes ?? []).forEach((q: any) => {
-          const cId = unitToCourse[q.unit_id];
-          if (cId) {
-            quizzesCount[cId] = (quizzesCount[cId] ?? 0) + 1;
-            quizToCourse[q.id] = cId;
-          }
+        const quizzesByUnit = await Promise.all(
+          unitIds.map((unitId) => listUnitQuizzes(unitId).catch(() => [])),
+        );
+        quizzesByUnit.forEach((quizzes, index) => {
+          const unitId = unitIds[index];
+          quizzes.forEach((q: any) => {
+            const cId = unitToCourse[unitId];
+            if (cId) {
+              quizzesCount[cId] = (quizzesCount[cId] ?? 0) + 1;
+              quizToCourse[q.id] = cId;
+            }
+          });
         });
       }
 

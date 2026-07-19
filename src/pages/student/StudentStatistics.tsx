@@ -60,7 +60,7 @@ const StudentStatistics = () => {
               delay={0}
             />
             <StatCard
-              label="الدروس المكتملة"
+              label="المحتوى المكتمل"
               value={stats.completedLessons}
               icon={ListChecks}
               accent="emerald"
@@ -121,7 +121,7 @@ const StudentStatistics = () => {
             <div className="p-5 md:p-6 border-b border-border/60">
               <h2 className="text-lg md:text-xl font-bold">دوراتي</h2>
               <p className="text-xs text-muted-foreground">
-                اضغط على الدورة لعرض تفاصيل الدروس والتقدّم داخل كل درس.
+                اضغط على الدورة لعرض الدروس والاختبارات والتقدّم داخل كل محتوى.
               </p>
             </div>
             <div className="divide-y divide-border/50">
@@ -368,7 +368,7 @@ const CourseRow = ({ course, index }: { course: StudentCourseStat; index: number
               </Badge>
             )}
             <span className="text-[11px] text-muted-foreground">
-              {course.completed_lessons}/{course.total_lessons} درس
+              {course.completed_lessons}/{course.total_lessons} محتوى
             </span>
           </div>
         </div>
@@ -414,77 +414,84 @@ const CourseRow = ({ course, index }: { course: StudentCourseStat; index: number
                       </div>
                     ) : (
                       <>
-                        {u.lessons.map((l) => (
-                          <Link
-                            key={l.id}
-                            to={`/courses/${course.id}/learn/lesson/${l.id}`}
-                            className="flex items-center gap-3 p-2.5 rounded-lg bg-background border border-border/50 hover:border-primary/40 transition-colors group"
-                          >
-                            <div
-                              className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 ${
-                                l.completed
-                                  ? "bg-emerald-500 text-white"
-                                  : "bg-primary/10 text-primary"
-                              }`}
-                            >
-                              {l.completed ? (
-                                <CheckCircle2 className="w-4 h-4" />
-                              ) : (
-                                <PlayCircle className="w-4 h-4" />
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0 text-sm font-medium truncate">
-                              {l.title}
-                            </div>
-                            <div className="text-xs font-bold tabular-nums shrink-0">
-                              {l.completed ? (
-                                <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                                  <CheckCircle2 className="w-3.5 h-3.5" />
-                                  مكتمل
-                                </span>
-                              ) : (
-                                <span className="text-muted-foreground">
-                                  {Math.round(l.watch_percentage)}%
-                                </span>
-                              )}
-                            </div>
-                          </Link>
-                        ))}
-                        {u.quizzes.map((q) => (
-                          <Link
-                            key={q.id}
-                            to={`/courses/${course.id}/learn/quiz/${q.id}`}
-                            className="flex items-center gap-3 p-2.5 rounded-lg bg-background border border-border/50 hover:border-primary/40 transition-colors group"
-                          >
-                            <div
-                              className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 ${
-                                q.attempted
-                                  ? "bg-emerald-500 text-white"
-                                  : "bg-violet-500/10 text-violet-600 dark:text-violet-400"
-                              }`}
-                            >
-                              {q.attempted ? (
-                                <CheckCircle2 className="w-4 h-4" />
-                              ) : (
-                                <ClipboardCheck className="w-4 h-4" />
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0 text-sm font-medium truncate">
-                              {q.title}
-                              <span className="mr-1 text-[10px] font-normal text-muted-foreground">· اختبار</span>
-                            </div>
-                            <div className="text-xs font-bold tabular-nums shrink-0">
-                              {q.attempted ? (
-                                <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                                  <CheckCircle2 className="w-3.5 h-3.5" />
-                                  تمّت المحاولة
-                                </span>
-                              ) : (
-                                <span className="text-muted-foreground">لم تُحاول</span>
-                              )}
-                            </div>
-                          </Link>
-                        ))}
+                        {[...u.lessons.map((item) => ({ ...item, type: "lesson" as const })), ...u.quizzes.map((item) => ({ ...item, type: "quiz" as const }))]
+                          .sort((a, b) => a.position - b.position)
+                          .map((item) => {
+                            if (item.type === "lesson") {
+                              return (
+                                <Link
+                                  key={`lesson-${item.id}`}
+                                  to={`/courses/${course.id}/learn/lesson/${item.id}`}
+                                  className="flex items-center gap-3 p-2.5 rounded-lg bg-background border border-border/50 hover:border-primary/40 transition-colors group"
+                                >
+                                  <div
+                                    className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 ${
+                                      item.completed
+                                        ? "bg-emerald-500 text-white"
+                                        : "bg-primary/10 text-primary"
+                                    }`}
+                                  >
+                                    {item.completed ? (
+                                      <CheckCircle2 className="w-4 h-4" />
+                                    ) : (
+                                      <PlayCircle className="w-4 h-4" />
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0 text-sm font-medium truncate">
+                                    {item.title}
+                                  </div>
+                                  <div className="text-xs font-bold tabular-nums shrink-0">
+                                    {item.completed ? (
+                                      <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                                        <CheckCircle2 className="w-3.5 h-3.5" />
+                                        مكتمل
+                                      </span>
+                                    ) : (
+                                      <span className="text-muted-foreground">
+                                        {Math.round(item.watch_percentage)}%
+                                      </span>
+                                    )}
+                                  </div>
+                                </Link>
+                              );
+                            }
+
+                            return (
+                              <Link
+                                key={`quiz-${item.id}`}
+                                to={`/courses/${course.id}/learn/quiz/${item.id}`}
+                                className="flex items-center gap-3 p-2.5 rounded-lg bg-background border border-border/50 hover:border-primary/40 transition-colors group"
+                              >
+                                <div
+                                  className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 ${
+                                    item.attempted
+                                      ? "bg-emerald-500 text-white"
+                                      : "bg-violet-500/10 text-violet-600 dark:text-violet-400"
+                                  }`}
+                                >
+                                  {item.attempted ? (
+                                    <CheckCircle2 className="w-4 h-4" />
+                                  ) : (
+                                    <ClipboardCheck className="w-4 h-4" />
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0 text-sm font-medium truncate">
+                                  {item.title}
+                                  <span className="mr-1 text-[10px] font-normal text-muted-foreground">· اختبار</span>
+                                </div>
+                                <div className="text-xs font-bold tabular-nums shrink-0">
+                                  {item.attempted ? (
+                                    <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                                      <CheckCircle2 className="w-3.5 h-3.5" />
+                                      تمّت المحاولة
+                                    </span>
+                                  ) : (
+                                    <span className="text-muted-foreground">لم تُحاول</span>
+                                  )}
+                                </div>
+                              </Link>
+                            );
+                          })}
                       </>
                     )}
                   </div>
