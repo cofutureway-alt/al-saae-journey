@@ -154,7 +154,7 @@ export function TextProperties({ canvas, obj, onChange }: Props) {
 
       {/* Shared geometry/opacity/binding controls */}
       <div className="pt-2 border-t border-border">
-        <ObjectProperties canvas={canvas} obj={obj} onChange={onChange} />
+        <ObjectProperties canvas={canvas} obj={obj} onChange={onChange} hideFill />
       </div>
     </div>
   );
