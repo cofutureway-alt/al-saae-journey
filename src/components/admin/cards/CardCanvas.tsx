@@ -547,7 +547,7 @@ export const cardCanvasHelpers = {
     }
   },
   serialize(c: Canvas): any {
-    return (c as any).toJSON(CUSTOM_PROPS);
+    return c.toObject(CUSTOM_PROPS);
   },
 };
 
@@ -556,7 +556,7 @@ export const cardCanvasHelpers = {
  * with the returned snapshot to revert.
  */
 export async function applySampleData(c: Canvas): Promise<any> {
-  const snapshot = (c as any).toJSON(CUSTOM_PROPS);
+  const snapshot = c.toObject(CUSTOM_PROPS);
   const objs = c.getObjects().slice();
   for (const obj of objs) {
     const b = (obj as any).__binding;
