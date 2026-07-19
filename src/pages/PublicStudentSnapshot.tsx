@@ -8,9 +8,11 @@ import {
   Focus,
   GraduationCap,
   IdCard,
+  ListChecks,
   Loader2,
   Phone,
   QrCode,
+  Search,
   ShieldAlert,
   Trophy,
   User,
@@ -19,7 +21,36 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { classifyGroups, LEVEL_META, type GroupClassification } from "@/lib/weak-analysis";
+
+interface EnrolledCourseRow {
+  course_id: string;
+  course_title: string | null;
+  stage_name: string | null;
+  subject_name: string | null;
+  enrolled_at: string | null;
+}
+
+interface QuizAttemptRow {
+  attempt_id: string;
+  quiz_title: string | null;
+  course_title: string | null;
+  subject_name: string | null;
+  stage_name: string | null;
+  attempt_number: number | null;
+  status: string | null;
+  percentage: number | null;
+  passed: boolean | null;
+  submitted_at: string | null;
+}
 
 interface Snapshot {
   found: true;
@@ -29,6 +60,8 @@ interface Snapshot {
   stage_name?: string | null;
   phone_number?: string | null;
   enrolled_courses_count?: number;
+  enrolled_courses?: EnrolledCourseRow[];
+  quiz_attempts?: QuizAttemptRow[];
   quiz_stats?: {
     total_attempts: number;
     unique_quizzes: number;
@@ -50,6 +83,9 @@ export default function PublicStudentSnapshot() {
   const { qrToken } = useParams<{ qrToken: string }>();
   const [snap, setSnap] = useState<Snapshot | null>(null);
   const [status, setStatus] = useState<"loading" | "ok" | "notfound" | "error">("loading");
+  const [coursesQuery, setCoursesQuery] = useState("");
+  const [attemptsQuery, setAttemptsQuery] = useState("");
+  const [attemptsStatus, setAttemptsStatus] = useState<string>("all");
 
   useEffect(() => {
     let alive = true;
@@ -97,6 +133,39 @@ export default function PublicStudentSnapshot() {
       (_k, q) => (q as any).course_title ?? "بدون كورس",
     );
   }, [snap]);
+
+  const filteredCourses = useMemo(() => {
+    const list = snap?.enrolled_courses ?? [];
+    const q = coursesQuery.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter((c) =>
+      [c.course_title, c.stage_name, c.subject_name]
+        .filter(Boolean)
+        .some((v) => String(v).toLowerCase().includes(q)),
+    );
+  }, [snap, coursesQuery]);
+
+  const filteredAttempts = useMemo(() => {
+    const list = snap?.quiz_attempts ?? [];
+    const q = attemptsQuery.trim().toLowerCase();
+    return list.filter((a) => {
+      const matchesQ =
+        !q ||
+        [a.quiz_title, a.course_title, a.subject_name, a.stage_name]
+          .filter(Boolean)
+          .some((v) => String(v).toLowerCase().includes(q));
+      const matchesStatus =
+        attemptsStatus === "all"
+          ? true
+          : attemptsStatus === "passed"
+            ? a.passed === true
+            : attemptsStatus === "failed"
+              ? a.passed === false && a.status === "graded"
+              : a.status === attemptsStatus;
+      return matchesQ && matchesStatus;
+    });
+  }, [snap, attemptsQuery, attemptsStatus]);
+
 
   if (status === "loading") {
     return (
@@ -244,6 +313,149 @@ export default function PublicStudentSnapshot() {
           </motion.section>
         )}
 
+        {/* Enrolled courses list */}
+        {snap.enrolled_courses !== undefined && (
+          <motion.section
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-2xl border border-border bg-card p-4 md:p-5 space-y-3"
+          >
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2 text-sm font-bold">
+                <ListChecks className="w-4 h-4 text-primary" />
+                الكورسات المسجّلة
+                <Badge variant="secondary" className="tabular-nums">
+                  {snap.enrolled_courses.length}
+                </Badge>
+              </div>
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  value={coursesQuery}
+                  onChange={(e) => setCoursesQuery(e.target.value)}
+                  placeholder="بحث بالكورس أو المرحلة أو المادة…"
+                  className="pr-9 h-9"
+                />
+              </div>
+            </div>
+            <div className="overflow-x-auto rounded-xl border border-border">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 text-xs text-muted-foreground">
+                  <tr>
+                    <th className="text-right px-3 py-2 font-bold">الكورس</th>
+                    <th className="text-right px-3 py-2 font-bold">المادة</th>
+                    <th className="text-right px-3 py-2 font-bold">المرحلة</th>
+                    <th className="text-right px-3 py-2 font-bold">تاريخ التسجيل</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredCourses.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="text-center text-muted-foreground py-6">
+                        لا توجد بيانات.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredCourses.map((c) => (
+                      <tr key={c.course_id} className="border-t border-border">
+                        <td className="px-3 py-2 font-semibold">{c.course_title ?? "—"}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{c.subject_name ?? "—"}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{c.stage_name ?? "—"}</td>
+                        <td className="px-3 py-2 text-muted-foreground tabular-nums" dir="ltr">
+                          {c.enrolled_at ? new Date(c.enrolled_at).toLocaleDateString() : "—"}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </motion.section>
+        )}
+
+        {/* Quiz attempts list */}
+        {snap.quiz_attempts !== undefined && (
+          <motion.section
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-2xl border border-border bg-card p-4 md:p-5 space-y-3"
+          >
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2 text-sm font-bold">
+                <ClipboardList className="w-4 h-4 text-primary" />
+                محاولات الاختبارات
+                <Badge variant="secondary" className="tabular-nums">
+                  {snap.quiz_attempts.length}
+                </Badge>
+              </div>
+              <div className="flex gap-2 w-full sm:w-auto flex-wrap">
+                <div className="relative flex-1 sm:w-64">
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    value={attemptsQuery}
+                    onChange={(e) => setAttemptsQuery(e.target.value)}
+                    placeholder="بحث بالاختبار أو الكورس…"
+                    className="pr-9 h-9"
+                  />
+                </div>
+                <Select value={attemptsStatus} onValueChange={setAttemptsStatus}>
+                  <SelectTrigger className="h-9 w-full sm:w-40">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">كل الحالات</SelectItem>
+                    <SelectItem value="passed">ناجح</SelectItem>
+                    <SelectItem value="failed">راسب</SelectItem>
+                    <SelectItem value="needs_review">بانتظار المراجعة</SelectItem>
+                    <SelectItem value="graded">مصحّح</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="overflow-x-auto rounded-xl border border-border">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 text-xs text-muted-foreground">
+                  <tr>
+                    <th className="text-right px-3 py-2 font-bold">الاختبار</th>
+                    <th className="text-right px-3 py-2 font-bold">الكورس</th>
+                    <th className="text-right px-3 py-2 font-bold">المحاولة</th>
+                    <th className="text-right px-3 py-2 font-bold">النسبة</th>
+                    <th className="text-right px-3 py-2 font-bold">الحالة</th>
+                    <th className="text-right px-3 py-2 font-bold">التاريخ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredAttempts.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="text-center text-muted-foreground py-6">
+                        لا توجد محاولات مطابقة.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredAttempts.map((a) => (
+                      <tr key={a.attempt_id} className="border-t border-border">
+                        <td className="px-3 py-2 font-semibold">{a.quiz_title ?? "—"}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{a.course_title ?? "—"}</td>
+                        <td className="px-3 py-2 tabular-nums">#{a.attempt_number ?? "—"}</td>
+                        <td className="px-3 py-2 tabular-nums">
+                          {a.percentage != null ? `${a.percentage}%` : "—"}
+                        </td>
+                        <td className="px-3 py-2">
+                          <AttemptStatusBadge status={a.status} passed={a.passed} />
+                        </td>
+                        <td className="px-3 py-2 text-muted-foreground tabular-nums" dir="ltr">
+                          {a.submitted_at ? new Date(a.submitted_at).toLocaleDateString() : "—"}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </motion.section>
+        )}
+
+
         {/* Weak areas */}
         {(snap.weak_flags?.subjects || snap.weak_flags?.courses) && (
           <div className="grid md:grid-cols-2 gap-4">
@@ -299,6 +511,19 @@ const StatTile = ({
       <div className="text-[11px] text-muted-foreground mt-0.5">{label}</div>
     </motion.div>
   );
+};
+
+const AttemptStatusBadge = ({ status, passed }: { status: string | null; passed: boolean | null }) => {
+  if (status === "needs_review") {
+    return <Badge variant="outline" className="border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400">بانتظار المراجعة</Badge>;
+  }
+  if (status === "graded" && passed === true) {
+    return <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">ناجح</Badge>;
+  }
+  if (status === "graded" && passed === false) {
+    return <Badge className="bg-red-500/15 text-red-600 dark:text-red-400 border border-red-500/30">راسب</Badge>;
+  }
+  return <Badge variant="secondary">{status ?? "—"}</Badge>;
 };
 
 const WeakBlock = ({

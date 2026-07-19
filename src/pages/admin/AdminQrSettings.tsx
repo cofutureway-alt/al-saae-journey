@@ -16,6 +16,8 @@ import {
   AlertTriangle,
   Focus,
   QrCode,
+  ListChecks,
+  ClipboardList,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,7 +44,9 @@ const FIELDS: FieldMeta[] = [
   { key: "show_stage", title: "المرحلة الدراسية", desc: "اسم المرحلة المسجّل بها.", icon: GraduationCap },
   { key: "show_phone", title: "رقم الهاتف", desc: "رقم الطالب — بيانات حسّاسة، مغلقة افتراضيًا.", icon: Phone, sensitive: true },
   { key: "show_enrolled_courses_count", title: "عدد الكورسات", desc: "إجمالي عدد الدورات التي التحق بها.", icon: BookOpen },
+  { key: "show_enrolled_courses_list", title: "جدول الكورسات المسجّلة", desc: "جدول يعرض كل الكورسات المسجّل بها الطالب.", icon: ListChecks },
   { key: "show_quiz_stats", title: "إحصائيات الاختبارات", desc: "الإجمالي، الناجحة، الراسبة، ونسبة النجاح.", icon: BarChart3 },
+  { key: "show_quiz_attempts_list", title: "جدول محاولات الاختبارات", desc: "جدول بكل محاولات الطالب مع الفلاتر والنتائج.", icon: ClipboardList },
   { key: "show_weak_subjects", title: "نقاط الضعف بالمواد", desc: "تحليل تلقائي للمواد التي يحتاج فيها الطالب دعمًا.", icon: AlertTriangle },
   { key: "show_weak_courses", title: "نقاط الضعف بالكورسات", desc: "تحليل تلقائي للكورسات الأضعف أداءً.", icon: Focus },
 ];

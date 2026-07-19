@@ -454,8 +454,10 @@ export type Database = {
           id: number
           show_avatar: boolean
           show_enrolled_courses_count: boolean
+          show_enrolled_courses_list: boolean
           show_full_name: boolean
           show_phone: boolean
+          show_quiz_attempts_list: boolean
           show_quiz_stats: boolean
           show_stage: boolean
           show_student_id: boolean
@@ -467,8 +469,10 @@ export type Database = {
           id: number
           show_avatar?: boolean
           show_enrolled_courses_count?: boolean
+          show_enrolled_courses_list?: boolean
           show_full_name?: boolean
           show_phone?: boolean
+          show_quiz_attempts_list?: boolean
           show_quiz_stats?: boolean
           show_stage?: boolean
           show_student_id?: boolean
@@ -480,8 +484,10 @@ export type Database = {
           id?: number
           show_avatar?: boolean
           show_enrolled_courses_count?: boolean
+          show_enrolled_courses_list?: boolean
           show_full_name?: boolean
           show_phone?: boolean
+          show_quiz_attempts_list?: boolean
           show_quiz_stats?: boolean
           show_stage?: boolean
           show_student_id?: boolean
