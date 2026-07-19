@@ -1,4 +1,4 @@
-import { Canvas, FabricImage } from "fabric";
+import { Canvas, FabricImage, Rect } from "fabric";
 import jsPDF from "jspdf";
 import { CARD_WIDTH, CARD_HEIGHT, CUSTOM_PROPS } from "@/components/admin/cards/CardCanvas";
 import { preloadFontsFromJson } from "@/lib/card-fonts";
@@ -52,6 +52,45 @@ async function loadImageDataUrl(url: string): Promise<string | null> {
   }
 }
 
+const QR_BINDING = { key: "qr_token", label: "رمز QR", kind: "qr" } as const;
+
+function objectBounds(obj: any, fallbackSize: number) {
+  return {
+    left: obj.left ?? 0,
+    top: obj.top ?? 0,
+    width: Math.max(1, (obj.width ?? fallbackSize) * (obj.scaleX ?? 1)),
+    height: Math.max(1, (obj.height ?? fallbackSize) * (obj.scaleY ?? 1)),
+    angle: obj.angle ?? 0,
+    opacity: obj.opacity ?? 1,
+  };
+}
+
+function replaceObjectAtSameLayer(c: Canvas, oldObj: any, newObj: any) {
+  const index = c.getObjects().indexOf(oldObj);
+  c.remove(oldObj);
+  if (index >= 0 && typeof (c as any).insertAt === "function") {
+    (c as any).insertAt(index, newObj);
+  } else {
+    c.add(newObj);
+  }
+}
+
+async function createQrImageForBounds(student: ExportStudent, bounds: ReturnType<typeof objectBounds>) {
+  const token = student.qr_token ?? student.id;
+  const size = Math.max(512, Math.ceil(Math.max(bounds.width, bounds.height) * 2));
+  const dataUrl = await generateQrDataUrl(`${window.location.origin}/s/${token}`, size);
+  const img = await FabricImage.fromURL(dataUrl, { crossOrigin: "anonymous" });
+  img.set({
+    left: bounds.left,
+    top: bounds.top,
+    angle: bounds.angle,
+    opacity: bounds.opacity,
+    scaleX: bounds.width / (img.width || 1),
+    scaleY: bounds.height / (img.height || 1),
+  });
+  return img;
+}
+
 /**
  * Render one design JSON for one student to a PNG data URL at print quality.
  */
@@ -93,6 +132,7 @@ export async function renderStudentFaceToDataUrl(
     const byLabel = new Map<string, BindingSource>(sources.map((s) => [`{{${s.label}}}`, s] as [string, BindingSource]));
     for (const obj of objs) {
       let b = (obj as any).__binding;
+      if (!b && (obj as any).__isQrPlaceholder) b = QR_BINDING;
       // Legacy fallback: infer from placeholder text
       if (!b && typeof (obj as any).text === "string") {
         const hit = byLabel.get((obj as any).text.trim());
@@ -105,23 +145,35 @@ export async function renderStudentFaceToDataUrl(
         (obj as any).set({ text: val });
         (obj as any).initDimensions?.();
       } else if (b.kind === "qr") {
-        const token = student.qr_token ?? student.id;
-        const dataUrl = await generateQrDataUrl(
-          `${window.location.origin}/s/${token}`,
-          512,
-        );
-        const img = await FabricImage.fromURL(dataUrl, { crossOrigin: "anonymous" });
-        const w = (obj.width ?? 180) * ((obj as any).scaleX ?? 1);
-        const h = (obj.height ?? 180) * ((obj as any).scaleY ?? 1);
-        img.set({
-          left: obj.left,
-          top: obj.top,
-          angle: obj.angle,
-          scaleX: w / (img.width || 1),
-          scaleY: h / (img.height || 1),
+        const bounds = objectBounds(obj, 180);
+        const pad = Math.max(8, Math.round(Math.min(bounds.width, bounds.height) * 0.045));
+        const backing = new Rect({
+          left: bounds.left,
+          top: bounds.top,
+          width: bounds.width,
+          height: bounds.height,
+          angle: bounds.angle,
+          opacity: bounds.opacity,
+          fill: "#ffffff",
+          stroke: "#0f172a",
+          strokeWidth: Math.max(2, Math.round(Math.min(bounds.width, bounds.height) * 0.012)),
+          rx: Math.round(Math.min(bounds.width, bounds.height) * 0.03),
+          ry: Math.round(Math.min(bounds.width, bounds.height) * 0.03),
         });
+        const img = await createQrImageForBounds(student, {
+          ...bounds,
+          left: bounds.left + pad,
+          top: bounds.top + pad,
+          width: Math.max(1, bounds.width - pad * 2),
+          height: Math.max(1, bounds.height - pad * 2),
+        });
+        const layer = c.getObjects().indexOf(obj);
         c.remove(obj);
-        c.add(img);
+        if (layer >= 0 && typeof (c as any).insertAt === "function") {
+          (c as any).insertAt(layer, backing, img);
+        } else {
+          c.add(backing, img);
+        }
       } else if (b.kind === "image") {
         const avatarUrl = student.avatar_url;
         if (!avatarUrl) continue;
@@ -145,12 +197,19 @@ export async function renderStudentFaceToDataUrl(
             scaleY: s,
             clipPath: undefined,
           });
-          c.remove(obj);
-          c.add(img);
+          replaceObjectAtSameLayer(c, obj, img);
         } catch {
           /* ignore */
         }
       }
+    }
+
+    // Final safety pass: any QR placeholder that survived matching is forced into a real QR image.
+    for (const obj of c.getObjects().slice() as any[]) {
+      if (!obj.__isQrPlaceholder) continue;
+      const bounds = objectBounds(obj, 180);
+      const img = await createQrImageForBounds(student, bounds);
+      replaceObjectAtSameLayer(c, obj, img);
     }
     c.renderAll();
     const url = c.toDataURL({ format: "png", multiplier });
