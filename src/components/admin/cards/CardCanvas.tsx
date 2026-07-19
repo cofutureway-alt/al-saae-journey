@@ -62,6 +62,8 @@ export function CardCanvas({ initialJson, onReady, onSelectionChange, className 
         try {
           await preloadFontsFromJson(initialJson);
           await c.loadFromJSON(initialJson);
+          // loadFromJSON can override canvas dimensions — force back to card size
+          c.setDimensions({ width: CARD_WIDTH, height: CARD_HEIGHT });
           c.requestRenderAll();
         } catch (e) {
           console.error("Fabric load failed", e);
