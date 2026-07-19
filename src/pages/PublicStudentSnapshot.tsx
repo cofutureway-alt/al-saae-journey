@@ -134,6 +134,39 @@ export default function PublicStudentSnapshot() {
     );
   }, [snap]);
 
+  const filteredCourses = useMemo(() => {
+    const list = snap?.enrolled_courses ?? [];
+    const q = coursesQuery.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter((c) =>
+      [c.course_title, c.stage_name, c.subject_name]
+        .filter(Boolean)
+        .some((v) => String(v).toLowerCase().includes(q)),
+    );
+  }, [snap, coursesQuery]);
+
+  const filteredAttempts = useMemo(() => {
+    const list = snap?.quiz_attempts ?? [];
+    const q = attemptsQuery.trim().toLowerCase();
+    return list.filter((a) => {
+      const matchesQ =
+        !q ||
+        [a.quiz_title, a.course_title, a.subject_name, a.stage_name]
+          .filter(Boolean)
+          .some((v) => String(v).toLowerCase().includes(q));
+      const matchesStatus =
+        attemptsStatus === "all"
+          ? true
+          : attemptsStatus === "passed"
+            ? a.passed === true
+            : attemptsStatus === "failed"
+              ? a.passed === false && a.status === "graded"
+              : a.status === attemptsStatus;
+      return matchesQ && matchesStatus;
+    });
+  }, [snap, attemptsQuery, attemptsStatus]);
+
+
   if (status === "loading") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center" dir="rtl">
