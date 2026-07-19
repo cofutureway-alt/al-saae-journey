@@ -1,0 +1,404 @@
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Users,
+  Search,
+  UserPlus,
+  Trash2,
+  Ban,
+  ShieldCheck,
+  Pencil,
+  Eye,
+  X,
+  SlidersHorizontal,
+  Loader2,
+} from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
+} from "@/components/ui/sheet";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useRegistrationFields, useStagesList } from "@/hooks/use-registration-fields";
+import {
+  listStudents, setStudentBanned, adminDeleteStudent, type AdminStudentRow,
+} from "@/lib/admin-students-api";
+import StudentFormModal from "@/components/admin/students/StudentFormModal";
+import { KNOWN_PROFILE_COLUMNS } from "@/lib/registration-fields";
+
+const PAGE_SIZE = 50;
+const ALL = "__all__";
+
+export default function AdminStudents() {
+  const navigate = useNavigate();
+  const { fields } = useRegistrationFields();
+  const stages = useStagesList();
+
+  const [rows, setRows] = useState<AdminStudentRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [filterValues, setFilterValues] = useState<Record<string, string>>({});
+
+  const [modalMode, setModalMode] = useState<"create" | "edit" | null>(null);
+  const [selected, setSelected] = useState<AdminStudentRow | null>(null);
+  const [confirm, setConfirm] = useState<null | {
+    kind: "ban" | "unban" | "delete";
+    student: AdminStudentRow;
+  }>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  // Filters derived from registration_form_fields
+  // Only select/radio, excluding phone type and password
+  const filterableFields = useMemo(
+    () =>
+      fields.filter(
+        (f) =>
+          (f.field_type === "select" || f.field_type === "radio") &&
+          f.field_type !== ("phone" as any),
+      ),
+    [fields],
+  );
+
+  useEffect(() => { setPage(0); }, [debouncedSearch, filterValues]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    const known: Record<string, string> = {};
+    const custom: Record<string, string> = {};
+    for (const [k, v] of Object.entries(filterValues)) {
+      if (!v || v === ALL) continue;
+      if (KNOWN_PROFILE_COLUMNS.has(k)) known[k] = v;
+      else custom[k] = v;
+    }
+    listStudents({
+      search: debouncedSearch || undefined,
+      knownFilters: known,
+      customFilters: custom,
+      limit: PAGE_SIZE,
+      offset: page * PAGE_SIZE,
+    })
+      .then((data) => {
+        if (cancelled) return;
+        setRows(data);
+        setTotal(data[0]?.total_count ?? 0);
+      })
+      .catch(() => { if (!cancelled) { setRows([]); setTotal(0); } })
+      .finally(() => !cancelled && setLoading(false));
+    return () => { cancelled = true; };
+  }, [debouncedSearch, filterValues, page]);
+
+  const activeFilterCount =
+    Object.values(filterValues).filter((v) => v && v !== ALL).length + (debouncedSearch ? 1 : 0);
+
+  const clearAll = () => { setSearch(""); setFilterValues({}); };
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  const reload = () => setPage((p) => p);
+
+  const doBan = async (row: AdminStudentRow, banned: boolean) => {
+    setBusy(true);
+    try {
+      await setStudentBanned(row.id, banned);
+      toast.success(banned ? "تم حظر الطالب" : "تم رفع الحظر");
+      setRows((rs) => rs.map((r) => (r.id === row.id ? { ...r, is_banned: banned } : r)));
+    } catch (e: any) {
+      toast.error(e?.message ?? "تعذّر التنفيذ");
+    } finally { setBusy(false); setConfirm(null); }
+  };
+
+  const doDelete = async (row: AdminStudentRow) => {
+    setBusy(true);
+    try {
+      await adminDeleteStudent(row.id);
+      toast.success("تم حذف الطالب نهائيًا");
+      setRows((rs) => rs.filter((r) => r.id !== row.id));
+      setTotal((t) => Math.max(0, t - 1));
+    } catch (e: any) {
+      toast.error(e?.message ?? "تعذّر الحذف");
+    } finally { setBusy(false); setConfirm(null); }
+  };
+
+  const filtersUI = (
+    <div className="space-y-4">
+      <div className="relative">
+        <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="بحث بالاسم أو رقم الطالب أو الهاتف"
+          className="pr-10"
+        />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {filterableFields.map((f) => {
+          const isStage = f.field_key === "stage_id";
+          const opts = isStage
+            ? stages.map((s) => ({ value: s.id, label: s.name }))
+            : f.options ?? [];
+          return (
+            <div key={f.id}>
+              <div className="text-xs text-muted-foreground mb-1.5">{f.label}</div>
+              <Select
+                value={filterValues[f.field_key] ?? ALL}
+                onValueChange={(v) =>
+                  setFilterValues((p) => ({ ...p, [f.field_key]: v }))
+                }
+              >
+                <SelectTrigger><SelectValue placeholder="الكل" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL}>الكل</SelectItem>
+                  {opts.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          );
+        })}
+      </div>
+      {activeFilterCount > 0 && (
+        <Button variant="ghost" onClick={clearAll} className="w-full gap-2">
+          <X className="w-4 h-4" /> مسح كل الفلاتر ({activeFilterCount})
+        </Button>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="max-w-7xl mx-auto space-y-6">
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-wrap items-center justify-between gap-3"
+      >
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+              <Users className="w-5 h-5" />
+            </div>
+            <h1 className="text-2xl md:text-3xl font-black">إدارة الطلاب</h1>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {loading ? "…" : `${total} طالب${activeFilterCount ? " مطابق للفلاتر" : ""}`}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" className="md:hidden gap-2 relative">
+                <SlidersHorizontal className="w-4 h-4" /> فلاتر
+                {activeFilterCount > 0 && (
+                  <Badge className="bg-primary text-primary-foreground border-0">{activeFilterCount}</Badge>
+                )}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[90vw] sm:max-w-md">
+              <SheetHeader className="text-right"><SheetTitle>الفلاتر</SheetTitle></SheetHeader>
+              <div className="mt-6">{filtersUI}</div>
+            </SheetContent>
+          </Sheet>
+          <Button onClick={() => { setSelected(null); setModalMode("create"); }} className="gap-2">
+            <UserPlus className="w-4 h-4" /> إضافة طالب
+          </Button>
+        </div>
+      </motion.div>
+
+      {/* Desktop filters */}
+      <motion.div
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="hidden md:block rounded-2xl border border-border bg-card p-5"
+      >
+        {filtersUI}
+      </motion.div>
+
+      {/* Table */}
+      <div className="rounded-2xl border border-border bg-card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/40 text-muted-foreground">
+              <tr className="text-right">
+                <th className="py-3 px-4 font-semibold">الطالب</th>
+                <th className="py-3 px-4 font-semibold hidden sm:table-cell">الهاتف</th>
+                <th className="py-3 px-4 font-semibold hidden md:table-cell">رقم الطالب</th>
+                <th className="py-3 px-4 font-semibold hidden lg:table-cell">الالتحاق</th>
+                <th className="py-3 px-4 font-semibold text-left">إجراءات</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                Array.from({ length: 6 }).map((_, i) => (
+                  <tr key={i} className="border-t border-border/60">
+                    <td className="p-4"><Skeleton className="h-10 w-40" /></td>
+                    <td className="p-4 hidden sm:table-cell"><Skeleton className="h-4 w-28" /></td>
+                    <td className="p-4 hidden md:table-cell"><Skeleton className="h-4 w-16" /></td>
+                    <td className="p-4 hidden lg:table-cell"><Skeleton className="h-4 w-16" /></td>
+                    <td className="p-4"><Skeleton className="h-8 w-32 ml-auto" /></td>
+                  </tr>
+                ))
+              ) : rows.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="p-10 text-center text-muted-foreground">
+                    لا يوجد طلاب مطابقون
+                  </td>
+                </tr>
+              ) : (
+                <AnimatePresence initial={false}>
+                  {rows.map((r, i) => {
+                    const initials =
+                      r.full_name?.split(" ").filter(Boolean).slice(0, 2).map((s) => s[0]).join("").toUpperCase() ||
+                      "ط";
+                    return (
+                      <motion.tr
+                        key={r.id}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ delay: i * 0.02 }}
+                        className="border-t border-border/60 hover:bg-accent/30 cursor-pointer"
+                        onClick={() => navigate(`/admin/students/${r.id}`)}
+                      >
+                        <td className="p-3 px-4">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="w-9 h-9">
+                              <AvatarImage src={r.avatar_url ?? undefined} />
+                              <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                                {initials}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0">
+                              <div className="font-semibold truncate flex items-center gap-2">
+                                {r.full_name || "بدون اسم"}
+                                {r.is_banned && (
+                                  <Badge variant="destructive" className="text-[10px]">محظور</Badge>
+                                )}
+                              </div>
+                              <div className="text-xs text-muted-foreground truncate" dir="ltr">
+                                {r.email || r.auth_email}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-3 px-4 hidden sm:table-cell font-mono text-xs" dir="ltr">
+                          {r.phone_number || "—"}
+                        </td>
+                        <td className="p-3 px-4 hidden md:table-cell font-mono text-xs">
+                          {r.student_id || "—"}
+                        </td>
+                        <td className="p-3 px-4 hidden lg:table-cell text-xs text-muted-foreground">
+                          {r.enrollments_count} كورس
+                        </td>
+                        <td className="p-3 px-4">
+                          <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                            <Button variant="ghost" size="icon" onClick={() => navigate(`/admin/students/${r.id}`)} title="عرض التفاصيل">
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => { setSelected(r); setModalMode("edit"); }} title="تعديل">
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setConfirm({ kind: r.is_banned ? "unban" : "ban", student: r })}
+                              title={r.is_banned ? "رفع الحظر" : "حظر"}
+                              className={r.is_banned ? "text-emerald-600" : "text-amber-600"}
+                            >
+                              {r.is_banned ? <ShieldCheck className="w-4 h-4" /> : <Ban className="w-4 h-4" />}
+                            </Button>
+                            <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setConfirm({ kind: "delete", student: r })} title="حذف">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    );
+                  })}
+                </AnimatePresence>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {total > PAGE_SIZE && (
+        <div className="flex items-center justify-between">
+          <Button variant="outline" disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))}>
+            السابق
+          </Button>
+          <div className="text-sm text-muted-foreground">الصفحة {page + 1} من {totalPages}</div>
+          <Button variant="outline" disabled={page + 1 >= totalPages} onClick={() => setPage((p) => p + 1)}>
+            التالي
+          </Button>
+        </div>
+      )}
+
+      <StudentFormModal
+        open={modalMode !== null}
+        onOpenChange={(o) => !o && setModalMode(null)}
+        mode={modalMode ?? "create"}
+        student={selected}
+        onSaved={reload}
+      />
+
+      <AlertDialog open={!!confirm} onOpenChange={(o) => !o && setConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-right">
+              {confirm?.kind === "delete" && "حذف الطالب نهائيًا؟"}
+              {confirm?.kind === "ban" && "حظر الطالب؟"}
+              {confirm?.kind === "unban" && "رفع الحظر عن الطالب؟"}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-right">
+              {confirm?.kind === "delete" && (
+                <>سيتم حذف الحساب نهائيًا مع كل تسجيلاته وتقدمه ومحاولات اختباراته. لا يمكن التراجع.</>
+              )}
+              {confirm?.kind === "ban" && (
+                <>سيتم تسجيل خروج الطالب فورًا وسيُمنع من تسجيل الدخول مجددًا حتى يتم رفع الحظر.</>
+              )}
+              {confirm?.kind === "unban" && (
+                <>سيتمكن الطالب من تسجيل الدخول والاستمرار في استخدام المنصة.</>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={busy}
+              className={confirm?.kind === "delete" ? "bg-destructive hover:bg-destructive/90" : ""}
+              onClick={(e) => {
+                e.preventDefault();
+                if (!confirm) return;
+                if (confirm.kind === "delete") doDelete(confirm.student);
+                else doBan(confirm.student, confirm.kind === "ban");
+              }}
+            >
+              {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : "تأكيد"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
