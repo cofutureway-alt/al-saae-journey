@@ -124,6 +124,7 @@ const App = () => (
               <Route path="settings" element={<AdminSettings />} />
               <Route path="settings/video-player" element={<AdminVideoPlayerSettings />} />
               <Route path="settings/registration-form" element={<AdminRegistrationForm />} />
+              <Route path="account" element={<MyAccount />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
