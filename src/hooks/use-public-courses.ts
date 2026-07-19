@@ -12,6 +12,8 @@ export interface PublicCourse {
   subject_name: string | null;
   units_count: number;
   lessons_count: number;
+  quizzes_count: number;
+  questions_count: number;
   created_at: string;
 }
 
@@ -36,11 +38,12 @@ export function usePublicCourses(limit?: number) {
         return;
       }
 
+      const courseIds = (data ?? []).map((c: any) => c.id);
       const unitIds: string[] = (data ?? []).flatMap((c: any) =>
         (c.units ?? []).map((u: any) => u.id),
       );
 
-      let lessonCounts: Record<string, number> = {};
+      const lessonCounts: Record<string, number> = {};
       if (unitIds.length) {
         const { data: lessons } = await supabase
           .from("lessons_public")
@@ -49,6 +52,32 @@ export function usePublicCourses(limit?: number) {
         (lessons ?? []).forEach((l: any) => {
           lessonCounts[l.unit_id] = (lessonCounts[l.unit_id] ?? 0) + 1;
         });
+      }
+
+      // Quizzes + questions per course (batched)
+      const quizzesByCourse: Record<string, number> = {};
+      const questionsByCourse: Record<string, number> = {};
+      if (courseIds.length) {
+        const { data: quizzes } = await (supabase as any)
+          .from("quizzes")
+          .select("id, course_id")
+          .in("course_id", courseIds);
+        const quizToCourse: Record<string, string> = {};
+        (quizzes ?? []).forEach((q: any) => {
+          quizToCourse[q.id] = q.course_id;
+          quizzesByCourse[q.course_id] = (quizzesByCourse[q.course_id] ?? 0) + 1;
+        });
+        const quizIds = Object.keys(quizToCourse);
+        if (quizIds.length) {
+          const { data: questions } = await (supabase as any)
+            .from("quiz_questions")
+            .select("quiz_id")
+            .in("quiz_id", quizIds);
+          (questions ?? []).forEach((qq: any) => {
+            const cId = quizToCourse[qq.quiz_id];
+            if (cId) questionsByCourse[cId] = (questionsByCourse[cId] ?? 0) + 1;
+          });
+        }
       }
 
       if (cancelled) return;
@@ -67,6 +96,8 @@ export function usePublicCourses(limit?: number) {
             (acc: number, u: any) => acc + (lessonCounts[u.id] ?? 0),
             0,
           ),
+          quizzes_count: quizzesByCourse[c.id] ?? 0,
+          questions_count: questionsByCourse[c.id] ?? 0,
           created_at: c.created_at,
         })),
       );

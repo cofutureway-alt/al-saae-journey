@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { BookOpen, Layers, ArrowLeft } from "lucide-react";
+import { BookOpen, Layers, ArrowLeft, ClipboardList, HelpCircle } from "lucide-react";
 import { useSignedThumbnail } from "@/hooks/use-signed-thumbnail";
 import { EightPointStar } from "@/components/IslamicPatterns";
 import type { PublicCourse } from "@/hooks/use-public-courses";
@@ -66,7 +66,7 @@ export const CourseCard = ({ course, index = 0, progress }: Props) => {
             {course.description || "دورة تعليمية على المنصة"}
           </p>
 
-          <div className="flex items-center gap-4 text-xs text-muted-foreground pt-4 border-t border-border">
+          <div className="flex items-center gap-3 flex-wrap text-xs text-muted-foreground pt-4 border-t border-border">
             <span className="inline-flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5" />
               {course.units_count} وحدات
@@ -74,6 +74,14 @@ export const CourseCard = ({ course, index = 0, progress }: Props) => {
             <span className="inline-flex items-center gap-1.5">
               <BookOpen className="w-3.5 h-3.5" />
               {course.lessons_count} دروس
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <ClipboardList className="w-3.5 h-3.5" />
+              {course.quizzes_count} اختبار
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <HelpCircle className="w-3.5 h-3.5" />
+              {course.questions_count} سؤال
             </span>
           </div>
 

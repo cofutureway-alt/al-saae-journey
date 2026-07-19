@@ -5,14 +5,19 @@ import {
   BookOpen,
   CheckCircle2,
   ChevronDown,
+  ClipboardList,
+  ClipboardCheck,
   Compass,
+  Eye,
   ListChecks,
   Percent,
   PlayCircle,
+  ShieldCheck,
+  ShieldX,
   Sparkles,
   TrendingUp,
 } from "lucide-react";
-import { useStudentStats, type StudentCourseStat } from "@/hooks/use-stats";
+import { useStudentStats, type StudentCourseStat, type FailedAttemptRow } from "@/hooks/use-stats";
 import { StatCard } from "@/components/StatCard";
 import { useSignedThumbnail } from "@/hooks/use-signed-thumbnail";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,9 +25,12 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useCountUp } from "@/hooks/use-count-up";
+import { getResultDisplay } from "@/lib/quiz-result";
+import AttemptDetailsModal from "@/components/quiz/AttemptDetailsModal";
 
 const StudentStatistics = () => {
   const stats = useStudentStats();
+  const [openAttemptId, setOpenAttemptId] = useState<string | null>(null);
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
@@ -61,6 +69,49 @@ const StudentStatistics = () => {
             <OverallCard percent={stats.overallPercent} />
           </div>
 
+          {/* ==== Quizzes section ==== */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="space-y-4"
+          >
+            <div className="flex items-center gap-2">
+              <ClipboardList className="w-5 h-5 text-primary" />
+              <h2 className="text-lg md:text-xl font-bold">الاختبارات</h2>
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <StatCard
+                label="إجمالي الاختبارات"
+                value={stats.quizzesTotal}
+                icon={ClipboardList}
+                accent="primary"
+                delay={0}
+              />
+              <StatCard
+                label="الاختبارات المكتملة"
+                value={stats.quizzesCompleted}
+                icon={ClipboardCheck}
+                accent="violet"
+                delay={0.05}
+              />
+              <StatCard
+                label="الاختبارات الناجح بها"
+                value={stats.quizzesPassed}
+                icon={ShieldCheck}
+                accent="emerald"
+                delay={0.1}
+              />
+              <StatCard
+                label="الاختبارات الراسب بها"
+                value={stats.quizzesFailed}
+                icon={ShieldX}
+                accent="amber"
+                delay={0.15}
+              />
+            </div>
+          </motion.div>
+
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -79,11 +130,177 @@ const StudentStatistics = () => {
               ))}
             </div>
           </motion.div>
+
+          {/* ==== Failed attempts table ==== */}
+          <FailedAttemptsCard
+            rows={stats.failedAttempts}
+            onView={(id) => setOpenAttemptId(id)}
+          />
         </>
       )}
+
+      <AttemptDetailsModal
+        attemptId={openAttemptId}
+        open={openAttemptId !== null}
+        onOpenChange={(o) => !o && setOpenAttemptId(null)}
+      />
     </div>
   );
 };
+
+const FailedAttemptsCard = ({
+  rows,
+  onView,
+}: {
+  rows: FailedAttemptRow[];
+  onView: (attemptId: string) => void;
+}) => (
+  <motion.div
+    initial={{ opacity: 0, y: 12 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay: 0.25 }}
+    className="rounded-2xl border border-border/60 bg-card overflow-hidden"
+  >
+    <div className="p-5 md:p-6 border-b border-border/60 flex items-center gap-3">
+      <div className="w-10 h-10 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 flex items-center justify-center">
+        <ShieldX className="w-5 h-5" />
+      </div>
+      <div>
+        <h2 className="text-lg md:text-xl font-bold">محاولات راسب بها</h2>
+        <p className="text-xs text-muted-foreground">
+          النتيجة الرسمية لكل اختبار رسبت به.
+        </p>
+      </div>
+    </div>
+
+    {rows.length === 0 ? (
+      <div className="p-10 text-center text-sm text-muted-foreground">
+        لا توجد محاولات راسب بها حالياً
+      </div>
+    ) : (
+      <>
+        {/* Desktop */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full">
+            <thead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border/60 bg-muted/30">
+              <tr>
+                <th className="text-right p-4">الاختبار</th>
+                <th className="text-right p-4">الدورة</th>
+                <th className="text-right p-4">المادة</th>
+                <th className="text-right p-4">النتيجة</th>
+                <th className="text-right p-4">تاريخ التسليم</th>
+                <th className="text-right p-4 w-32"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r, i) => {
+                const display = getResultDisplay(
+                  { status: "graded", percentage: r.percentage, passed: false },
+                  r.pass_percentage,
+                );
+                return (
+                  <motion.tr
+                    key={r.attempt_id}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.04 }}
+                    className="border-b border-border/40 hover:bg-accent/30 transition-colors"
+                  >
+                    <td className="p-4 font-semibold">{r.quiz_title}</td>
+                    <td className="p-4 text-sm text-muted-foreground">{r.course_title}</td>
+                    <td className="p-4">
+                      {r.subject_name ? (
+                        <Badge variant="secondary" className="text-[10px] font-medium">
+                          {r.subject_name}
+                        </Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    <td className="p-4">
+                      <Badge className={`${display.badgeClass} font-bold`}>
+                        {display.label}
+                        {display.showPercentage && display.percentage !== null && (
+                          <span className="mr-1">· {Math.round(display.percentage)}%</span>
+                        )}
+                      </Badge>
+                    </td>
+                    <td className="p-4 text-xs text-muted-foreground tabular-nums">
+                      {r.submitted_at
+                        ? new Date(r.submitted_at).toLocaleDateString("ar-EG")
+                        : "—"}
+                    </td>
+                    <td className="p-4">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1.5"
+                        onClick={() => onView(r.attempt_id)}
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        عرض التفاصيل
+                      </Button>
+                    </td>
+                  </motion.tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile */}
+        <div className="md:hidden divide-y divide-border/50">
+          {rows.map((r, i) => {
+            const display = getResultDisplay(
+              { status: "graded", percentage: r.percentage, passed: false },
+              r.pass_percentage,
+            );
+            return (
+              <motion.div
+                key={r.attempt_id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.04 }}
+                className="p-4 space-y-2"
+              >
+                <div className="font-bold">{r.quiz_title}</div>
+                <div className="text-xs text-muted-foreground">{r.course_title}</div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {r.subject_name && (
+                    <Badge variant="secondary" className="text-[10px]">
+                      {r.subject_name}
+                    </Badge>
+                  )}
+                  <Badge className={`${display.badgeClass} font-bold text-[10px]`}>
+                    {display.label}
+                    {display.showPercentage && display.percentage !== null && (
+                      <span className="mr-1">· {Math.round(display.percentage)}%</span>
+                    )}
+                  </Badge>
+                  <span className="text-[10px] text-muted-foreground tabular-nums">
+                    {r.submitted_at
+                      ? new Date(r.submitted_at).toLocaleDateString("ar-EG")
+                      : "—"}
+                  </span>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full gap-1.5"
+                  onClick={() => onView(r.attempt_id)}
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  عرض التفاصيل
+                </Button>
+              </motion.div>
+            );
+          })}
+        </div>
+      </>
+    )}
+  </motion.div>
+);
+
 
 const OverallCard = ({ percent }: { percent: number }) => {
   const { count } = useCountUp(percent, 1400);

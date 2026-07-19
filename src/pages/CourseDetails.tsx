@@ -13,6 +13,8 @@ import {
   ShieldCheck,
   Sparkles,
   ClipboardCheck,
+  ClipboardList,
+  HelpCircle,
   Clock,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -77,6 +79,7 @@ const CourseDetails = () => {
 
   const [course, setCourse] = useState<Course | null>(null);
   const [units, setUnits] = useState<UnitWithLessons[]>([]);
+  const [questionsCount, setQuestionsCount] = useState(0);
   const [enrolled, setEnrolled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState(false);
@@ -159,6 +162,18 @@ const CourseDetails = () => {
       }),
     );
 
+    // Total questions across all forms of all quizzes in this course
+    const allQuizIds = Object.values(quizzesByUnit).flat().map((q) => q.id);
+    if (allQuizIds.length) {
+      const { count } = await (supabase as any)
+        .from("quiz_questions")
+        .select("id", { count: "exact", head: true })
+        .in("quiz_id", allQuizIds);
+      setQuestionsCount(count ?? 0);
+    } else {
+      setQuestionsCount(0);
+    }
+
     // Enrollment status
     if (user) {
       const { data: e } = await supabase
@@ -180,6 +195,7 @@ const CourseDetails = () => {
   }, [load, authLoading]);
 
   const totalLessons = units.reduce((acc, u) => acc + u.lessons.length, 0);
+  const totalQuizzes = units.reduce((acc, u) => acc + u.quizzes.length, 0);
   const unlocked = enrolled || isAdmin;
   const { data: progressData } = useCourseProgress(enrolled ? id : undefined);
   const progress = enrolled ? (progressData?.percent ?? 0) : null;
@@ -277,6 +293,8 @@ const CourseDetails = () => {
           course={course}
           unitsCount={units.length}
           lessonsCount={totalLessons}
+          quizzesCount={totalQuizzes}
+          questionsCount={questionsCount}
         />
 
         <div className="container mx-auto px-4 mt-10 grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -285,7 +303,7 @@ const CourseDetails = () => {
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold">المنهج الدراسي</h2>
               <div className="text-sm text-muted-foreground">
-                {units.length} وحدات · {totalLessons} دروس
+                {units.length} وحدات · {totalLessons} دروس · {totalQuizzes} اختبار
               </div>
             </div>
 
@@ -352,10 +370,14 @@ const CourseHero = ({
   course,
   unitsCount,
   lessonsCount,
+  quizzesCount,
+  questionsCount,
 }: {
   course: Course;
   unitsCount: number;
   lessonsCount: number;
+  quizzesCount: number;
+  questionsCount: number;
 }) => {
   const thumb = useSignedThumbnail(course.thumbnail_url);
   return (
@@ -410,7 +432,7 @@ const CourseHero = ({
               </p>
             )}
 
-            <div className="flex items-center gap-5 mt-5 text-sm text-muted-foreground">
+            <div className="flex items-center gap-4 flex-wrap mt-5 text-sm text-muted-foreground">
               <span className="inline-flex items-center gap-1.5">
                 <Layers className="w-4 h-4" />
                 {unitsCount} وحدات
@@ -418,6 +440,14 @@ const CourseHero = ({
               <span className="inline-flex items-center gap-1.5">
                 <BookOpen className="w-4 h-4" />
                 {lessonsCount} دروس
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <ClipboardList className="w-4 h-4" />
+                {quizzesCount} اختبار
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <HelpCircle className="w-4 h-4" />
+                {questionsCount} سؤال
               </span>
             </div>
           </div>

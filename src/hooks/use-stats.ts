@@ -31,12 +31,41 @@ export interface StudentCourseStat {
   }[];
 }
 
+export interface FailedAttemptRow {
+  attempt_id: string;
+  quiz_id: string;
+  quiz_title: string;
+  course_id: string;
+  course_title: string;
+  subject_name: string | null;
+  percentage: number | null;
+  pass_percentage: number;
+  submitted_at: string | null;
+}
+
 export interface StudentStats {
   enrollmentsCount: number;
   completedLessons: number;
   overallPercent: number;
   courses: StudentCourseStat[];
+  quizzesTotal: number;
+  quizzesCompleted: number;
+  quizzesPassed: number;
+  quizzesFailed: number;
+  failedAttempts: FailedAttemptRow[];
 }
+
+const EMPTY_STATS: StudentStats = {
+  enrollmentsCount: 0,
+  completedLessons: 0,
+  overallPercent: 0,
+  courses: [],
+  quizzesTotal: 0,
+  quizzesCompleted: 0,
+  quizzesPassed: 0,
+  quizzesFailed: 0,
+  failedAttempts: [],
+};
 
 export function useStudentStats() {
   const { user } = useAuth();
@@ -45,7 +74,7 @@ export function useStudentStats() {
   useEffect(() => {
     let cancelled = false;
     if (!user) {
-      setData({ enrollmentsCount: 0, completedLessons: 0, overallPercent: 0, courses: [] });
+      setData(EMPTY_STATS);
       return;
     }
     (async () => {
@@ -62,7 +91,7 @@ export function useStudentStats() {
       const rows = (enrollments ?? []).filter((e: any) => e.courses);
       if (!rows.length) {
         if (!cancelled)
-          setData({ enrollmentsCount: 0, completedLessons: 0, overallPercent: 0, courses: [] });
+          setData(EMPTY_STATS);
         return;
       }
 
@@ -103,13 +132,21 @@ export function useStudentStats() {
       const quizList = (quizzes ?? []) as { id: string; unit_id: string }[];
       const quizIds = quizList.map((q) => q.id);
 
-      const { data: attempts } = quizIds.length
-        ? await (supabase as any)
-            .from("quiz_attempts")
-            .select("quiz_id")
-            .eq("user_id", uid)
-            .in("quiz_id", quizIds)
-        : { data: [] as any[] };
+      const [{ data: attempts }, { data: quizMeta }] = await Promise.all([
+        quizIds.length
+          ? (supabase as any)
+              .from("quiz_attempts")
+              .select("id, quiz_id, status, percentage, passed, submitted_at, attempt_number")
+              .eq("user_id", uid)
+              .in("quiz_id", quizIds)
+          : Promise.resolve({ data: [] as any[] }),
+        quizIds.length
+          ? (supabase as any)
+              .from("quizzes")
+              .select("id, title, course_id, pass_percentage, attempt_result_policy")
+              .in("id", quizIds)
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
       const attemptedQuizSet = new Set<string>(
         ((attempts ?? []) as any[]).map((a) => a.quiz_id),
       );
@@ -195,12 +232,97 @@ export function useStudentStats() {
 
       const overall = globalTotal ? Math.round(globalSum / (globalTotal * 100) * 100) : 0;
 
+      // ==== Quiz stats + failed attempts (per section 4 & 5) ====
+      const courseInfoById = new Map<string, { title: string; subject: string | null }>();
+      rows.forEach((r: any) => {
+        courseInfoById.set(r.course_id, {
+          title: r.courses?.title ?? "",
+          subject: r.courses?.subjects?.name ?? null,
+        });
+      });
+      const quizMetaById = new Map<
+        string,
+        { title: string; course_id: string; pass_percentage: number; policy: string }
+      >();
+      ((quizMeta ?? []) as any[]).forEach((q) => {
+        quizMetaById.set(q.id, {
+          title: q.title,
+          course_id: q.course_id,
+          pass_percentage: q.pass_percentage ?? 50,
+          policy: q.attempt_result_policy ?? "highest",
+        });
+      });
+
+      // Group attempts by quiz
+      const attemptsByQuiz = new Map<string, any[]>();
+      ((attempts ?? []) as any[]).forEach((a) => {
+        if (!attemptsByQuiz.has(a.quiz_id)) attemptsByQuiz.set(a.quiz_id, []);
+        attemptsByQuiz.get(a.quiz_id)!.push(a);
+      });
+
+      const quizzesTotal = quizList.length;
+      let quizzesCompleted = 0;
+      let quizzesPassed = 0;
+      let quizzesFailed = 0;
+      const failedAttempts: FailedAttemptRow[] = [];
+
+      quizList.forEach((q) => {
+        const arr = attemptsByQuiz.get(q.id);
+        if (!arr || arr.length === 0) return;
+        quizzesCompleted += 1;
+        const graded = arr.filter((a) => a.status === "graded");
+        if (graded.length === 0) return; // needs_review pending
+        const meta = quizMetaById.get(q.id);
+        const policy = meta?.policy ?? "highest";
+        let official: any;
+        if (policy === "first") {
+          official = [...graded].sort((a, b) => a.attempt_number - b.attempt_number)[0];
+        } else if (policy === "last") {
+          official = [...graded].sort((a, b) => b.attempt_number - a.attempt_number)[0];
+        } else {
+          official = [...graded].sort((a, b) => {
+            const pb = b.percentage ?? -1;
+            const pa = a.percentage ?? -1;
+            if (pb !== pa) return pb - pa;
+            return a.attempt_number - b.attempt_number;
+          })[0];
+        }
+        if (official.passed === true) {
+          quizzesPassed += 1;
+        } else if (official.passed === false) {
+          quizzesFailed += 1;
+          const info = meta ? courseInfoById.get(meta.course_id) : undefined;
+          failedAttempts.push({
+            attempt_id: official.id,
+            quiz_id: q.id,
+            quiz_title: meta?.title ?? "",
+            course_id: meta?.course_id ?? "",
+            course_title: info?.title ?? "",
+            subject_name: info?.subject ?? null,
+            percentage: official.percentage,
+            pass_percentage: meta?.pass_percentage ?? 50,
+            submitted_at: official.submitted_at,
+          });
+        }
+      });
+
+      failedAttempts.sort((a, b) => {
+        const tb = b.submitted_at ? new Date(b.submitted_at).getTime() : 0;
+        const ta = a.submitted_at ? new Date(a.submitted_at).getTime() : 0;
+        return tb - ta;
+      });
+
       if (!cancelled)
         setData({
           enrollmentsCount: rows.length,
           completedLessons: completedLessonsCount,
           overallPercent: overall,
           courses: courseStats,
+          quizzesTotal,
+          quizzesCompleted,
+          quizzesPassed,
+          quizzesFailed,
+          failedAttempts,
         });
     })();
     return () => {
@@ -225,6 +347,8 @@ export interface AdminStats {
   studentsCount: number;
   totalLessons: number;
   stagesCount: number;
+  totalQuizzes: number;
+  totalQuestions: number;
   topCourses: TopCourseRow[];
 }
 
@@ -239,6 +363,8 @@ export function useAdminStats() {
         { count: studentsCount },
         { count: totalLessons },
         { count: stagesCount },
+        { count: totalQuizzes },
+        { count: totalQuestions },
         { data: enrollments },
         { data: courses },
       ] = await Promise.all([
@@ -252,11 +378,12 @@ export function useAdminStats() {
           .eq("role", "student"),
         supabase.from("lessons").select("id", { count: "exact", head: true }),
         supabase.from("stages").select("id", { count: "exact", head: true }),
+        (supabase as any).from("quizzes").select("id", { count: "exact", head: true }),
+        (supabase as any).from("quiz_questions").select("id", { count: "exact", head: true }),
         supabase.from("enrollments").select("course_id"),
         supabase.from("courses").select("id, title, thumbnail_url, created_at, stages(name)"),
       ]);
 
-      // Group enrollments by course_id
       const counts = new Map<string, number>();
       (enrollments ?? []).forEach((e: any) => {
         counts.set(e.course_id, (counts.get(e.course_id) ?? 0) + 1);
@@ -286,6 +413,8 @@ export function useAdminStats() {
           studentsCount: studentsCount ?? 0,
           totalLessons: totalLessons ?? 0,
           stagesCount: stagesCount ?? 0,
+          totalQuizzes: totalQuizzes ?? 0,
+          totalQuestions: totalQuestions ?? 0,
           topCourses: enriched,
         });
     })();

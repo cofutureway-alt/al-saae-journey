@@ -11,6 +11,8 @@ import {
   AlertTriangle,
   Layers,
   FileText,
+  ClipboardList,
+  HelpCircle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -48,6 +50,8 @@ interface CourseRow {
   stage_name: string | null;
   units_count: number;
   lessons_count: number;
+  quizzes_count: number;
+  questions_count: number;
 }
 
 interface StageOpt {
@@ -97,6 +101,33 @@ const AdminCourses = () => {
       return;
     }
     setStages((sRows as StageOpt[]) ?? []);
+
+    const courseIds = (cRows ?? []).map((c: any) => c.id);
+    const quizzesByCourse: Record<string, number> = {};
+    const questionsByCourse: Record<string, number> = {};
+    if (courseIds.length) {
+      const { data: quizzes } = await (supabase as any)
+        .from("quizzes")
+        .select("id, course_id")
+        .in("course_id", courseIds);
+      const quizToCourse: Record<string, string> = {};
+      (quizzes ?? []).forEach((q: any) => {
+        quizToCourse[q.id] = q.course_id;
+        quizzesByCourse[q.course_id] = (quizzesByCourse[q.course_id] ?? 0) + 1;
+      });
+      const quizIds = Object.keys(quizToCourse);
+      if (quizIds.length) {
+        const { data: questions } = await (supabase as any)
+          .from("quiz_questions")
+          .select("quiz_id")
+          .in("quiz_id", quizIds);
+        (questions ?? []).forEach((qq: any) => {
+          const cId = quizToCourse[qq.quiz_id];
+          if (cId) questionsByCourse[cId] = (questionsByCourse[cId] ?? 0) + 1;
+        });
+      }
+    }
+
     setCourses(
       (cRows ?? []).map((c: any) => ({
         id: c.id,
@@ -113,6 +144,8 @@ const AdminCourses = () => {
             (acc: number, u: any) => acc + (u.lessons?.length ?? 0),
             0,
           ) ?? 0,
+        quizzes_count: quizzesByCourse[c.id] ?? 0,
+        questions_count: questionsByCourse[c.id] ?? 0,
       })),
     );
   }, []);
@@ -269,7 +302,7 @@ const AdminCourses = () => {
                     {c.description || "بدون وصف"}
                   </p>
 
-                  <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-3 flex-wrap mt-3 text-xs text-muted-foreground">
                     <span className="inline-flex items-center gap-1">
                       <Layers className="w-3.5 h-3.5" />
                       {c.units_count} وحدات
@@ -277,6 +310,14 @@ const AdminCourses = () => {
                     <span className="inline-flex items-center gap-1">
                       <FileText className="w-3.5 h-3.5" />
                       {c.lessons_count} دروس
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <ClipboardList className="w-3.5 h-3.5" />
+                      {c.quizzes_count} اختبار
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <HelpCircle className="w-3.5 h-3.5" />
+                      {c.questions_count} سؤال
                     </span>
                   </div>
 
