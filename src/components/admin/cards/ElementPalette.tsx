@@ -36,7 +36,7 @@ type Tool = {
 const TOOLS: Tool[] = [
   { label: "نص", icon: Type, run: (c) => cardCanvasHelpers.addText(c) },
   { label: "مستطيل", icon: Square, run: cardCanvasHelpers.addRect },
-  { label: "مستطيل بحواف", icon: SquareRoundCorner, run: cardCanvasHelpers.addRoundedRect },
+  { label: "مستطيل بحواف", icon: Squircle, run: cardCanvasHelpers.addRoundedRect },
   { label: "مربع", icon: Square, run: cardCanvasHelpers.addSquare },
   { label: "دائرة", icon: CircleIcon, run: cardCanvasHelpers.addCircle },
   { label: "بيضاوي", icon: Egg, run: cardCanvasHelpers.addEllipse },
