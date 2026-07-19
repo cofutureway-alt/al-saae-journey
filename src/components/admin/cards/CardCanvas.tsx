@@ -175,6 +175,7 @@ function normalizeLoadedCanvas(c: Canvas) {
   const backgroundObjects = c.getObjects().filter((obj: any, index) => {
     if (obj.type !== "image") return false;
     if (obj.__isBg) return true;
+    if (index === 0 && obj.selectable === false && obj.evented === false) return true;
     const rawW = obj.width || CARD_WIDTH;
     const rawH = obj.height || CARD_HEIGHT;
     const renderedW = rawW * (obj.scaleX || 1);
