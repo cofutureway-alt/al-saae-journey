@@ -34,6 +34,7 @@ export interface ListSubmissionsParams {
   courseId?: string;
   stageId?: string;
   subjectId?: string;
+  assignmentId?: string;
   ungradedOnly?: boolean;
   limit?: number;
   offset?: number;
@@ -48,6 +49,7 @@ export async function listAssignmentSubmissions(
     _stage_id: params.stageId ?? null,
     _subject_id: params.subjectId ?? null,
     _ungraded_only: !!params.ungradedOnly,
+    _assignment_id: params.assignmentId ?? null,
     _limit: params.limit ?? 100,
     _offset: params.offset ?? 0,
   });
