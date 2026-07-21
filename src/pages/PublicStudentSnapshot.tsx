@@ -126,21 +126,29 @@ export default function PublicStudentSnapshot() {
 
   const weakSubjects: GroupClassification[] = useMemo(() => {
     if (!snap?.weak_data || !snap?.weak_flags?.subjects) return [];
-    return classifyGroups(
+    return classifyCombinedGroups(
       snap.weak_data.quizzes as any,
       snap.weak_data.attempts as any,
+      (snap.weak_data.assignments ?? []) as AssignmentEval[],
       "subject_id",
-      (_k, q) => (q as any).subject_name ?? "بدون مادة",
+      (_k, ctx) =>
+        (ctx.quiz as any)?.subject_name ??
+        ctx.assignment?.subject_name ??
+        "بدون مادة",
     );
   }, [snap]);
 
   const weakCourses: GroupClassification[] = useMemo(() => {
     if (!snap?.weak_data || !snap?.weak_flags?.courses) return [];
-    return classifyGroups(
+    return classifyCombinedGroups(
       snap.weak_data.quizzes as any,
       snap.weak_data.attempts as any,
+      (snap.weak_data.assignments ?? []) as AssignmentEval[],
       "course_id",
-      (_k, q) => (q as any).course_title ?? "بدون كورس",
+      (_k, ctx) =>
+        (ctx.quiz as any)?.course_title ??
+        ctx.assignment?.course_title ??
+        "بدون كورس",
     );
   }, [snap]);
 
