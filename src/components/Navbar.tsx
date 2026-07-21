@@ -163,6 +163,8 @@ const Navbar = () => {
             </a>
           ))}
           <ThemeToggle />
+          {user && profile?.role !== "admin" && <WalletWidget to="/dashboard/wallet" />}
+          {user && profile?.role === "admin" && <WalletWidget to="/admin/wallets" />}
           <AuthArea />
         </div>
 
