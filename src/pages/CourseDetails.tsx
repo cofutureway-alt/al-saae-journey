@@ -30,6 +30,9 @@ import { useSignedThumbnail } from "@/hooks/use-signed-thumbnail";
 import { useCourseProgress } from "@/hooks/use-my-progress";
 import { EightPointStar } from "@/components/IslamicPatterns";
 import { listUnitQuizzes } from "@/lib/quiz-api";
+import { getEffectiveCoursePrice, formatPiastres } from "@/lib/money";
+import PurchaseCourseModal from "@/components/course/PurchaseCourseModal";
+import DiscountCountdown from "@/components/DiscountCountdown";
 
 interface Course {
   id: string;
