@@ -16,6 +16,7 @@ import {
   Filter,
   Copy,
   Check,
+  Trash2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
