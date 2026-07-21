@@ -329,6 +329,31 @@ const AdminCourses = () => {
         </Select>
       </motion.div>
 
+      <AnimatePresence>
+        {selectedIds.size > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-3 mb-6"
+          >
+            <div className="text-sm font-semibold">تم تحديد {selectedIds.size} دورة</div>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => setBulkAction("draft")} className="gap-1.5">
+                <EyeOff className="w-4 h-4" /> تحويل إلى مسودة
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setBulkAction("publish")} className="gap-1.5 text-emerald-600">
+                <Eye className="w-4 h-4" /> نشر
+              </Button>
+              <Button size="sm" variant="destructive" onClick={() => setBulkAction("delete")} className="gap-1.5">
+                <Trash2 className="w-4 h-4" /> حذف
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>إلغاء</Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {courses === null ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -340,6 +365,72 @@ const AdminCourses = () => {
               </div>
             </div>
           ))}
+        </div>
+      ) : filtered && filtered.length > 0 && view === "table" ? (
+        <div className="rounded-2xl border border-border bg-card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-muted-foreground">
+                <tr className="text-right">
+                  <th className="p-3 w-10">
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4 accent-primary cursor-pointer"
+                      checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                      ref={(el) => { if (el) el.indeterminate = selectedIds.size > 0 && selectedIds.size < filtered.length; }}
+                      onChange={toggleAllVisible}
+                    />
+                  </th>
+                  <th className="p-3 font-semibold">العنوان</th>
+                  <th className="p-3 font-semibold hidden md:table-cell">المرحلة</th>
+                  <th className="p-3 font-semibold">الحالة</th>
+                  <th className="p-3 font-semibold hidden lg:table-cell">المحتوى</th>
+                  <th className="p-3 font-semibold text-left">إجراءات</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((c) => (
+                  <tr key={c.id} className="border-t border-border/60 hover:bg-accent/30">
+                    <td className="p-3 w-10">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 accent-primary cursor-pointer"
+                        checked={selectedIds.has(c.id)}
+                        onChange={() => toggleOne(c.id)}
+                      />
+                    </td>
+                    <td className="p-3 font-semibold">{c.title}</td>
+                    <td className="p-3 hidden md:table-cell text-muted-foreground">{c.stage_name || "—"}</td>
+                    <td className="p-3">
+                      <Badge
+                        variant={c.status === "published" ? "default" : "secondary"}
+                        className={
+                          c.status === "published"
+                            ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-0"
+                            : "bg-muted text-muted-foreground border-0"
+                        }
+                      >
+                        {c.status === "published" ? "منشورة" : "مسودة"}
+                      </Badge>
+                    </td>
+                    <td className="p-3 hidden lg:table-cell text-xs text-muted-foreground">
+                      {c.units_count} وحدة · {c.lessons_count} درس · {c.quizzes_count} اختبار · {c.assignments_count} واجب
+                    </td>
+                    <td className="p-3">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button asChild variant="ghost" size="icon" title="تعديل">
+                          <Link to={`/admin/courses/${c.id}/builder`}><Pencil className="w-4 h-4" /></Link>
+                        </Button>
+                        <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setDeleting(c)} title="حذف">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : filtered && filtered.length > 0 ? (
         <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
