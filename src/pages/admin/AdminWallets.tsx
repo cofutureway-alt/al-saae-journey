@@ -405,12 +405,41 @@ function CardsTab() {
         </div>
       </div>
 
+      {/* Bulk actions */}
+      <AnimatePresence>
+        {selectedIds.size > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-3"
+          >
+            <div className="text-sm font-semibold">تم تحديد {selectedIds.size} كارت</div>
+            <div className="flex gap-2">
+              <Button size="sm" variant="destructive" onClick={() => setBulkDeleteOpen(true)} className="gap-1.5">
+                <Trash2 className="w-4 h-4" /> حذف المحدد
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>إلغاء</Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Table */}
       <div className="rounded-2xl border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/50">
               <tr className="text-right">
+                <th className="p-3 w-10">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 accent-primary cursor-pointer"
+                    checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                    ref={(el) => { if (el) el.indeterminate = selectedIds.size > 0 && selectedIds.size < filtered.length; }}
+                    onChange={toggleAll}
+                  />
+                </th>
                 <th className="p-3 font-semibold">الكود</th>
                 <th className="p-3 font-semibold">القيمة</th>
                 <th className="p-3 font-semibold">الحالة</th>
