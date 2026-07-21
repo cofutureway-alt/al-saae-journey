@@ -409,6 +409,159 @@ const CourseInfoEditor = () => {
           </div>
         </div>
 
+        {/* Pricing section */}
+        <div className="rounded-xl border border-border/70 bg-accent/20 p-4 md:p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <Wallet className="w-4 h-4 text-primary" />
+            <Label className="text-base font-bold">تسعير الدورة</Label>
+          </div>
+
+          <div className="space-y-2">
+            <Label>نوع الكورس</Label>
+            <RadioGroup
+              value={isPaid ? "paid" : "free"}
+              onValueChange={(v) => {
+                const paid = v === "paid";
+                setValue("is_paid", paid, { shouldValidate: true });
+                if (!paid) {
+                  setValue("price_egp", "");
+                  setValue("discount_price_egp", "");
+                  setValue("discount_expires_at", "");
+                }
+              }}
+              className="grid grid-cols-2 gap-3"
+            >
+              <label
+                htmlFor="type-free"
+                className={`flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
+                  !isPaid ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
+                }`}
+              >
+                <RadioGroupItem id="type-free" value="free" />
+                <div className="flex-1">
+                  <div className="text-sm font-bold">مجاني</div>
+                  <div className="text-xs text-muted-foreground">تسجيل مباشر بدون دفع</div>
+                </div>
+              </label>
+              <label
+                htmlFor="type-paid"
+                className={`flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
+                  isPaid ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
+                }`}
+              >
+                <RadioGroupItem id="type-paid" value="paid" />
+                <div className="flex-1">
+                  <div className="text-sm font-bold">مدفوع</div>
+                  <div className="text-xs text-muted-foreground">يشتري الطالب الوصول</div>
+                </div>
+              </label>
+            </RadioGroup>
+          </div>
+
+          <AnimatePresence initial={false}>
+            {isPaid && (
+              <motion.div
+                key="paid-fields"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.25 }}
+                className="space-y-4 overflow-hidden"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="price_egp">السعر (ج.م)</Label>
+                    <Input
+                      id="price_egp"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      inputMode="decimal"
+                      placeholder="100"
+                      {...register("price_egp")}
+                    />
+                    {errors.price_egp && (
+                      <p className="text-xs text-destructive">{errors.price_egp.message}</p>
+                    )}
+                    {priceEgp && Number(priceEgp) > 0 && (
+                      <p className="text-[11px] text-muted-foreground">
+                        يُخزَّن كـ {parseEgpToPiastres(priceEgp)?.toLocaleString("ar-EG")} قرش
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="discount_price_egp" className="flex items-center gap-1.5">
+                      <Tag className="w-3.5 h-3.5" />
+                      سعر الخصم (اختياري)
+                    </Label>
+                    <Input
+                      id="discount_price_egp"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      inputMode="decimal"
+                      placeholder="80"
+                      {...register("discount_price_egp")}
+                    />
+                    {errors.discount_price_egp && (
+                      <p className="text-xs text-destructive">
+                        {errors.discount_price_egp.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <AnimatePresence initial={false}>
+                  {discountEgp && Number(discountEgp) >= 0 && (
+                    <motion.div
+                      key="expiry"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="space-y-2 overflow-hidden"
+                    >
+                      <Label htmlFor="discount_expires_at">تاريخ انتهاء الخصم (اختياري)</Label>
+                      <Input
+                        id="discount_expires_at"
+                        type="datetime-local"
+                        {...register("discount_expires_at")}
+                      />
+                      <p className="text-[11px] text-muted-foreground">
+                        اتركه فارغًا لجعل الخصم دائمًا (بدون عدّاد تنازلي).
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {priceEgp && Number(priceEgp) > 0 && (
+                  <div className="rounded-lg bg-background border border-border p-3 flex items-baseline gap-2 flex-wrap">
+                    <span className="text-xs text-muted-foreground">السعر النهائي المعروض:</span>
+                    {discountEgp &&
+                    Number(discountEgp) >= 0 &&
+                    Number(discountEgp) < Number(priceEgp) ? (
+                      <>
+                        <span className="text-lg font-extrabold text-primary">
+                          {formatPiastres(parseEgpToPiastres(discountEgp))}
+                        </span>
+                        <span className="text-xs text-muted-foreground line-through">
+                          {formatPiastres(parseEgpToPiastres(priceEgp))}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-lg font-extrabold text-foreground">
+                        {formatPiastres(parseEgpToPiastres(priceEgp))}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+
         <div className="space-y-2">
           <Label>الصورة المصغّرة</Label>
           <div
