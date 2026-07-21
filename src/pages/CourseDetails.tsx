@@ -367,8 +367,11 @@ const CourseDetails = () => {
                 courseId={course.id}
                 courseTitle={course.title}
                 amountPiastres={effective.amount}
-                onPurchased={() => {
+                onPurchased={(info) => {
                   setEnrolled(true);
+                  toast.success(
+                    `تم تفعيل الدورة بنجاح — الرصيد الجديد ${(info.newBalance / 100).toFixed(2)} ج.م`,
+                  );
                   load();
                 }}
               />
