@@ -44,6 +44,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { formatPiastres, parseEgpToPiastres } from "@/lib/money";
 import { cn } from "@/lib/utils";
+import StrongConfirmDialog from "@/components/admin/StrongConfirmDialog";
 
 // ============================================================
 // Types
