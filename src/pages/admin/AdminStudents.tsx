@@ -358,6 +358,14 @@ export default function AdminStudents() {
                         className="border-t border-border/60 hover:bg-accent/30 cursor-pointer"
                         onClick={() => navigate(`/admin/students/${r.id}`)}
                       >
+                        <td className="p-3 px-4 w-10" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4 accent-primary cursor-pointer"
+                            checked={selectedIds.has(r.id)}
+                            onChange={() => toggleOne(r.id)}
+                          />
+                        </td>
                         <td className="p-3 px-4">
                           <div className="flex items-center gap-3">
                             <Avatar className="w-9 h-9">
