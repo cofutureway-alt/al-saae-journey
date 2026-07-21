@@ -60,7 +60,49 @@ export default function AdminStudents() {
     kind: "ban" | "unban" | "delete";
     student: AdminStudentRow;
   }>(null);
+  const [bulkConfirm, setBulkConfirm] = useState<null | "delete" | "ban" | "unban">(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
+
+  const toggleOne = (id: string) =>
+    setSelectedIds((p) => {
+      const n = new Set(p);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+  const toggleAll = () =>
+    setSelectedIds((p) =>
+      p.size === rows.length ? new Set() : new Set(rows.map((r) => r.id)),
+    );
+
+  useEffect(() => { setSelectedIds(new Set()); }, [rows]);
+
+  const runBulk = async () => {
+    if (!bulkConfirm || selectedIds.size === 0) return;
+    setBusy(true);
+    const ids = Array.from(selectedIds);
+    let ok = 0, fail = 0;
+    try {
+      if (bulkConfirm === "delete") {
+        for (const id of ids) {
+          try { await adminDeleteStudent(id); ok++; } catch { fail++; }
+        }
+        setRows((rs) => rs.filter((r) => !selectedIds.has(r.id)));
+        setTotal((t) => Math.max(0, t - ok));
+      } else {
+        const banned = bulkConfirm === "ban";
+        for (const id of ids) {
+          try { await setStudentBanned(id, banned); ok++; } catch { fail++; }
+        }
+        setRows((rs) => rs.map((r) => (selectedIds.has(r.id) ? { ...r, is_banned: banned } : r)));
+      }
+      toast.success(`تم تنفيذ العملية على ${ok} طالب${fail ? ` (فشل ${fail})` : ""}`);
+      setSelectedIds(new Set());
+    } finally {
+      setBusy(false);
+      setBulkConfirm(null);
+    }
+  };
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
