@@ -108,10 +108,22 @@ const CourseInfoEditor = () => {
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { title: "", description: "", stage_id: "", subject_id: "" },
+    defaultValues: {
+      title: "",
+      description: "",
+      stage_id: "",
+      subject_id: "",
+      is_paid: false,
+      price_egp: "",
+      discount_price_egp: "",
+      discount_expires_at: "",
+    },
   });
   const stageVal = watch("stage_id");
   const subjectVal = watch("subject_id");
+  const isPaid = watch("is_paid");
+  const priceEgp = watch("price_egp");
+  const discountEgp = watch("discount_price_egp");
 
   useEffect(() => {
     supabase
