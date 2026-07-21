@@ -1,21 +1,21 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   CalendarClock,
   ClipboardList,
+  Clock,
   Download,
   File as FileIcon,
   FileImage,
   FileText,
-  Info,
   Loader2,
   Target,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import AssignmentSubmissionPanel from "./AssignmentSubmissionPanel";
 
 interface AssignmentRow {
   id: string;
@@ -133,11 +133,26 @@ const AssignmentInlinePanel = ({ assignmentId }: Props) => {
     );
   }
 
-  const now = Date.now();
-  const start = new Date(assignment.start_at).getTime();
-  const end = new Date(assignment.end_at).getTime();
-  const status =
-    now < start ? "upcoming" : now > end ? "closed" : "open";
+  return <AssignmentBody assignment={assignment} files={files} downloading={downloading} openFile={openFile} />;
+};
+
+interface BodyProps {
+  assignment: AssignmentRow;
+  files: FileRow[];
+  downloading: string | null;
+  openFile: (row: FileRow) => void;
+}
+
+const AssignmentBody = ({ assignment, files, downloading, openFile }: BodyProps) => {
+  // Live clock so the window state changes without needing a manual refresh.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const start = useMemo(() => new Date(assignment.start_at).getTime(), [assignment.start_at]);
+  const end = useMemo(() => new Date(assignment.end_at).getTime(), [assignment.end_at]);
+  const status = now < start ? "upcoming" : now > end ? "closed" : "open";
 
   const statusMeta: Record<
     typeof status,
@@ -275,13 +290,26 @@ const AssignmentInlinePanel = ({ assignmentId }: Props) => {
         )}
       </motion.div>
 
-      <div className="rounded-xl border border-dashed border-border p-4 flex items-start gap-3 text-xs text-muted-foreground">
-        <Info className="w-4 h-4 mt-0.5 shrink-0" />
-        <span>
-          تسليم الواجبات والتصحيح سيكونان متاحين قريبًا. بإمكانك حاليًا مراجعة
-          المطلوب وتحميل الملفات المرفقة.
-        </span>
-      </div>
+      {status === "upcoming" ? (
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl border border-sky-500/30 bg-sky-500/5 p-6 text-center"
+        >
+          <div className="w-12 h-12 mx-auto rounded-full bg-sky-500/15 flex items-center justify-center mb-3">
+            <Clock className="w-6 h-6 text-sky-600" />
+          </div>
+          <h3 className="text-base font-bold mb-1">لم يبدأ الواجب بعد</h3>
+          <p className="text-sm text-muted-foreground">
+            سيكون متاحاً في {fmt(assignment.start_at)}
+          </p>
+        </motion.div>
+      ) : (
+        <AssignmentSubmissionPanel
+          assignmentId={assignment.id}
+          endAt={assignment.end_at}
+        />
+      )}
     </div>
   );
 };

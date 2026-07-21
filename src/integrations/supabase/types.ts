@@ -49,6 +49,89 @@ export type Database = {
           },
         ]
       }
+      assignment_submission_files: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_size_bytes: number
+          file_url: string
+          id: string
+          submission_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_size_bytes?: number
+          file_url: string
+          id?: string
+          submission_id: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_size_bytes?: number
+          file_url?: string
+          id?: string
+          submission_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignment_submission_files_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "assignment_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assignment_submissions: {
+        Row: {
+          assignment_id: string
+          created_at: string
+          id: string
+          status: string
+          submitted_at: string | null
+          text_content: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assignment_id: string
+          created_at?: string
+          id?: string
+          status?: string
+          submitted_at?: string | null
+          text_content?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assignment_id?: string
+          created_at?: string
+          id?: string
+          status?: string
+          submitted_at?: string | null
+          text_content?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignment_submissions_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignment_submissions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assignments: {
         Row: {
           course_id: string
@@ -1135,6 +1218,10 @@ export type Database = {
           stage_name: string
           subject_name: string
         }[]
+      }
+      assignment_window_open: {
+        Args: { _assignment_id: string }
+        Returns: boolean
       }
       get_attempt_details: { Args: { _attempt_id: string }; Returns: Json }
       get_attempt_questions: { Args: { _attempt_id: string }; Returns: Json }
