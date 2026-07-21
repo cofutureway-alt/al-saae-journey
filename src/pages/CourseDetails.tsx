@@ -497,6 +497,7 @@ const EnrollCard = ({
   onEnroll,
   onStart,
   progress,
+  effective,
 }: {
   enrolled: boolean;
   isAdmin: boolean;
@@ -504,7 +505,9 @@ const EnrollCard = ({
   onEnroll: () => void;
   onStart: () => void;
   progress: number | null;
+  effective: ReturnType<typeof getEffectiveCoursePrice>;
 }) => {
+  const isPaid = !effective.isFree;
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -512,12 +515,27 @@ const EnrollCard = ({
       className="rounded-2xl border border-border bg-card overflow-hidden"
     >
       <div className="p-6 space-y-4">
-        <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-bold text-foreground">مجانًا</span>
-          <span className="text-xs text-muted-foreground">
-            (قد تُضاف باقات مدفوعة لاحقًا)
-          </span>
-        </div>
+        {isPaid ? (
+          <div className="space-y-2">
+            <div className="flex items-baseline gap-3 flex-wrap">
+              <span className="text-3xl font-bold text-foreground">
+                {formatPiastres(effective.amount)}
+              </span>
+              {effective.discountActive && effective.originalAmount !== null && (
+                <span className="text-base text-muted-foreground line-through">
+                  {formatPiastres(effective.originalAmount)}
+                </span>
+              )}
+            </div>
+            {effective.discountActive && effective.discountExpiresAt && (
+              <DiscountCountdown target={effective.discountExpiresAt} compact />
+            )}
+          </div>
+        ) : (
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-bold text-foreground">مجانًا</span>
+          </div>
+        )}
 
         {isAdmin ? (
           <div className="rounded-lg bg-primary/10 border border-primary/20 p-3 text-sm flex items-start gap-2">
@@ -532,7 +550,11 @@ const EnrollCard = ({
         ) : (
           <div className="rounded-lg bg-accent p-3 text-sm flex items-start gap-2">
             <Sparkles className="w-4 h-4 text-primary mt-0.5" />
-            <span>سجّل مجانًا لفتح كامل الدروس والملفات.</span>
+            <span>
+              {isPaid
+                ? "اشترِ الدورة الآن لفتح كامل المحتوى."
+                : "سجّل مجانًا لفتح كامل الدروس والملفات."}
+            </span>
           </div>
         )}
 
@@ -567,7 +589,7 @@ const EnrollCard = ({
             className="w-full font-bold shadow-lg shadow-primary/20"
           >
             {enrolling && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
-            سجّل مجانًا
+            {isPaid ? "شراء الكورس" : "سجّل مجانًا"}
           </Button>
         )}
       </div>
