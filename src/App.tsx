@@ -43,6 +43,7 @@ import AdminStudentDetail from "./pages/admin/AdminStudentDetail";
 import AdminQrSettings from "./pages/admin/AdminQrSettings";
 import AdminCards from "./pages/admin/AdminCards";
 import AdminWallets from "./pages/admin/AdminWallets";
+import AdminPaymentGateways from "./pages/admin/AdminPaymentGateways";
 import CardBuilder from "./pages/admin/CardBuilder";
 import PublicStudentSnapshot from "./pages/PublicStudentSnapshot";
 
