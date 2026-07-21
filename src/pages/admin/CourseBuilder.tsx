@@ -912,7 +912,11 @@ const CourseBuilder = () => {
       return;
     }
 
-    if (activeData?.type === "lesson" || activeData?.type === "quiz") {
+    if (
+      activeData?.type === "lesson" ||
+      activeData?.type === "quiz" ||
+      activeData?.type === "assignment"
+    ) {
       const parsedActive = parseDragId(String(active.id));
       if (!parsedActive || parsedActive.kind === "unit") return;
 
