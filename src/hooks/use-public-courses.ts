@@ -109,6 +109,7 @@ export function usePublicCourses(limit?: number) {
             0,
           ),
           quizzes_count: quizzesByCourse[c.id] ?? 0,
+          assignments_count: assignmentsByCourse[c.id] ?? 0,
           questions_count: questionsByCourse[c.id] ?? 0,
           created_at: c.created_at,
         })),
