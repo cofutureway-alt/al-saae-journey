@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import {
@@ -21,7 +21,19 @@ import {
   Sparkles,
   PieChart,
   Clock,
+  Ticket,
+  CreditCard,
+  ShieldCheck,
 } from "lucide-react";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip as RTooltip,
+} from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminStats } from "@/hooks/use-stats";
 import { StatCard } from "@/components/StatCard";
@@ -30,6 +42,37 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useSignedThumbnail } from "@/hooks/use-signed-thumbnail";
 import { formatPiastres } from "@/lib/money";
+
+/* Small count-up used inside Financial tab summary numbers */
+function useCountUp(target: number, duration = 700) {
+  const [value, setValue] = useState(0);
+  const startRef = useRef<number | null>(null);
+  const fromRef = useRef(0);
+  useEffect(() => {
+    startRef.current = null;
+    fromRef.current = value;
+    let raf = 0;
+    const tick = (t: number) => {
+      if (startRef.current === null) startRef.current = t;
+      const p = Math.min(1, (t - startRef.current) / duration);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setValue(Math.round(fromRef.current + (target - fromRef.current) * eased));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [target]);
+  return value;
+}
+
+function dayKey(d: Date | string) {
+  const x = typeof d === "string" ? new Date(d) : d;
+  const y = x.getFullYear();
+  const m = String(x.getMonth() + 1).padStart(2, "0");
+  const day = String(x.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
 
 type TabKey = "content" | "academic" | "financial";
 
@@ -469,28 +512,113 @@ const AsgMetricCard = ({
 const FinancialTab = ({ stats }: { stats: ReturnType<typeof useAdminStats> }) => {
   const [totalRevenue, setTotalRevenue] = useState<number | null>(null);
   const [totalBalance, setTotalBalance] = useState<number | null>(null);
+  const [avgOrder, setAvgOrder] = useState<number | null>(null);
+  const [chartData, setChartData] = useState<
+    Array<{ day: string; revenue_egp: number; count: number }> | null
+  >(null);
+  const [funding, setFunding] = useState<{ admin: number; cards: number } | null>(
+    null,
+  );
+  const [topCards, setTopCards] = useState<
+    Array<{ value_piastres: number; count: number }> | null
+  >(null);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [{ data: pays }, { data: wal }] = await Promise.all([
+      // Same underlying queries as the Billing page (Phase 37).
+      const now = new Date();
+      const from30 = new Date(now);
+      from30.setDate(from30.getDate() - 30);
+      from30.setHours(0, 0, 0, 0);
+
+      const [
+        { data: paysAll },
+        { data: pays30 },
+        { data: wal },
+        { data: wtx },
+        { data: cardsData },
+      ] = await Promise.all([
         (supabase as any)
           .from("payment_transactions")
           .select("amount_piastres, status")
           .eq("status", "success"),
+        (supabase as any)
+          .from("payment_transactions")
+          .select("amount_piastres, created_at, status")
+          .eq("status", "success")
+          .gte("created_at", from30.toISOString()),
         (supabase as any).from("wallets").select("balance_piastres"),
+        (supabase as any)
+          .from("wallet_transactions")
+          .select("type, amount_piastres")
+          .in("type", ["admin_charge", "bulk_charge", "card_redemption"]),
+        (supabase as any)
+          .from("top_up_cards")
+          .select("value_piastres")
+          .eq("is_redeemed", true),
       ]);
       if (cancelled) return;
-      const rev = ((pays ?? []) as { amount_piastres: number }[]).reduce(
-        (s, r) => s + (r.amount_piastres || 0),
-        0,
-      );
+
+      const successAll = (paysAll ?? []) as { amount_piastres: number }[];
+      const rev = successAll.reduce((s, r) => s + (r.amount_piastres || 0), 0);
       const bal = ((wal ?? []) as { balance_piastres: number }[]).reduce(
         (s, w) => s + (w.balance_piastres || 0),
         0,
       );
       setTotalRevenue(rev);
       setTotalBalance(bal);
+      setAvgOrder(successAll.length > 0 ? Math.round(rev / successAll.length) : 0);
+
+      // Build a continuous 30-day series (matches Billing's chart logic)
+      const days: string[] = [];
+      const cursor = new Date(from30);
+      const end = new Date(now);
+      end.setHours(0, 0, 0, 0);
+      while (cursor <= end) {
+        days.push(dayKey(cursor));
+        cursor.setDate(cursor.getDate() + 1);
+      }
+      const map = new Map<string, { count: number; revenue: number }>();
+      for (const d of days) map.set(d, { count: 0, revenue: 0 });
+      for (const r of (pays30 ?? []) as {
+        amount_piastres: number;
+        created_at: string;
+      }[]) {
+        const k = dayKey(r.created_at);
+        const cur = map.get(k);
+        if (cur) {
+          cur.count += 1;
+          cur.revenue += r.amount_piastres || 0;
+        }
+      }
+      setChartData(
+        days.map((d) => ({
+          day: d.slice(5),
+          count: map.get(d)!.count,
+          revenue_egp: +(map.get(d)!.revenue / 100).toFixed(2),
+        })),
+      );
+
+      // Funding source breakdown (all-time)
+      let admin = 0;
+      let cards = 0;
+      for (const t of (wtx ?? []) as { type: string; amount_piastres: number }[]) {
+        if (t.type === "card_redemption") cards += t.amount_piastres || 0;
+        else admin += t.amount_piastres || 0;
+      }
+      setFunding({ admin, cards });
+
+      // Most-used top-up card values — top 3
+      const counts = new Map<number, number>();
+      for (const c of (cardsData ?? []) as { value_piastres: number }[]) {
+        counts.set(c.value_piastres, (counts.get(c.value_piastres) ?? 0) + 1);
+      }
+      const arr = Array.from(counts.entries())
+        .map(([value_piastres, count]) => ({ value_piastres, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 3);
+      setTopCards(arr);
     })();
     return () => {
       cancelled = true;
@@ -537,6 +665,16 @@ const FinancialTab = ({ stats }: { stats: ReturnType<typeof useAdminStats> }) =>
           <ArrowLeft className="w-5 h-5 text-primary group-hover:-translate-x-1 transition-transform shrink-0" />
         </Link>
       </motion.div>
+
+      {/* Sales trend (last 30 days) */}
+      <SalesTrendCard data={chartData} />
+
+      {/* AOV + Funding split + Top card values */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <AverageOrderCard value={avgOrder} />
+        <FundingBreakdownCard funding={funding} />
+        <TopCardValuesCard rows={topCards} />
+      </div>
 
       <motion.div
         initial={{ opacity: 0, y: 12 }}
@@ -718,6 +856,285 @@ const TopThumb = ({ path }: { path: string | null }) => {
         <BookOpen className="w-5 h-5 text-muted-foreground/50" />
       )}
     </div>
+  );
+};
+
+/* ------------------------------ Financial subcomponents ------------------ */
+
+const SalesTrendCard = ({
+  data,
+}: {
+  data: Array<{ day: string; revenue_egp: number; count: number }> | null;
+}) => {
+  const totalRevenueEgp = useMemo(
+    () => (data ? data.reduce((s, d) => s + d.revenue_egp, 0) : 0),
+    [data],
+  );
+  const totalCount = useMemo(
+    () => (data ? data.reduce((s, d) => s + d.count, 0) : 0),
+    [data],
+  );
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.18 }}
+      className="rounded-2xl border border-border/60 bg-card overflow-hidden"
+    >
+      <div className="p-5 md:p-6 border-b border-border/60 flex items-start md:items-center justify-between gap-3 flex-col md:flex-row">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <TrendingUp className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="text-lg md:text-xl font-bold">اتجاه المبيعات</h2>
+            <p className="text-xs text-muted-foreground">آخر 30 يوماً</p>
+          </div>
+        </div>
+        {data && (
+          <div className="flex items-center gap-4 text-xs md:text-sm">
+            <div className="text-muted-foreground">
+              الإيرادات:{" "}
+              <span className="font-bold tabular-nums text-foreground">
+                {formatPiastres(Math.round(totalRevenueEgp * 100))}
+              </span>
+            </div>
+            <div className="text-muted-foreground">
+              المعاملات:{" "}
+              <span className="font-bold tabular-nums text-foreground">{totalCount}</span>
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="p-3 md:p-4">
+        {!data ? (
+          <Skeleton className="h-48 w-full rounded-xl" />
+        ) : totalCount === 0 ? (
+          <div className="h-48 flex flex-col items-center justify-center text-center">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-muted mb-2">
+              <BarChart3 className="w-5 h-5 text-muted-foreground" />
+            </div>
+            <div className="text-sm font-semibold">لا توجد مبيعات في آخر 30 يوماً</div>
+          </div>
+        ) : (
+          <div className="w-full h-48 md:h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="salesFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis
+                  dataKey="day"
+                  tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                  interval="preserveStartEnd"
+                  minTickGap={20}
+                />
+                <YAxis
+                  tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                  width={40}
+                />
+                <RTooltip
+                  contentStyle={{
+                    background: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: 12,
+                    fontSize: 12,
+                  }}
+                  labelStyle={{ fontWeight: 700 }}
+                  formatter={(v: number, name: string) => [
+                    name === "revenue_egp" ? `${v.toFixed(2)} ج.م` : v,
+                    name === "revenue_egp" ? "الإيراد" : "المعاملات",
+                  ]}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="revenue_egp"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={2}
+                  fill="url(#salesFill)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+};
+
+const AverageOrderCard = ({ value }: { value: number | null }) => {
+  const counter = useCountUp(value ?? 0);
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.22 }}
+      className="rounded-2xl border border-border/60 bg-card p-5 md:p-6"
+    >
+      <div className="flex items-center gap-3">
+        <div className="w-11 h-11 rounded-xl bg-violet-500/10 text-violet-600 dark:text-violet-400 flex items-center justify-center">
+          <BarChart3 className="w-5 h-5" />
+        </div>
+        <div>
+          <div className="text-sm font-semibold text-muted-foreground">
+            متوسط قيمة الطلب
+          </div>
+          <div className="text-[11px] text-muted-foreground">
+            على كل المعاملات الناجحة
+          </div>
+        </div>
+      </div>
+      <div className="mt-4">
+        {value === null ? (
+          <Skeleton className="h-9 w-32" />
+        ) : (
+          <div className="text-3xl md:text-4xl font-black tabular-nums">
+            {formatPiastres(counter)}
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+};
+
+const FundingBreakdownCard = ({
+  funding,
+}: {
+  funding: { admin: number; cards: number } | null;
+}) => {
+  const total = funding ? funding.admin + funding.cards : 0;
+  const adminPct = total > 0 ? (funding!.admin / total) * 100 : 0;
+  const cardsPct = total > 0 ? (funding!.cards / total) * 100 : 0;
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.26 }}
+      className="rounded-2xl border border-border/60 bg-card p-5 md:p-6"
+    >
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-11 h-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+          <PieChart className="w-5 h-5" />
+        </div>
+        <div>
+          <div className="text-sm font-semibold">مصادر تمويل المحافظ</div>
+          <div className="text-[11px] text-muted-foreground">إجمالي المدة</div>
+        </div>
+      </div>
+      {!funding ? (
+        <>
+          <Skeleton className="h-4 w-full rounded-full" />
+          <Skeleton className="h-10 w-full mt-3" />
+        </>
+      ) : total === 0 ? (
+        <div className="text-sm text-muted-foreground">لا توجد تعاملات بعد.</div>
+      ) : (
+        <>
+          <div className="w-full h-3 rounded-full overflow-hidden bg-muted flex">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${adminPct}%` }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="h-full bg-primary"
+              title="شحن إداري"
+            />
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${cardsPct}%` }}
+              transition={{ duration: 0.8, ease: "easeOut", delay: 0.1 }}
+              className="h-full bg-emerald-500"
+              title="بطاقات شحن"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3 mt-4 text-sm">
+            <div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span className="w-2.5 h-2.5 rounded-sm bg-primary" />
+                <ShieldCheck className="w-3.5 h-3.5" />
+                شحن إداري
+              </div>
+              <div className="font-bold tabular-nums mt-1">
+                {formatPiastres(funding.admin)}
+              </div>
+              <div className="text-[11px] text-muted-foreground tabular-nums">
+                {adminPct.toFixed(1)}%
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500" />
+                <CreditCard className="w-3.5 h-3.5" />
+                بطاقات شحن
+              </div>
+              <div className="font-bold tabular-nums mt-1">
+                {formatPiastres(funding.cards)}
+              </div>
+              <div className="text-[11px] text-muted-foreground tabular-nums">
+                {cardsPct.toFixed(1)}%
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+    </motion.div>
+  );
+};
+
+const TopCardValuesCard = ({
+  rows,
+}: {
+  rows: Array<{ value_piastres: number; count: number }> | null;
+}) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.3 }}
+      className="rounded-2xl border border-border/60 bg-card p-5 md:p-6"
+    >
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-11 h-11 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+          <Ticket className="w-5 h-5" />
+        </div>
+        <div>
+          <div className="text-sm font-semibold">أكثر فئات الكروت استخداماً</div>
+          <div className="text-[11px] text-muted-foreground">أفضل 3 قيم</div>
+        </div>
+      </div>
+      {!rows ? (
+        <div className="space-y-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-10 w-full rounded-xl" />
+          ))}
+        </div>
+      ) : rows.length === 0 ? (
+        <div className="text-sm text-muted-foreground">لا توجد كروت مستخدمة بعد.</div>
+      ) : (
+        <ul className="space-y-2">
+          {rows.map((r, i) => (
+            <motion.li
+              key={r.value_piastres}
+              initial={{ opacity: 0, x: 12 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.35 + i * 0.05 }}
+              className="flex items-center justify-between gap-3 rounded-xl bg-muted/40 px-3 py-2"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <RankBadge rank={i + 1} />
+                <div className="font-bold tabular-nums">{formatPiastres(r.value_piastres)}</div>
+              </div>
+              <div className="text-xs font-semibold text-muted-foreground tabular-nums">
+                {r.count} استخدام
+              </div>
+            </motion.li>
+          ))}
+        </ul>
+      )}
+    </motion.div>
   );
 };
 
