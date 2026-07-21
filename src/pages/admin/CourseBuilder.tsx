@@ -994,6 +994,38 @@ const CourseBuilder = () => {
     load();
   };
 
+  const openAddAssignment = (unitId: string) => {
+    setAssignmentUnitId(unitId);
+    setEditingAssignment(null);
+    setAssignmentModalOpen(true);
+  };
+  const openEditAssignment = (assignment: AssignmentRecord) => {
+    setAssignmentUnitId(assignment.unit_id);
+    setEditingAssignment(assignment);
+    setAssignmentModalOpen(true);
+  };
+  const deleteAssignment = async () => {
+    if (!deletingAssignment) return;
+    await markSaving(async () => {
+      const { data: files } = await (supabase as any)
+        .from("assignment_files")
+        .select("file_url")
+        .eq("assignment_id", deletingAssignment.id);
+      if (files?.length) {
+        await supabase.storage
+          .from("assignment-files")
+          .remove(files.map((f: any) => f.file_url));
+      }
+      const { error } = await (supabase as any)
+        .from("assignments")
+        .delete()
+        .eq("id", deletingAssignment.id);
+      if (error) throw error;
+    });
+    setDeletingAssignment(null);
+    load();
+  };
+
   const nextLessonPosition = useMemo(() => {
     if (!lessonUnitId) return 0;
     const u = units.find((x) => x.id === lessonUnitId);
