@@ -129,6 +129,17 @@ const AdminCourses = () => {
       }
     }
 
+    const assignmentsByCourse: Record<string, number> = {};
+    if (courseIds.length) {
+      const { data: assignments } = await (supabase as any)
+        .from("assignments")
+        .select("course_id")
+        .in("course_id", courseIds);
+      (assignments ?? []).forEach((a: any) => {
+        assignmentsByCourse[a.course_id] = (assignmentsByCourse[a.course_id] ?? 0) + 1;
+      });
+    }
+
     setCourses(
       (cRows ?? []).map((c: any) => ({
         id: c.id,
@@ -146,6 +157,7 @@ const AdminCourses = () => {
             0,
           ) ?? 0,
         quizzes_count: quizzesByCourse[c.id] ?? 0,
+        assignments_count: assignmentsByCourse[c.id] ?? 0,
         questions_count: questionsByCourse[c.id] ?? 0,
       })),
     );
