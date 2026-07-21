@@ -387,10 +387,13 @@ const UnitCard = ({
   onDelete,
   onAddLesson,
   onAddQuiz,
+  onAddAssignment,
   onEditLesson,
   onDeleteLesson,
   onEditQuiz,
   onDeleteQuiz,
+  onEditAssignment,
+  onDeleteAssignment,
 }: {
   unit: Unit;
   expanded: boolean;
@@ -399,10 +402,13 @@ const UnitCard = ({
   onDelete: () => void;
   onAddLesson: () => void;
   onAddQuiz: () => void;
+  onAddAssignment: () => void;
   onEditLesson: (l: LessonRecord) => void;
   onDeleteLesson: (l: LessonRecord) => void;
   onEditQuiz: (q: QuizRecord) => void;
   onDeleteQuiz: (q: QuizRecord) => void;
+  onEditAssignment: (a: AssignmentRecord) => void;
+  onDeleteAssignment: (a: AssignmentRecord) => void;
 }) => {
   const {
     attributes,
@@ -421,6 +427,7 @@ const UnitCard = ({
 
   const lessonCount = unit.content.filter((c) => c.kind === "lesson").length;
   const quizCount = unit.content.filter((c) => c.kind === "quiz").length;
+  const assignmentCount = unit.content.filter((c) => c.kind === "assignment").length;
 
   return (
     <div
@@ -444,7 +451,7 @@ const UnitCard = ({
           <div className="flex-1 min-w-0">
             <div className="font-bold text-foreground truncate">{unit.title}</div>
             <div className="text-xs text-muted-foreground">
-              {lessonCount} دروس · {quizCount} اختبارات
+              {lessonCount} دروس · {quizCount} اختبارات · {assignmentCount} واجبات
             </div>
           </div>
           <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
@@ -485,34 +492,47 @@ const UnitCard = ({
                 strategy={verticalListSortingStrategy}
               >
                 <div className="space-y-2 min-h-[8px]">
-                  {unit.content.map((c) =>
-                    c.kind === "lesson" ? (
-                      <LessonItem
-                        key={`l-${c.id}`}
-                        lesson={c.lesson}
-                        onEdit={() => onEditLesson(c.lesson)}
-                        onDelete={() => onDeleteLesson(c.lesson)}
+                  {unit.content.map((c) => {
+                    if (c.kind === "lesson") {
+                      return (
+                        <LessonItem
+                          key={`l-${c.id}`}
+                          lesson={c.lesson}
+                          onEdit={() => onEditLesson(c.lesson)}
+                          onDelete={() => onDeleteLesson(c.lesson)}
+                        />
+                      );
+                    }
+                    if (c.kind === "quiz") {
+                      return (
+                        <QuizItem
+                          key={`q-${c.id}`}
+                          quiz={c.quiz}
+                          onEdit={() => onEditQuiz(c.quiz)}
+                          onDelete={() => onDeleteQuiz(c.quiz)}
+                        />
+                      );
+                    }
+                    return (
+                      <AssignmentItem
+                        key={`a-${c.id}`}
+                        assignment={c.assignment}
+                        onEdit={() => onEditAssignment(c.assignment)}
+                        onDelete={() => onDeleteAssignment(c.assignment)}
                       />
-                    ) : (
-                      <QuizItem
-                        key={`q-${c.id}`}
-                        quiz={c.quiz}
-                        onEdit={() => onEditQuiz(c.quiz)}
-                        onDelete={() => onDeleteQuiz(c.quiz)}
-                      />
-                    ),
-                  )}
+                    );
+                  })}
                   {unit.content.length === 0 && (
                     <div className="text-center text-xs text-muted-foreground py-6 border border-dashed rounded-lg">
-                      أضف درسًا أو اختبارًا لهذه الوحدة
+                      أضف درسًا أو اختبارًا أو واجبًا لهذه الوحدة
                     </div>
                   )}
                 </div>
               </SortableContext>
-              <div className="grid grid-cols-2 gap-2 mt-2">
+              <div className="grid grid-cols-3 gap-2 mt-2">
                 <Button variant="outline" size="sm" onClick={onAddLesson}>
-                  <Plus className="w-4 h-4 ml-2" />
-                  إضافة درس
+                  <Plus className="w-4 h-4 ml-1" />
+                  درس
                 </Button>
                 <Button
                   variant="outline"
@@ -520,8 +540,17 @@ const UnitCard = ({
                   onClick={onAddQuiz}
                   className="border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
                 >
-                  <ClipboardList className="w-4 h-4 ml-2" />
-                  إضافة اختبار
+                  <ClipboardList className="w-4 h-4 ml-1" />
+                  اختبار
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onAddAssignment}
+                  className="border-emerald-500/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10"
+                >
+                  <ClipboardCheck className="w-4 h-4 ml-1" />
+                  واجب
                 </Button>
               </div>
             </div>
