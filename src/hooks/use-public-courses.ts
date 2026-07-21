@@ -16,6 +16,10 @@ export interface PublicCourse {
   assignments_count: number;
   questions_count: number;
   created_at: string;
+  is_paid: boolean;
+  price_piastres: number | null;
+  discount_price_piastres: number | null;
+  discount_expires_at: string | null;
 }
 
 export function usePublicCourses(limit?: number) {
