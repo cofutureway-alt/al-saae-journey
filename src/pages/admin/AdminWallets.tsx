@@ -265,6 +265,34 @@ function CardsTab() {
     setTimeout(() => setCopied(null), 1500);
   };
 
+  const toggleAll = () =>
+    setSelectedIds((p) =>
+      p.size === filtered.length ? new Set() : new Set(filtered.map((c) => c.id))
+    );
+  const toggleOne = (id: string) =>
+    setSelectedIds((p) => {
+      const n = new Set(p);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+
+  const runBulkDelete = async () => {
+    setBulkBusy(true);
+    try {
+      const ids = Array.from(selectedIds);
+      const { error } = await supabase.from("top_up_cards").delete().in("id", ids);
+      if (error) throw error;
+      toast.success(`تم حذف ${ids.length} كارت`);
+      setCards((cs) => cs.filter((c) => !selectedIds.has(c.id)));
+      setSelectedIds(new Set());
+      setBulkDeleteOpen(false);
+    } catch (e: any) {
+      toast.error(e?.message ?? "تعذّر الحذف");
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Toolbar */}
