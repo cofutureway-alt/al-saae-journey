@@ -182,6 +182,7 @@ const StudentLayout = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            <WalletWidget to="/dashboard/wallet" />
             <ThemeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
