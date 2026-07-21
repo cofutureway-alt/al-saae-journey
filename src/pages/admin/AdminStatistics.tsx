@@ -512,28 +512,113 @@ const AsgMetricCard = ({
 const FinancialTab = ({ stats }: { stats: ReturnType<typeof useAdminStats> }) => {
   const [totalRevenue, setTotalRevenue] = useState<number | null>(null);
   const [totalBalance, setTotalBalance] = useState<number | null>(null);
+  const [avgOrder, setAvgOrder] = useState<number | null>(null);
+  const [chartData, setChartData] = useState<
+    Array<{ day: string; revenue_egp: number; count: number }> | null
+  >(null);
+  const [funding, setFunding] = useState<{ admin: number; cards: number } | null>(
+    null,
+  );
+  const [topCards, setTopCards] = useState<
+    Array<{ value_piastres: number; count: number }> | null
+  >(null);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [{ data: pays }, { data: wal }] = await Promise.all([
+      // Same underlying queries as the Billing page (Phase 37).
+      const now = new Date();
+      const from30 = new Date(now);
+      from30.setDate(from30.getDate() - 30);
+      from30.setHours(0, 0, 0, 0);
+
+      const [
+        { data: paysAll },
+        { data: pays30 },
+        { data: wal },
+        { data: wtx },
+        { data: cardsData },
+      ] = await Promise.all([
         (supabase as any)
           .from("payment_transactions")
           .select("amount_piastres, status")
           .eq("status", "success"),
+        (supabase as any)
+          .from("payment_transactions")
+          .select("amount_piastres, created_at, status")
+          .eq("status", "success")
+          .gte("created_at", from30.toISOString()),
         (supabase as any).from("wallets").select("balance_piastres"),
+        (supabase as any)
+          .from("wallet_transactions")
+          .select("type, amount_piastres")
+          .in("type", ["admin_charge", "bulk_charge", "card_redemption"]),
+        (supabase as any)
+          .from("top_up_cards")
+          .select("value_piastres")
+          .eq("is_redeemed", true),
       ]);
       if (cancelled) return;
-      const rev = ((pays ?? []) as { amount_piastres: number }[]).reduce(
-        (s, r) => s + (r.amount_piastres || 0),
-        0,
-      );
+
+      const successAll = (paysAll ?? []) as { amount_piastres: number }[];
+      const rev = successAll.reduce((s, r) => s + (r.amount_piastres || 0), 0);
       const bal = ((wal ?? []) as { balance_piastres: number }[]).reduce(
         (s, w) => s + (w.balance_piastres || 0),
         0,
       );
       setTotalRevenue(rev);
       setTotalBalance(bal);
+      setAvgOrder(successAll.length > 0 ? Math.round(rev / successAll.length) : 0);
+
+      // Build a continuous 30-day series (matches Billing's chart logic)
+      const days: string[] = [];
+      const cursor = new Date(from30);
+      const end = new Date(now);
+      end.setHours(0, 0, 0, 0);
+      while (cursor <= end) {
+        days.push(dayKey(cursor));
+        cursor.setDate(cursor.getDate() + 1);
+      }
+      const map = new Map<string, { count: number; revenue: number }>();
+      for (const d of days) map.set(d, { count: 0, revenue: 0 });
+      for (const r of (pays30 ?? []) as {
+        amount_piastres: number;
+        created_at: string;
+      }[]) {
+        const k = dayKey(r.created_at);
+        const cur = map.get(k);
+        if (cur) {
+          cur.count += 1;
+          cur.revenue += r.amount_piastres || 0;
+        }
+      }
+      setChartData(
+        days.map((d) => ({
+          day: d.slice(5),
+          count: map.get(d)!.count,
+          revenue_egp: +(map.get(d)!.revenue / 100).toFixed(2),
+        })),
+      );
+
+      // Funding source breakdown (all-time)
+      let admin = 0;
+      let cards = 0;
+      for (const t of (wtx ?? []) as { type: string; amount_piastres: number }[]) {
+        if (t.type === "card_redemption") cards += t.amount_piastres || 0;
+        else admin += t.amount_piastres || 0;
+      }
+      setFunding({ admin, cards });
+
+      // Most-used top-up card values — top 3
+      const counts = new Map<number, number>();
+      for (const c of (cardsData ?? []) as { value_piastres: number }[]) {
+        counts.set(c.value_piastres, (counts.get(c.value_piastres) ?? 0) + 1);
+      }
+      const arr = Array.from(counts.entries())
+        .map(([value_piastres, count]) => ({ value_piastres, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 3);
+      setTopCards(arr);
     })();
     return () => {
       cancelled = true;
@@ -580,6 +665,16 @@ const FinancialTab = ({ stats }: { stats: ReturnType<typeof useAdminStats> }) =>
           <ArrowLeft className="w-5 h-5 text-primary group-hover:-translate-x-1 transition-transform shrink-0" />
         </Link>
       </motion.div>
+
+      {/* Sales trend (last 30 days) */}
+      <SalesTrendCard data={chartData} />
+
+      {/* AOV + Funding split + Top card values */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <AverageOrderCard value={avgOrder} />
+        <FundingBreakdownCard funding={funding} />
+        <TopCardValuesCard rows={topCards} />
+      </div>
 
       <motion.div
         initial={{ opacity: 0, y: 12 }}
