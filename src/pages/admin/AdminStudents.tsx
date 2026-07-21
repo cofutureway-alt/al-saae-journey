@@ -328,6 +328,7 @@ export default function AdminStudents() {
               {loading ? (
                 Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i} className="border-t border-border/60">
+                    <td className="p-4"><Skeleton className="h-4 w-4" /></td>
                     <td className="p-4"><Skeleton className="h-10 w-40" /></td>
                     <td className="p-4 hidden sm:table-cell"><Skeleton className="h-4 w-28" /></td>
                     <td className="p-4 hidden md:table-cell"><Skeleton className="h-4 w-16" /></td>
@@ -337,7 +338,7 @@ export default function AdminStudents() {
                 ))
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="p-10 text-center text-muted-foreground">
+                  <td colSpan={6} className="p-10 text-center text-muted-foreground">
                     لا يوجد طلاب مطابقون
                   </td>
                 </tr>
