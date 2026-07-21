@@ -582,6 +582,24 @@ function CardsTab() {
         cards={cards}
         distinctValues={distinctValues}
       />
+
+      <Dialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>حذف {selectedIds.size} كارت نهائيًا؟</DialogTitle>
+            <DialogDescription>
+              سيتم حذف الكروت المحددة نهائيًا من قاعدة البيانات. لا يمكن التراجع.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkDeleteOpen(false)} disabled={bulkBusy}>إلغاء</Button>
+            <Button variant="destructive" onClick={runBulkDelete} disabled={bulkBusy}>
+              {bulkBusy && <Loader2 className="w-4 h-4 animate-spin ml-2" />}
+              حذف نهائي
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
