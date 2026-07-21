@@ -41,7 +41,8 @@ import StudentFormModal from "@/components/admin/students/StudentFormModal";
 import StudentQrCard from "@/components/admin/students/StudentQrCard";
 import { useRegistrationFields } from "@/hooks/use-registration-fields";
 import {
-  classifyGroups, LEVEL_META, type GroupClassification,
+  classifyCombinedGroups, LEVEL_META, type GroupClassification,
+  type AssignmentEval,
 } from "@/lib/weak-analysis";
 
 const STATUS_META: Record<string, { label: string; className: string }> = {
