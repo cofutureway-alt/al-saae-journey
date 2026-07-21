@@ -37,6 +37,7 @@ import MyAssignmentSubmissions from "./pages/student/MyAssignmentSubmissions";
 import QuizStatistics from "./pages/admin/QuizStatistics";
 import AdminRegistrationForm from "./pages/admin/AdminRegistrationForm";
 import MyAccount from "./pages/student/MyAccount";
+import MyWallet from "./pages/student/MyWallet";
 import AdminStudents from "./pages/admin/AdminStudents";
 import AdminStudentDetail from "./pages/admin/AdminStudentDetail";
 import AdminQrSettings from "./pages/admin/AdminQrSettings";
