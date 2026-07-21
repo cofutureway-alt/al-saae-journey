@@ -163,24 +163,32 @@ export default function AdminStudentDetail() {
 
   const weakSubjects: GroupClassification[] = useMemo(
     () =>
-      classifyGroups(
+      classifyCombinedGroups(
         quizzesForAnalysis as any,
         officialAttempts,
+        assignmentEvals,
         "subject_id",
-        (_k, q) => q.subject_name ?? "بدون مادة",
+        (_k, ctx) =>
+          ctx.quiz?.subject_name ??
+          ctx.assignment?.subject_name ??
+          "بدون مادة",
       ),
-    [quizzesForAnalysis, officialAttempts],
+    [quizzesForAnalysis, officialAttempts, assignmentEvals],
   );
 
   const weakCourses: GroupClassification[] = useMemo(
     () =>
-      classifyGroups(
+      classifyCombinedGroups(
         quizzesForAnalysis as any,
         officialAttempts,
+        assignmentEvals,
         "course_id",
-        (_k, q) => q.course_title ?? "بدون كورس",
+        (_k, ctx) =>
+          ctx.quiz?.course_title ??
+          ctx.assignment?.course_title ??
+          "بدون كورس",
       ),
-    [quizzesForAnalysis, officialAttempts],
+    [quizzesForAnalysis, officialAttempts, assignmentEvals],
   );
 
   const stats = useMemo(() => {
