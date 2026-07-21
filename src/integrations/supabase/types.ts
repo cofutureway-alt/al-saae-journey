@@ -1103,6 +1103,50 @@ export type Database = {
         }
         Relationships: []
       }
+      top_up_cards: {
+        Row: {
+          batch_id: string | null
+          code: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_redeemed: boolean
+          redeemed_at: string | null
+          redeemed_by: string | null
+          value_piastres: number
+        }
+        Insert: {
+          batch_id?: string | null
+          code: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_redeemed?: boolean
+          redeemed_at?: string | null
+          redeemed_by?: string | null
+          value_piastres: number
+        }
+        Update: {
+          batch_id?: string | null
+          code?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_redeemed?: boolean
+          redeemed_at?: string | null
+          redeemed_by?: string | null
+          value_piastres?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "top_up_cards_redeemed_by_fkey"
+            columns: ["redeemed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       units: {
         Row: {
           course_id: string
@@ -1192,6 +1236,67 @@ export type Database = {
         }
         Relationships: []
       }
+      wallet_transactions: {
+        Row: {
+          amount_piastres: number
+          balance_after_piastres: number
+          created_at: string
+          id: string
+          notes: string | null
+          performed_by: string | null
+          reference_number: string
+          related_card_id: string | null
+          type: string
+          wallet_id: string
+        }
+        Insert: {
+          amount_piastres: number
+          balance_after_piastres: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          performed_by?: string | null
+          reference_number: string
+          related_card_id?: string | null
+          type: string
+          wallet_id: string
+        }
+        Update: {
+          amount_piastres?: number
+          balance_after_piastres?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          performed_by?: string | null
+          reference_number?: string
+          related_card_id?: string | null
+          type?: string
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_performed_by_fkey"
+            columns: ["performed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_transactions_related_card_id_fkey"
+            columns: ["related_card_id"]
+            isOneToOne: false
+            referencedRelation: "top_up_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_transactions_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wallets: {
         Row: {
           balance_piastres: number
@@ -1238,6 +1343,7 @@ export type Database = {
     }
     Functions: {
       _finalize_attempt: { Args: { _attempt_id: string }; Returns: undefined }
+      _gen_txn_reference: { Args: never; Returns: string }
       _grade_answer: { Args: { _answer_id: string }; Returns: undefined }
       add_answer_time: {
         Args: { _attempt_id: string; _delta: number; _question_id: string }
@@ -1553,6 +1659,7 @@ export type Database = {
             }[]
           }
       next_unit_order_index: { Args: { _unit_id: string }; Returns: number }
+      redeem_top_up_card: { Args: { p_code: string }; Returns: Json }
       resolve_login_email: { Args: { _identifier: string }; Returns: string }
       save_quiz_answer: {
         Args: {
