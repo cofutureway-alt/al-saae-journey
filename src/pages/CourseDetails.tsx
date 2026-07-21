@@ -30,6 +30,9 @@ import { useSignedThumbnail } from "@/hooks/use-signed-thumbnail";
 import { useCourseProgress } from "@/hooks/use-my-progress";
 import { EightPointStar } from "@/components/IslamicPatterns";
 import { listUnitQuizzes } from "@/lib/quiz-api";
+import { getEffectiveCoursePrice, formatPiastres } from "@/lib/money";
+import PurchaseCourseModal from "@/components/course/PurchaseCourseModal";
+import DiscountCountdown from "@/components/DiscountCountdown";
 
 interface Course {
   id: string;
@@ -40,6 +43,10 @@ interface Course {
   stage_name: string | null;
   subject_name: string | null;
   status: "draft" | "published";
+  is_paid: boolean | null;
+  price_piastres: number | null;
+  discount_price_piastres: number | null;
+  discount_expires_at: string | null;
 }
 
 interface LessonLite {
@@ -83,6 +90,7 @@ const CourseDetails = () => {
   const [enrolled, setEnrolled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState(false);
+  const [purchaseOpen, setPurchaseOpen] = useState(false);
   const [openUnits, setOpenUnits] = useState<Record<string, boolean>>({});
 
   const load = useCallback(async () => {
@@ -91,7 +99,7 @@ const CourseDetails = () => {
     // Fetch course (RLS: published visible to all, admin sees all)
     const { data: cData, error: cErr } = await (supabase as any)
       .from("courses")
-      .select("id, title, description, thumbnail_url, stage_id, status, stages(name), subjects(name)")
+      .select("id, title, description, thumbnail_url, stage_id, status, is_paid, price_piastres, discount_price_piastres, discount_expires_at, stages(name), subjects(name)")
       .eq("id", id)
       .maybeSingle();
 
@@ -109,6 +117,10 @@ const CourseDetails = () => {
       stage_name: (cData as any).stages?.name ?? null,
       subject_name: (cData as any).subjects?.name ?? null,
       status: cData.status,
+      is_paid: cData.is_paid ?? false,
+      price_piastres: cData.price_piastres ?? null,
+      discount_price_piastres: cData.discount_price_piastres ?? null,
+      discount_expires_at: cData.discount_expires_at ?? null,
     });
 
     // Units
@@ -201,10 +213,17 @@ const CourseDetails = () => {
   const progress = enrolled ? (progressData?.percent ?? 0) : null;
   const completedIds = progressData?.completedLessonIds ?? new Set<string>();
 
+  const effective = getEffectiveCoursePrice(course);
+
   const handleEnroll = async () => {
     if (!id) return;
     if (!user) {
       navigate(`/login?redirect=/courses/${id}`);
+      return;
+    }
+    // Paid courses go through the purchase modal
+    if (course?.is_paid && effective.amount > 0) {
+      setPurchaseOpen(true);
       return;
     }
     setEnrolling(true);
@@ -213,7 +232,6 @@ const CourseDetails = () => {
         .from("enrollments")
         .insert({ user_id: user.id, course_id: id });
       if (error) {
-        // 23505 unique violation → already enrolled
         if ((error as any).code === "23505") {
           setEnrolled(true);
           toast.success("أنت مسجّل بالفعل في هذه الدورة");
@@ -340,7 +358,21 @@ const CourseDetails = () => {
               onEnroll={handleEnroll}
               onStart={startCourse}
               progress={progress}
+              effective={effective}
             />
+            {course && (
+              <PurchaseCourseModal
+                open={purchaseOpen}
+                onOpenChange={setPurchaseOpen}
+                courseId={course.id}
+                courseTitle={course.title}
+                amountPiastres={effective.amount}
+                onPurchased={() => {
+                  setEnrolled(true);
+                  load();
+                }}
+              />
+            )}
 
             <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
               <div className="flex items-center gap-2 text-sm">
@@ -465,6 +497,7 @@ const EnrollCard = ({
   onEnroll,
   onStart,
   progress,
+  effective,
 }: {
   enrolled: boolean;
   isAdmin: boolean;
@@ -472,7 +505,9 @@ const EnrollCard = ({
   onEnroll: () => void;
   onStart: () => void;
   progress: number | null;
+  effective: ReturnType<typeof getEffectiveCoursePrice>;
 }) => {
+  const isPaid = !effective.isFree;
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -480,12 +515,27 @@ const EnrollCard = ({
       className="rounded-2xl border border-border bg-card overflow-hidden"
     >
       <div className="p-6 space-y-4">
-        <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-bold text-foreground">مجانًا</span>
-          <span className="text-xs text-muted-foreground">
-            (قد تُضاف باقات مدفوعة لاحقًا)
-          </span>
-        </div>
+        {isPaid ? (
+          <div className="space-y-2">
+            <div className="flex items-baseline gap-3 flex-wrap">
+              <span className="text-3xl font-bold text-foreground">
+                {formatPiastres(effective.amount)}
+              </span>
+              {effective.discountActive && effective.originalAmount !== null && (
+                <span className="text-base text-muted-foreground line-through">
+                  {formatPiastres(effective.originalAmount)}
+                </span>
+              )}
+            </div>
+            {effective.discountActive && effective.discountExpiresAt && (
+              <DiscountCountdown target={effective.discountExpiresAt} compact />
+            )}
+          </div>
+        ) : (
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-bold text-foreground">مجانًا</span>
+          </div>
+        )}
 
         {isAdmin ? (
           <div className="rounded-lg bg-primary/10 border border-primary/20 p-3 text-sm flex items-start gap-2">
@@ -500,7 +550,11 @@ const EnrollCard = ({
         ) : (
           <div className="rounded-lg bg-accent p-3 text-sm flex items-start gap-2">
             <Sparkles className="w-4 h-4 text-primary mt-0.5" />
-            <span>سجّل مجانًا لفتح كامل الدروس والملفات.</span>
+            <span>
+              {isPaid
+                ? "اشترِ الدورة الآن لفتح كامل المحتوى."
+                : "سجّل مجانًا لفتح كامل الدروس والملفات."}
+            </span>
           </div>
         )}
 
@@ -535,7 +589,7 @@ const EnrollCard = ({
             className="w-full font-bold shadow-lg shadow-primary/20"
           >
             {enrolling && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
-            سجّل مجانًا
+            {isPaid ? "شراء الكورس" : "سجّل مجانًا"}
           </Button>
         )}
       </div>

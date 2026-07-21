@@ -596,6 +596,101 @@ export type Database = {
           },
         ]
       }
+      payment_gateways: {
+        Row: {
+          created_at: string
+          display_name: string
+          gateway_key: string
+          id: string
+          is_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          gateway_key: string
+          id?: string
+          is_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          gateway_key?: string
+          id?: string
+          is_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      payment_transactions: {
+        Row: {
+          amount_piastres: number
+          course_id: string
+          created_at: string
+          failure_reason: string | null
+          gateway_id: string
+          id: string
+          reference_number: string
+          status: string
+          user_id: string
+          wallet_transaction_id: string | null
+        }
+        Insert: {
+          amount_piastres: number
+          course_id: string
+          created_at?: string
+          failure_reason?: string | null
+          gateway_id: string
+          id?: string
+          reference_number: string
+          status: string
+          user_id: string
+          wallet_transaction_id?: string | null
+        }
+        Update: {
+          amount_piastres?: number
+          course_id?: string
+          created_at?: string
+          failure_reason?: string | null
+          gateway_id?: string
+          id?: string
+          reference_number?: string
+          status?: string
+          user_id?: string
+          wallet_transaction_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_transactions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_transactions_gateway_id_fkey"
+            columns: ["gateway_id"]
+            isOneToOne: false
+            referencedRelation: "payment_gateways"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_transactions_wallet_transaction_id_fkey"
+            columns: ["wallet_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "wallet_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           auth_email: string | null
@@ -1236,6 +1331,24 @@ export type Database = {
         }
         Relationships: []
       }
+      wallet_gateway_settings: {
+        Row: {
+          id: number
+          max_wallet_balance_piastres: number
+          updated_at: string
+        }
+        Insert: {
+          id: number
+          max_wallet_balance_piastres?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          max_wallet_balance_piastres?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       wallet_transactions: {
         Row: {
           amount_piastres: number
@@ -1343,6 +1456,7 @@ export type Database = {
     }
     Functions: {
       _finalize_attempt: { Args: { _attempt_id: string }; Returns: undefined }
+      _gen_payment_reference: { Args: never; Returns: string }
       _gen_txn_reference: { Args: never; Returns: string }
       _grade_answer: { Args: { _answer_id: string }; Returns: undefined }
       add_answer_time: {
@@ -1424,6 +1538,7 @@ export type Database = {
         }[]
       }
       admin_regenerate_qr_token: { Args: { _uid: string }; Returns: string }
+      admin_reset_all_wallets: { Args: never; Returns: Json }
       admin_save_feedback: {
         Args: { _attempt_id: string; _feedback: string }
         Returns: Json
@@ -1700,6 +1815,7 @@ export type Database = {
             }[]
           }
       next_unit_order_index: { Args: { _unit_id: string }; Returns: number }
+      purchase_course: { Args: { p_course_id: string }; Returns: Json }
       redeem_top_up_card: { Args: { p_code: string }; Returns: Json }
       resolve_login_email: { Args: { _identifier: string }; Returns: string }
       save_quiz_answer: {
