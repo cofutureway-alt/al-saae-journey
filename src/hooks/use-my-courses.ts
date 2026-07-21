@@ -63,6 +63,7 @@ export function useMyCourses() {
       const quizzesCount: Record<string, number> = {};
       const assignmentsCount: Record<string, number> = {};
       const quizToCourse: Record<string, string> = {};
+      const assignmentToCourse: Record<string, string> = {};
       if (unitIds.length) {
         const { data: lessons } = await supabase
           .from("lessons_public")
@@ -89,11 +90,14 @@ export function useMyCourses() {
 
         const { data: assignments } = await (supabase as any)
           .from("assignments")
-          .select("unit_id")
+          .select("id, unit_id")
           .in("unit_id", unitIds);
         (assignments ?? []).forEach((a: any) => {
           const cId = unitToCourse[a.unit_id];
-          if (cId) assignmentsCount[cId] = (assignmentsCount[cId] ?? 0) + 1;
+          if (cId) {
+            assignmentsCount[cId] = (assignmentsCount[cId] ?? 0) + 1;
+            assignmentToCourse[a.id] = cId;
+          }
         });
       }
 
@@ -124,6 +128,24 @@ export function useMyCourses() {
         });
       }
 
+      const doneAssignments: Record<string, Set<string>> = {};
+      const allAssignmentIds = Object.keys(assignmentToCourse);
+      if (allAssignmentIds.length) {
+        const { data: subs } = await (supabase as any)
+          .from("assignment_submissions")
+          .select("assignment_id, outcome")
+          .eq("user_id", user.id)
+          .in("assignment_id", allAssignmentIds);
+        (subs ?? [])
+          .filter((s: any) => s.outcome === "passed" || s.outcome === "failed")
+          .forEach((s: any) => {
+            const cId = assignmentToCourse[s.assignment_id];
+            if (!cId) return;
+            if (!doneAssignments[cId]) doneAssignments[cId] = new Set();
+            doneAssignments[cId].add(s.assignment_id);
+          });
+      }
+
       if (cancelled) return;
       setCourses(
         rows.map((e: any) => {
@@ -133,7 +155,9 @@ export function useMyCourses() {
           const totalAssignments = assignmentsCount[c.id] ?? 0;
           const total = totalLessons + totalQuizzes + totalAssignments;
           const completed =
-            (doneLessons[c.id] ?? 0) + (doneQuizzes[c.id]?.size ?? 0);
+            (doneLessons[c.id] ?? 0) +
+            (doneQuizzes[c.id]?.size ?? 0) +
+            (doneAssignments[c.id]?.size ?? 0);
           return {
             id: c.id,
             title: c.title,

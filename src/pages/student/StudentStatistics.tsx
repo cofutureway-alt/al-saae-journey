@@ -9,6 +9,7 @@ import {
   ClipboardCheck,
   Compass,
   Eye,
+  FileText,
   ListChecks,
   Percent,
   PlayCircle,
@@ -111,6 +112,50 @@ const StudentStatistics = () => {
               />
             </div>
           </motion.div>
+
+          {/* ==== Assignments section (Phase 32) ==== */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.18 }}
+            className="space-y-4"
+          >
+            <div className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-primary" />
+              <h2 className="text-lg md:text-xl font-bold">الواجبات</h2>
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <StatCard
+                label="إجمالي الواجبات"
+                value={stats.assignmentsTotal}
+                icon={FileText}
+                accent="primary"
+                delay={0}
+              />
+              <StatCard
+                label="الواجبات المكتملة"
+                value={stats.assignmentsCompleted}
+                icon={ClipboardCheck}
+                accent="violet"
+                delay={0.05}
+              />
+              <StatCard
+                label="الواجبات الناجح بها"
+                value={stats.assignmentsPassed}
+                icon={ShieldCheck}
+                accent="emerald"
+                delay={0.1}
+              />
+              <StatCard
+                label="الواجبات الراسب بها"
+                value={stats.assignmentsFailed}
+                icon={ShieldX}
+                accent="amber"
+                delay={0.15}
+              />
+            </div>
+          </motion.div>
+
 
           <motion.div
             initial={{ opacity: 0, y: 12 }}
@@ -408,13 +453,17 @@ const CourseRow = ({ course, index }: { course: StudentCourseStat; index: number
                       </span>
                       <span className="truncate">{u.title}</span>
                     </div>
-                    {u.lessons.length === 0 && u.quizzes.length === 0 ? (
+                    {u.lessons.length === 0 && u.quizzes.length === 0 && u.assignments.length === 0 ? (
                       <div className="text-xs text-muted-foreground px-2 py-1.5">
                         لا يوجد محتوى
                       </div>
                     ) : (
                       <>
-                        {[...u.lessons.map((item) => ({ ...item, type: "lesson" as const })), ...u.quizzes.map((item) => ({ ...item, type: "quiz" as const }))]
+                        {[
+                          ...u.lessons.map((item) => ({ ...item, type: "lesson" as const })),
+                          ...u.quizzes.map((item) => ({ ...item, type: "quiz" as const })),
+                          ...u.assignments.map((item) => ({ ...item, type: "assignment" as const })),
+                        ]
                           .sort((a, b) => a.position - b.position)
                           .map((item) => {
                             if (item.type === "lesson") {
@@ -456,37 +505,76 @@ const CourseRow = ({ course, index }: { course: StudentCourseStat; index: number
                               );
                             }
 
+                            if (item.type === "quiz") {
+                              return (
+                                <Link
+                                  key={`quiz-${item.id}`}
+                                  to={`/courses/${course.id}/learn/quiz/${item.id}`}
+                                  className="flex items-center gap-3 p-2.5 rounded-lg bg-background border border-border/50 hover:border-primary/40 transition-colors group"
+                                >
+                                  <div
+                                    className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 ${
+                                      item.attempted
+                                        ? "bg-emerald-500 text-white"
+                                        : "bg-violet-500/10 text-violet-600 dark:text-violet-400"
+                                    }`}
+                                  >
+                                    {item.attempted ? (
+                                      <CheckCircle2 className="w-4 h-4" />
+                                    ) : (
+                                      <ClipboardCheck className="w-4 h-4" />
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0 text-sm font-medium truncate">
+                                    {item.title}
+                                    <span className="mr-1 text-[10px] font-normal text-muted-foreground">· اختبار</span>
+                                  </div>
+                                  <div className="text-xs font-bold tabular-nums shrink-0">
+                                    {item.attempted ? (
+                                      <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                                        <CheckCircle2 className="w-3.5 h-3.5" />
+                                        تمّت المحاولة
+                                      </span>
+                                    ) : (
+                                      <span className="text-muted-foreground">لم تُحاول</span>
+                                    )}
+                                  </div>
+                                </Link>
+                              );
+                            }
+
+                            // assignment
                             return (
                               <Link
-                                key={`quiz-${item.id}`}
-                                to={`/courses/${course.id}/learn/quiz/${item.id}`}
+                                key={`assignment-${item.id}`}
+                                to={`/courses/${course.id}/learn/assignment/${item.id}`}
                                 className="flex items-center gap-3 p-2.5 rounded-lg bg-background border border-border/50 hover:border-primary/40 transition-colors group"
                               >
                                 <div
                                   className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 ${
-                                    item.attempted
+                                    item.evaluated
                                       ? "bg-emerald-500 text-white"
-                                      : "bg-violet-500/10 text-violet-600 dark:text-violet-400"
+                                      : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
                                   }`}
                                 >
-                                  {item.attempted ? (
+                                  {item.evaluated ? (
                                     <CheckCircle2 className="w-4 h-4" />
                                   ) : (
-                                    <ClipboardCheck className="w-4 h-4" />
+                                    <FileText className="w-4 h-4" />
                                   )}
                                 </div>
                                 <div className="flex-1 min-w-0 text-sm font-medium truncate">
                                   {item.title}
-                                  <span className="mr-1 text-[10px] font-normal text-muted-foreground">· اختبار</span>
+                                  <span className="mr-1 text-[10px] font-normal text-muted-foreground">· واجب</span>
                                 </div>
                                 <div className="text-xs font-bold tabular-nums shrink-0">
-                                  {item.attempted ? (
+                                  {item.evaluated ? (
                                     <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
                                       <CheckCircle2 className="w-3.5 h-3.5" />
-                                      تمّت المحاولة
+                                      تمّ تقييمه
                                     </span>
                                   ) : (
-                                    <span className="text-muted-foreground">لم تُحاول</span>
+                                    <span className="text-muted-foreground">قيد الانتظار</span>
                                   )}
                                 </div>
                               </Link>

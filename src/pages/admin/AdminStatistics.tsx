@@ -11,6 +11,7 @@ import {
   Users,
   ClipboardList,
   HelpCircle,
+  FileText,
   AlertTriangle,
   BarChart3,
 } from "lucide-react";
@@ -85,6 +86,13 @@ const AdminStatistics = () => {
             icon={HelpCircle}
             accent="emerald"
             delay={0.25}
+          />
+          <StatCard
+            label="إجمالي الواجبات"
+            value={stats.totalAssignments}
+            icon={FileText}
+            accent="violet"
+            delay={0.3}
           />
         </div>
       )}

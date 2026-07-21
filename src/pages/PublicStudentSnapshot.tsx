@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   BookOpen,
   ClipboardList,
+  FileText,
   Focus,
   GraduationCap,
   IdCard,
@@ -29,7 +30,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { classifyGroups, LEVEL_META, type GroupClassification } from "@/lib/weak-analysis";
+import {
+  classifyCombinedGroups, LEVEL_META, type GroupClassification,
+  type AssignmentEval,
+} from "@/lib/weak-analysis";
 
 interface EnrolledCourseRow {
   course_id: string;
@@ -69,9 +73,16 @@ interface Snapshot {
     failed: number;
     graded_total: number;
   };
+  assignment_stats?: {
+    total: number;
+    completed: number;
+    passed: number;
+    failed: number; // includes 'not_submitted'
+  };
   weak_data?: {
     quizzes: any[];
     attempts: any[];
+    assignments?: AssignmentEval[];
   };
   weak_flags?: {
     subjects: boolean;
@@ -116,21 +127,29 @@ export default function PublicStudentSnapshot() {
 
   const weakSubjects: GroupClassification[] = useMemo(() => {
     if (!snap?.weak_data || !snap?.weak_flags?.subjects) return [];
-    return classifyGroups(
+    return classifyCombinedGroups(
       snap.weak_data.quizzes as any,
       snap.weak_data.attempts as any,
+      (snap.weak_data.assignments ?? []) as AssignmentEval[],
       "subject_id",
-      (_k, q) => (q as any).subject_name ?? "بدون مادة",
+      (_k, ctx) =>
+        (ctx.quiz as any)?.subject_name ??
+        ctx.assignment?.subject_name ??
+        "بدون مادة",
     );
   }, [snap]);
 
   const weakCourses: GroupClassification[] = useMemo(() => {
     if (!snap?.weak_data || !snap?.weak_flags?.courses) return [];
-    return classifyGroups(
+    return classifyCombinedGroups(
       snap.weak_data.quizzes as any,
       snap.weak_data.attempts as any,
+      (snap.weak_data.assignments ?? []) as AssignmentEval[],
       "course_id",
-      (_k, q) => (q as any).course_title ?? "بدون كورس",
+      (_k, ctx) =>
+        (ctx.quiz as any)?.course_title ??
+        ctx.assignment?.course_title ??
+        "بدون كورس",
     );
   }, [snap]);
 
@@ -312,6 +331,27 @@ export default function PublicStudentSnapshot() {
             </div>
           </motion.section>
         )}
+
+        {snap.assignment_stats && (
+          <motion.section
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.12 }}
+            className="space-y-3"
+          >
+            <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground">
+              <FileText className="w-4 h-4" />
+              إحصائيات الواجبات
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <StatTile icon={FileText} label="إجمالي الواجبات" value={snap.assignment_stats.total} tone="neutral" />
+              <StatTile icon={ListChecks} label="المكتملة" value={snap.assignment_stats.completed} tone="primary" />
+              <StatTile icon={Trophy} label="ناجحة" value={snap.assignment_stats.passed} tone="success" />
+              <StatTile icon={XCircle} label="راسبة" value={snap.assignment_stats.failed} tone="danger" />
+            </div>
+          </motion.section>
+        )}
+
 
         {/* Enrolled courses list */}
         {snap.enrolled_courses !== undefined && (

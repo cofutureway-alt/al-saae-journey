@@ -13,6 +13,7 @@ export interface QrDisplaySettings {
   show_quiz_attempts_list: boolean;
   show_weak_subjects: boolean;
   show_weak_courses: boolean;
+  show_assignment_stats: boolean;
 }
 
 export const DEFAULT_QR_SETTINGS: QrDisplaySettings = {
@@ -27,6 +28,7 @@ export const DEFAULT_QR_SETTINGS: QrDisplaySettings = {
   show_quiz_attempts_list: true,
   show_weak_subjects: true,
   show_weak_courses: true,
+  show_assignment_stats: true,
 };
 
 export function useQrSettings() {

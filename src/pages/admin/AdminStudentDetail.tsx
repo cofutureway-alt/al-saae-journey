@@ -41,7 +41,8 @@ import StudentFormModal from "@/components/admin/students/StudentFormModal";
 import StudentQrCard from "@/components/admin/students/StudentQrCard";
 import { useRegistrationFields } from "@/hooks/use-registration-fields";
 import {
-  classifyGroups, LEVEL_META, type GroupClassification,
+  classifyCombinedGroups, LEVEL_META, type GroupClassification,
+  type AssignmentEval,
 } from "@/lib/weak-analysis";
 
 const STATUS_META: Record<string, { label: string; className: string }> = {
@@ -81,6 +82,7 @@ export default function AdminStudentDetail() {
   const [student, setStudent] = useState<AdminStudentRow | null>(null);
   const [enrollments, setEnrollments] = useState<any[]>([]);
   const [attempts, setAttempts] = useState<AttemptRow[]>([]);
+  const [assignmentEvals, setAssignmentEvals] = useState<AssignmentEval[]>([]);
   const [loading, setLoading] = useState(true);
   const [editOpen, setEditOpen] = useState(false);
   const [confirm, setConfirm] = useState<null | "ban" | "unban" | "delete">(null);
@@ -90,7 +92,7 @@ export default function AdminStudentDetail() {
     if (!id) return;
     setLoading(true);
     try {
-      const [s, e, atts] = await Promise.all([
+      const [s, e, atts, subs] = await Promise.all([
         getStudent(id),
         getStudentEnrollments(id),
         (supabase as any)
@@ -102,10 +104,27 @@ export default function AdminStudentDetail() {
           .neq("status", "in_progress")
           .order("submitted_at", { ascending: false })
           .then(({ data }: any) => (data ?? []) as AttemptRow[]),
+        (supabase as any)
+          .from("assignment_submissions")
+          .select(
+            "assignment_id, outcome, assignments(id, courses(id, title, subjects(id, name)))",
+          )
+          .eq("user_id", id)
+          .then(({ data }: any) =>
+            ((data ?? []) as any[]).map((row) => ({
+              assignment_id: row.assignment_id,
+              course_id: row.assignments?.courses?.id ?? "",
+              subject_id: row.assignments?.courses?.subjects?.id ?? null,
+              subject_name: row.assignments?.courses?.subjects?.name ?? null,
+              course_title: row.assignments?.courses?.title ?? "",
+              outcome: row.outcome ?? null,
+            })) as AssignmentEval[],
+          ),
       ]);
       setStudent(s);
       setEnrollments(e);
       setAttempts(atts);
+      setAssignmentEvals(subs);
     } catch (err: any) {
       toast.error(err?.message ?? "تعذّر التحميل");
     } finally {
@@ -144,24 +163,32 @@ export default function AdminStudentDetail() {
 
   const weakSubjects: GroupClassification[] = useMemo(
     () =>
-      classifyGroups(
+      classifyCombinedGroups(
         quizzesForAnalysis as any,
         officialAttempts,
+        assignmentEvals,
         "subject_id",
-        (_k, q) => q.subject_name ?? "بدون مادة",
+        (_k, ctx) =>
+          ctx.quiz?.subject_name ??
+          ctx.assignment?.subject_name ??
+          "بدون مادة",
       ),
-    [quizzesForAnalysis, officialAttempts],
+    [quizzesForAnalysis, officialAttempts, assignmentEvals],
   );
 
   const weakCourses: GroupClassification[] = useMemo(
     () =>
-      classifyGroups(
+      classifyCombinedGroups(
         quizzesForAnalysis as any,
         officialAttempts,
+        assignmentEvals,
         "course_id",
-        (_k, q) => q.course_title ?? "بدون كورس",
+        (_k, ctx) =>
+          ctx.quiz?.course_title ??
+          ctx.assignment?.course_title ??
+          "بدون كورس",
       ),
-    [quizzesForAnalysis, officialAttempts],
+    [quizzesForAnalysis, officialAttempts, assignmentEvals],
   );
 
   const stats = useMemo(() => {

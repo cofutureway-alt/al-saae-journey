@@ -87,18 +87,64 @@ export function classifyGroups(
   groupBy: "subject_id" | "course_id",
   labelFor: (key: string, quiz: QuizForAnalysis) => string,
 ): GroupClassification[] {
+  return classifyCombinedGroups(quizzes, attempts, [], groupBy, (k, ctx) =>
+    labelFor(k, (ctx.quiz ?? {}) as QuizForAnalysis),
+  );
+}
+
+// Assignment evaluations that participate in the combined weak-area pool.
+// Only outcomes 'passed' or 'failed' count toward the pool; 'not_submitted'
+// and ungraded submissions are excluded from BOTH numerator and denominator,
+// exactly analogous to how only `graded`-status quiz attempts count.
+export interface AssignmentEval {
+  assignment_id: string;
+  course_id: string;
+  subject_id?: string | null;
+  subject_name?: string | null;
+  course_title?: string | null;
+  outcome: "passed" | "failed" | "not_submitted" | null;
+}
+
+export interface GroupContext {
+  quiz?: QuizForAnalysis;
+  assignment?: AssignmentEval;
+}
+
+// Phase 32: combined pool of quizzes + assignments as one shared set of
+// "academic evaluations" per subject/course, gated by the SAME
+// MIN_CERTIFIED_QUIZZES_FOR_SUBJECT_STATS threshold against the combined
+// count (not separately per source).
+export function classifyCombinedGroups(
+  quizzes: QuizForAnalysis[],
+  attempts: OfficialAttempt[],
+  assignmentEvals: AssignmentEval[],
+  groupBy: "subject_id" | "course_id",
+  labelFor: (key: string, ctx: GroupContext) => string,
+): GroupClassification[] {
   const official = pickOfficialAttempts(attempts, quizzes);
   const groups = new Map<string, { label: string; certified: number; passed: number }>();
+
   for (const q of quizzes) {
     const key = (q as any)[groupBy] as string | null | undefined;
     if (!key) continue;
     const att = official.get(q.id);
     if (!att) continue;
-    const g = groups.get(key) ?? { label: labelFor(key, q), certified: 0, passed: 0 };
+    const g = groups.get(key) ?? { label: labelFor(key, { quiz: q }), certified: 0, passed: 0 };
     g.certified += 1;
     if (att.passed === true) g.passed += 1;
     groups.set(key, g);
   }
+
+  for (const a of assignmentEvals) {
+    if (a.outcome !== "passed" && a.outcome !== "failed") continue;
+    const key = (a as any)[groupBy] as string | null | undefined;
+    if (!key) continue;
+    const g = groups.get(key) ?? { label: labelFor(key, { assignment: a }), certified: 0, passed: 0 };
+    g.certified += 1;
+    if (a.outcome === "passed") g.passed += 1;
+    groups.set(key, g);
+  }
+
   const out: GroupClassification[] = [];
   groups.forEach((g, key) => {
     const rate = g.certified > 0 ? g.passed / g.certified : 0;
@@ -113,6 +159,7 @@ export function classifyGroups(
   });
   return out.sort((a, b) => a.pass_rate - b.pass_rate);
 }
+
 
 export const LEVEL_META: Record<WeakLevel | "insufficient", { label: string; className: string }> = {
   weak: { label: "ضعيف", className: "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30" },

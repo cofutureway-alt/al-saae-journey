@@ -128,8 +128,10 @@ export function useCourseContent(courseId: string | undefined) {
     // Completion lookups
     let completedLessonIds = new Set<string>();
     let attemptedQuizIds = new Set<string>();
+    let evaluatedAssignmentIds = new Set<string>();
+    const assignmentIds = assignments.map((a) => a.id);
     if (user) {
-      const [{ data: prog }, attemptsRes] = await Promise.all([
+      const [{ data: prog }, attemptsRes, subsRes] = await Promise.all([
         supabase
           .from("lesson_progress")
           .select("lesson_id")
@@ -142,10 +144,25 @@ export function useCourseContent(courseId: string | undefined) {
               .eq("user_id", user.id)
               .in("quiz_id", allQuizIds)
           : Promise.resolve({ data: [] as any[] }),
+        assignmentIds.length
+          ? (supabase as any)
+              .from("assignment_submissions")
+              .select("assignment_id, outcome")
+              .eq("user_id", user.id)
+              .in("assignment_id", assignmentIds)
+          : Promise.resolve({ data: [] as any[] }),
       ]);
       completedLessonIds = new Set((prog ?? []).map((p: any) => p.lesson_id));
       attemptedQuizIds = new Set(
         ((attemptsRes.data ?? []) as any[]).map((a) => a.quiz_id),
+      );
+      // Phase 32: an assignment counts as done only when the admin has
+      // finalized its outcome (passed OR failed). Ungraded pending
+      // submissions do NOT count — the platform can't yet judge them.
+      evaluatedAssignmentIds = new Set(
+        ((subsRes.data ?? []) as any[])
+          .filter((s) => s.outcome === "passed" || s.outcome === "failed")
+          .map((s) => s.assignment_id),
       );
     }
 
@@ -179,8 +196,8 @@ export function useCourseContent(courseId: string | undefined) {
           unitId: u.id,
           title: a.title,
           orderIndex: a.order_index,
-          // Phase 30/31 will define assignment completion.
-          isCompleted: false,
+          // Phase 32: evaluated (passed OR failed) => complete.
+          isCompleted: evaluatedAssignmentIds.has(a.id),
           routePath: contentRoute(courseId, "assignment", a.id),
           extra: { endAt: a.end_at },
         }));
