@@ -21,7 +21,9 @@ import {
   AlertTriangle,
   Focus,
   Trophy,
+  Wallet as WalletIcon,
 } from "lucide-react";
+import AdminWalletAdjustPanel from "@/components/admin/AdminWalletAdjustPanel";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
