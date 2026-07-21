@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import {
@@ -21,7 +21,19 @@ import {
   Sparkles,
   PieChart,
   Clock,
+  Ticket,
+  CreditCard,
+  ShieldCheck,
 } from "lucide-react";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip as RTooltip,
+} from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminStats } from "@/hooks/use-stats";
 import { StatCard } from "@/components/StatCard";
@@ -30,6 +42,37 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useSignedThumbnail } from "@/hooks/use-signed-thumbnail";
 import { formatPiastres } from "@/lib/money";
+
+/* Small count-up used inside Financial tab summary numbers */
+function useCountUp(target: number, duration = 700) {
+  const [value, setValue] = useState(0);
+  const startRef = useRef<number | null>(null);
+  const fromRef = useRef(0);
+  useEffect(() => {
+    startRef.current = null;
+    fromRef.current = value;
+    let raf = 0;
+    const tick = (t: number) => {
+      if (startRef.current === null) startRef.current = t;
+      const p = Math.min(1, (t - startRef.current) / duration);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setValue(Math.round(fromRef.current + (target - fromRef.current) * eased));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [target]);
+  return value;
+}
+
+function dayKey(d: Date | string) {
+  const x = typeof d === "string" ? new Date(d) : d;
+  const y = x.getFullYear();
+  const m = String(x.getMonth() + 1).padStart(2, "0");
+  const day = String(x.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
 
 type TabKey = "content" | "academic" | "financial";
 
