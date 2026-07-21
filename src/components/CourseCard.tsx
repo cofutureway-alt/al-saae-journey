@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { BookOpen, Layers, ArrowLeft, ClipboardList, HelpCircle } from "lucide-react";
+import { BookOpen, Layers, ArrowLeft, ClipboardList, ClipboardCheck, HelpCircle } from "lucide-react";
 import { useSignedThumbnail } from "@/hooks/use-signed-thumbnail";
 import { EightPointStar } from "@/components/IslamicPatterns";
 import type { PublicCourse } from "@/hooks/use-public-courses";
