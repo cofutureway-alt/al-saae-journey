@@ -116,6 +116,10 @@ export function usePublicCourses(limit?: number) {
           assignments_count: assignmentsByCourse[c.id] ?? 0,
           questions_count: questionsByCourse[c.id] ?? 0,
           created_at: c.created_at,
+          is_paid: !!c.is_paid,
+          price_piastres: c.price_piastres ?? null,
+          discount_price_piastres: c.discount_price_piastres ?? null,
+          discount_expires_at: c.discount_expires_at ?? null,
         })),
       );
     })();
