@@ -88,7 +88,13 @@ export type Database = {
         Row: {
           assignment_id: string
           created_at: string
+          feedback: string | null
+          feedback_given_at: string | null
+          grade: number | null
+          graded_at: string | null
+          graded_by: string | null
           id: string
+          outcome: string | null
           status: string
           submitted_at: string | null
           text_content: Json | null
@@ -98,7 +104,13 @@ export type Database = {
         Insert: {
           assignment_id: string
           created_at?: string
+          feedback?: string | null
+          feedback_given_at?: string | null
+          grade?: number | null
+          graded_at?: string | null
+          graded_by?: string | null
           id?: string
+          outcome?: string | null
           status?: string
           submitted_at?: string | null
           text_content?: Json | null
@@ -108,7 +120,13 @@ export type Database = {
         Update: {
           assignment_id?: string
           created_at?: string
+          feedback?: string | null
+          feedback_given_at?: string | null
+          grade?: number | null
+          graded_at?: string | null
+          graded_by?: string | null
           id?: string
+          outcome?: string | null
           status?: string
           submitted_at?: string | null
           text_content?: Json | null
@@ -121,6 +139,13 @@ export type Database = {
             columns: ["assignment_id"]
             isOneToOne: false
             referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignment_submissions_graded_by_fkey"
+            columns: ["graded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -1171,6 +1196,10 @@ export type Database = {
         Args: { _attempt_id: string; _delta: number; _question_id: string }
         Returns: undefined
       }
+      admin_finalize_not_submitted: {
+        Args: { _submission_id: string }
+        Returns: Json
+      }
       admin_get_student: { Args: { _uid: string }; Returns: Json }
       admin_list_students: {
         Args: {
@@ -1331,6 +1360,45 @@ export type Database = {
       is_enrolled_in_lesson_course: {
         Args: { _lesson_id: string; _user_id: string }
         Returns: boolean
+      }
+      list_assignment_submissions: {
+        Args: {
+          _course_id?: string
+          _limit?: number
+          _offset?: number
+          _stage_id?: string
+          _subject_id?: string
+          _ungraded_only?: boolean
+          _user_search?: string
+        }
+        Returns: {
+          assignment_id: string
+          assignment_title: string
+          computed_outcome: string
+          course_id: string
+          course_title: string
+          end_at: string
+          feedback_given_at: string
+          grade: number
+          graded_at: string
+          has_feedback: boolean
+          outcome: string
+          pass_grade: number
+          stage_id: string
+          stage_name: string
+          status: string
+          student_email: string
+          student_name: string
+          student_phone: string
+          student_student_id: string
+          subject_id: string
+          subject_name: string
+          submission_id: string
+          submitted_at: string
+          total_count: number
+          total_grade: number
+          user_id: string
+        }[]
       }
       list_my_quiz_attempts: {
         Args: { _quiz_id: string }
