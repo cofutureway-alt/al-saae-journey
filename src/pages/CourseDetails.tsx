@@ -213,10 +213,17 @@ const CourseDetails = () => {
   const progress = enrolled ? (progressData?.percent ?? 0) : null;
   const completedIds = progressData?.completedLessonIds ?? new Set<string>();
 
+  const effective = getEffectiveCoursePrice(course);
+
   const handleEnroll = async () => {
     if (!id) return;
     if (!user) {
       navigate(`/login?redirect=/courses/${id}`);
+      return;
+    }
+    // Paid courses go through the purchase modal
+    if (course?.is_paid && effective.amount > 0) {
+      setPurchaseOpen(true);
       return;
     }
     setEnrolling(true);
@@ -225,7 +232,6 @@ const CourseDetails = () => {
         .from("enrollments")
         .insert({ user_id: user.id, course_id: id });
       if (error) {
-        // 23505 unique violation → already enrolled
         if ((error as any).code === "23505") {
           setEnrolled(true);
           toast.success("أنت مسجّل بالفعل في هذه الدورة");
