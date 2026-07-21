@@ -18,6 +18,7 @@ import {
   Settings2,
   User as UserIcon,
   Users,
+  Wallet as WalletIcon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -41,6 +42,7 @@ const nav = [
   { to: "/admin/stages", label: "المراحل", icon: Layers },
   { to: "/admin/subjects", label: "المواد الدراسية", icon: BookMarked },
   { to: "/admin/cards", label: "كروت الطلاب", icon: CreditCard },
+  { to: "/admin/wallets", label: "إدارة المحافظ والكروت", icon: WalletIcon },
   { to: "/admin/settings", label: "الإعدادات", icon: Settings2 },
   { to: "/admin/account", label: "الملف الشخصي", icon: UserIcon },
 ];

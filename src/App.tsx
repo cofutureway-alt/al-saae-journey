@@ -42,6 +42,7 @@ import AdminStudents from "./pages/admin/AdminStudents";
 import AdminStudentDetail from "./pages/admin/AdminStudentDetail";
 import AdminQrSettings from "./pages/admin/AdminQrSettings";
 import AdminCards from "./pages/admin/AdminCards";
+import AdminWallets from "./pages/admin/AdminWallets";
 import CardBuilder from "./pages/admin/CardBuilder";
 import PublicStudentSnapshot from "./pages/PublicStudentSnapshot";
 
@@ -137,6 +138,7 @@ const App = () => (
               <Route path="settings/registration-form" element={<AdminRegistrationForm />} />
               <Route path="settings/student-qr" element={<AdminQrSettings />} />
               <Route path="cards" element={<AdminCards />} />
+              <Route path="wallets" element={<AdminWallets />} />
               <Route path="cards/:templateId/edit" element={<CardBuilder />} />
               <Route path="account" element={<MyAccount />} />
             </Route>
