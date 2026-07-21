@@ -93,7 +93,9 @@ const Signup = () => {
       ? normalizeEgPhone(String(values.guardian_phone))
       : null;
     const realEmail = (values.email || "").toString().trim().toLowerCase() || "";
-    const authEmail = realEmail || syntheticAuthEmail(canonicalPhone);
+    // Always use the deterministic synthetic auth email so phone-based login
+    // works without any server lookup (prevents email enumeration).
+    const authEmail = syntheticAuthEmail(canonicalPhone);
     const password = String(values.password || "");
 
     // Split values between known columns and custom_fields

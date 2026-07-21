@@ -3,6 +3,7 @@ import { generateHTML } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import { MathExtension } from "@aarkue/tiptap-math-extension";
+import DOMPurify from "dompurify";
 import "katex/dist/katex.min.css";
 import "katex/contrib/mhchem";
 import { cn } from "@/lib/utils";
@@ -29,20 +30,34 @@ const isEmptyDoc = (json: unknown): boolean => {
   return !walk(json);
 };
 
+const escapeHtml = (s: string): string =>
+  s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
 const RichTextRenderer = ({ content, className }: Props) => {
   const html = useMemo(() => {
     if (!content) return "";
     try {
-      if (typeof content === "string") return content;
-      return generateHTML(content as never, [
+      // Plain-string content is NOT trusted HTML — escape and preserve line breaks.
+      if (typeof content === "string") {
+        return escapeHtml(content).replace(/\n/g, "<br/>");
+      }
+      const raw = generateHTML(content as never, [
         StarterKit.configure({ heading: false }),
         Image,
         MathExtension.configure({ evaluation: false, addInlineMath: true }),
       ]);
+      // Sanitize the generated HTML to strip any script/handler that slipped through.
+      return DOMPurify.sanitize(raw, { USE_PROFILES: { html: true, mathMl: true, svg: true } });
     } catch {
       return "";
     }
   }, [content]);
+
 
   return (
     <div
