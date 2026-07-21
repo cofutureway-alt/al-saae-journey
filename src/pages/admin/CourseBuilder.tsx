@@ -301,6 +301,83 @@ const QuizItem = ({
   );
 };
 
+// ---------- Sortable assignment row ----------
+const AssignmentItem = ({
+  assignment,
+  onEdit,
+  onDelete,
+  isOverlay,
+}: {
+  assignment: AssignmentRecord;
+  onEdit: () => void;
+  onDelete: () => void;
+  isOverlay?: boolean;
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: `assignment:${assignment.id}`,
+    data: { type: "assignment", assignment },
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging && !isOverlay ? 0.4 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`group flex items-center gap-2 p-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/5 hover:border-emerald-500/60 hover:bg-emerald-500/10 transition-colors ${
+        isOverlay ? "shadow-2xl border-emerald-500/70" : ""
+      }`}
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing p-1"
+        aria-label="اسحب لإعادة الترتيب"
+      >
+        <GripVertical className="w-4 h-4" />
+      </button>
+      <div className="w-7 h-7 rounded-md bg-emerald-500/15 flex items-center justify-center shrink-0">
+        <ClipboardCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-medium truncate">{assignment.title}</div>
+      </div>
+      <Badge
+        variant="outline"
+        className="text-[10px] border-emerald-500/40 text-emerald-700 dark:text-emerald-400 shrink-0"
+      >
+        واجب
+      </Badge>
+      {!isOverlay && (
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+          <Button variant="ghost" size="icon" onClick={onEdit} className="h-8 w-8">
+            <Pencil className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onDelete}
+            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ---------- Sortable unit card ----------
 const UnitCard = ({
   unit,
