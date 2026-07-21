@@ -128,6 +128,24 @@ export function useMyCourses() {
         });
       }
 
+      const doneAssignments: Record<string, Set<string>> = {};
+      const allAssignmentIds = Object.keys(assignmentToCourse);
+      if (allAssignmentIds.length) {
+        const { data: subs } = await (supabase as any)
+          .from("assignment_submissions")
+          .select("assignment_id, outcome")
+          .eq("user_id", user.id)
+          .in("assignment_id", allAssignmentIds);
+        (subs ?? [])
+          .filter((s: any) => s.outcome === "passed" || s.outcome === "failed")
+          .forEach((s: any) => {
+            const cId = assignmentToCourse[s.assignment_id];
+            if (!cId) return;
+            if (!doneAssignments[cId]) doneAssignments[cId] = new Set();
+            doneAssignments[cId].add(s.assignment_id);
+          });
+      }
+
       if (cancelled) return;
       setCourses(
         rows.map((e: any) => {
@@ -137,7 +155,9 @@ export function useMyCourses() {
           const totalAssignments = assignmentsCount[c.id] ?? 0;
           const total = totalLessons + totalQuizzes + totalAssignments;
           const completed =
-            (doneLessons[c.id] ?? 0) + (doneQuizzes[c.id]?.size ?? 0);
+            (doneLessons[c.id] ?? 0) +
+            (doneQuizzes[c.id]?.size ?? 0) +
+            (doneAssignments[c.id]?.size ?? 0);
           return {
             id: c.id,
             title: c.title,
