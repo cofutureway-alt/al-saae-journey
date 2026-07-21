@@ -477,6 +477,16 @@ export default function AdminStudentDetail() {
           </div>
         </TabsContent>
 
+        {/* WALLET */}
+        <TabsContent value="wallet" className="mt-4">
+          <div className="max-w-md">
+            <AdminWalletAdjustPanel
+              userId={student.id}
+              studentName={student.full_name}
+            />
+          </div>
+        </TabsContent>
+
         {/* REGISTRATION */}
         <TabsContent value="registration" className="mt-4">
           <div className="rounded-2xl border border-border bg-card p-5">
