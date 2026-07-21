@@ -3,10 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { listUnitQuizzes } from "@/lib/quiz-api";
 
-// ============ Phase 17: weighted completion incl. quizzes ============
+// ============ Phase 17 + 32: weighted completion incl. quizzes & assignments ============
 // For each lesson: contribution = 100 if completed, else watch_percentage (0 if none)
 // For each quiz: contribution = 100 if student has ANY attempt, else 0
-// Course percent = sum(contribution across lessons + quizzes) / ((lessons + quizzes) * 100) * 100
+// For each assignment: contribution = 100 if outcome is 'passed' OR 'failed', else 0
+// Course percent = sum(contribution) / (count * 100) * 100
 
 export interface StudentCourseStat {
   id: string;
@@ -35,6 +36,12 @@ export interface StudentCourseStat {
       position: number;
       attempted: boolean;
     }[];
+    assignments: {
+      id: string;
+      title: string;
+      position: number;
+      evaluated: boolean;
+    }[];
   }[];
 }
 
@@ -60,6 +67,11 @@ export interface StudentStats {
   quizzesPassed: number;
   quizzesFailed: number;
   failedAttempts: FailedAttemptRow[];
+  // Phase 32: assignment cards (mirror quiz card structure).
+  assignmentsTotal: number;
+  assignmentsCompleted: number;
+  assignmentsPassed: number;
+  assignmentsFailed: number; // includes 'not_submitted'
 }
 
 const EMPTY_STATS: StudentStats = {
@@ -72,6 +84,10 @@ const EMPTY_STATS: StudentStats = {
   quizzesPassed: 0,
   quizzesFailed: 0,
   failedAttempts: [],
+  assignmentsTotal: 0,
+  assignmentsCompleted: 0,
+  assignmentsPassed: 0,
+  assignmentsFailed: 0,
 };
 
 export function useStudentStats() {
@@ -97,8 +113,7 @@ export function useStudentStats() {
 
       const rows = (enrollments ?? []).filter((e: any) => e.courses);
       if (!rows.length) {
-        if (!cancelled)
-          setData(EMPTY_STATS);
+        if (!cancelled) setData(EMPTY_STATS);
         return;
       }
 
@@ -123,7 +138,7 @@ export function useStudentStats() {
       const unitToCourse = new Map<string, string>();
       uList.forEach((u) => unitToCourse.set(u.id, u.course_id));
 
-      const [lessonsResult, quizzesArrays] = await Promise.all([
+      const [lessonsResult, quizzesArrays, assignmentsResult] = await Promise.all([
         unitIds.length
           ? supabase
               .from("lessons_public")
@@ -133,6 +148,12 @@ export function useStudentStats() {
         unitIds.length
           ? Promise.all(unitIds.map((unitId) => listUnitQuizzes(unitId).catch(() => [])))
           : Promise.resolve([] as any[][]),
+        unitIds.length
+          ? (supabase as any)
+              .from("assignments")
+              .select("id, unit_id, title, order_index")
+              .in("unit_id", unitIds)
+          : Promise.resolve({ data: [] as any[] }),
       ]);
 
       const lessons = lessonsResult.data ?? [];
@@ -149,7 +170,16 @@ export function useStudentStats() {
       );
       const quizIds = quizList.map((q) => q.id);
 
-      const [{ data: attempts }, { data: quizMeta }] = await Promise.all([
+      const assignmentList = (assignmentsResult.data ?? []).map((a: any) => ({
+        id: a.id,
+        unit_id: a.unit_id,
+        course_id: unitToCourse.get(a.unit_id) ?? "",
+        title: a.title,
+        position: a.order_index ?? 0,
+      }));
+      const assignmentIds = assignmentList.map((a) => a.id);
+
+      const [{ data: attempts }, { data: quizMeta }, { data: submissions }] = await Promise.all([
         quizIds.length
           ? (supabase as any)
               .from("quiz_attempts")
@@ -163,18 +193,35 @@ export function useStudentStats() {
               .select("id, title, course_id, pass_percentage, attempt_result_policy")
               .in("id", quizIds)
           : Promise.resolve({ data: [] as any[] }),
+        assignmentIds.length
+          ? (supabase as any)
+              .from("assignment_submissions")
+              .select("assignment_id, outcome")
+              .eq("user_id", uid)
+              .in("assignment_id", assignmentIds)
+          : Promise.resolve({ data: [] as any[] }),
       ]);
       const attemptedQuizSet = new Set<string>(
         ((attempts ?? []) as any[]).map((a) => a.quiz_id),
       );
+      const submissionsByAssignment = new Map<string, string | null>();
+      ((submissions ?? []) as any[]).forEach((s) => {
+        submissionsByAssignment.set(s.assignment_id, s.outcome ?? null);
+      });
+      const evaluatedAssignmentSet = new Set<string>(
+        ((submissions ?? []) as any[])
+          .filter((s) => s.outcome === "passed" || s.outcome === "failed")
+          .map((s) => s.assignment_id),
+      );
 
-      const completedByLesson = new Set<string>((lessonProgress ?? []).map((p: any) => p.lesson_id));
+      const completedByLesson = new Set<string>(
+        (lessonProgress ?? []).map((p: any) => p.lesson_id),
+      );
       const watchByLesson = new Map<string, number>();
       (watchRows ?? []).forEach((w: any) => {
         watchByLesson.set(w.lesson_id, Math.min(100, Math.max(0, Number(w.watch_percentage) || 0)));
       });
 
-      // Global counters
       let globalSum = 0;
       let globalTotal = 0;
       let completedLessonsCount = 0;
@@ -208,7 +255,23 @@ export function useStudentStats() {
                 position: q.position,
                 attempted: attemptedQuizSet.has(q.id),
               }));
-            return { id: u.id, title: u.title, position: u.position, lessons: uLessons, quizzes: uQuizzes };
+            const uAssignments = assignmentList
+              .filter((a) => a.unit_id === u.id)
+              .sort((a, b) => a.position - b.position)
+              .map((a) => ({
+                id: a.id,
+                title: a.title,
+                position: a.position,
+                evaluated: evaluatedAssignmentSet.has(a.id),
+              }));
+            return {
+              id: u.id,
+              title: u.title,
+              position: u.position,
+              lessons: uLessons,
+              quizzes: uQuizzes,
+              assignments: uAssignments,
+            };
           });
 
         let sum = 0;
@@ -222,13 +285,19 @@ export function useStudentStats() {
             if (l.completed) done += 1;
           }),
         );
-
-        // Include quizzes: each quiz weighs equally to a lesson.
-        // Contribution = 100 if attempted (any status), else 0.
         courseUnits.forEach((u) =>
           u.quizzes.forEach((q) => {
             total += 1;
             if (q.attempted) {
+              sum += 100;
+              done += 1;
+            }
+          }),
+        );
+        courseUnits.forEach((u) =>
+          u.assignments.forEach((a) => {
+            total += 1;
+            if (a.evaluated) {
               sum += 100;
               done += 1;
             }
@@ -248,14 +317,14 @@ export function useStudentStats() {
           enrolled_at: r.enrolled_at,
           total_lessons: total,
           completed_lessons: done,
-          percent: total ? Math.round(sum / (total * 100) * 100) : 0,
+          percent: total ? Math.round((sum / (total * 100)) * 100) : 0,
           units: courseUnits,
         } as StudentCourseStat;
       });
 
-      const overall = globalTotal ? Math.round(globalSum / (globalTotal * 100) * 100) : 0;
+      const overall = globalTotal ? Math.round((globalSum / (globalTotal * 100)) * 100) : 0;
 
-      // ==== Quiz stats + failed attempts (per section 4 & 5) ====
+      // ==== Quiz stats + failed attempts ====
       const courseInfoById = new Map<string, { title: string; subject: string | null }>();
       rows.forEach((r: any) => {
         courseInfoById.set(r.course_id, {
@@ -284,7 +353,6 @@ export function useStudentStats() {
         });
       });
 
-      // Group attempts by quiz
       const attemptsByQuiz = new Map<string, any[]>();
       ((attempts ?? []) as any[]).forEach((a) => {
         if (!attemptsByQuiz.has(a.quiz_id)) attemptsByQuiz.set(a.quiz_id, []);
@@ -302,7 +370,7 @@ export function useStudentStats() {
         if (!arr || arr.length === 0) return;
         quizzesCompleted += 1;
         const graded = arr.filter((a) => a.status === "graded");
-        if (graded.length === 0) return; // needs_review pending
+        if (graded.length === 0) return;
         const meta = quizMetaById.get(q.id);
         const policy = meta?.policy ?? "highest";
         let official: any;
@@ -343,6 +411,22 @@ export function useStudentStats() {
         return tb - ta;
       });
 
+      // ==== Assignment stats (Phase 32) — mirror quiz cards ====
+      const assignmentsTotal = assignmentList.length;
+      let assignmentsCompleted = 0; // evaluated (passed | failed | not_submitted)
+      let assignmentsPassed = 0;
+      let assignmentsFailed = 0; // includes 'not_submitted'
+      assignmentList.forEach((a) => {
+        const outcome = submissionsByAssignment.get(a.id) ?? null;
+        if (outcome === "passed") {
+          assignmentsCompleted += 1;
+          assignmentsPassed += 1;
+        } else if (outcome === "failed" || outcome === "not_submitted") {
+          assignmentsCompleted += 1;
+          assignmentsFailed += 1;
+        }
+      });
+
       if (!cancelled)
         setData({
           enrollmentsCount: rows.length,
@@ -354,6 +438,10 @@ export function useStudentStats() {
           quizzesPassed,
           quizzesFailed,
           failedAttempts,
+          assignmentsTotal,
+          assignmentsCompleted,
+          assignmentsPassed,
+          assignmentsFailed,
         });
     })();
     return () => {
@@ -393,6 +481,7 @@ export interface AdminStats {
   stagesCount: number;
   totalQuizzes: number;
   totalQuestions: number;
+  totalAssignments: number;
   topCourses: TopCourseRow[];
   mostFailedQuizzes: MostFailedQuizRow[];
 }
@@ -410,6 +499,7 @@ export function useAdminStats() {
         { count: stagesCount },
         { count: totalQuizzes },
         { count: totalQuestions },
+        { count: totalAssignments },
         { data: enrollments },
         { data: courses },
         { data: mostFailed },
@@ -426,6 +516,7 @@ export function useAdminStats() {
         supabase.from("stages").select("id", { count: "exact", head: true }),
         (supabase as any).from("quizzes").select("id", { count: "exact", head: true }),
         (supabase as any).from("quiz_questions").select("id", { count: "exact", head: true }),
+        (supabase as any).from("assignments").select("id", { count: "exact", head: true }),
         supabase.from("enrollments").select("course_id"),
         supabase.from("courses").select("id, title, thumbnail_url, created_at, stages(name)"),
         (supabase as any).rpc("get_most_failed_quizzes", { _limit: 10 }),
@@ -462,6 +553,7 @@ export function useAdminStats() {
           stagesCount: stagesCount ?? 0,
           totalQuizzes: totalQuizzes ?? 0,
           totalQuestions: totalQuestions ?? 0,
+          totalAssignments: totalAssignments ?? 0,
           topCourses: enriched,
           mostFailedQuizzes: (mostFailed ?? []) as MostFailedQuizRow[],
         });
