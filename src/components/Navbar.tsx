@@ -170,6 +170,7 @@ const Navbar = () => {
 
         <div className="md:hidden flex items-center gap-2">
           <ThemeToggle />
+          {user && <WalletWidget to={profile?.role === "admin" ? "/admin/wallets" : "/dashboard/wallet"} />}
 
           {user && (
             <Avatar className="w-8 h-8 border border-border">
