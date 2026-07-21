@@ -290,13 +290,26 @@ const AssignmentBody = ({ assignment, files, downloading, openFile }: BodyProps)
         )}
       </motion.div>
 
-      <div className="rounded-xl border border-dashed border-border p-4 flex items-start gap-3 text-xs text-muted-foreground">
-        <Info className="w-4 h-4 mt-0.5 shrink-0" />
-        <span>
-          تسليم الواجبات والتصحيح سيكونان متاحين قريبًا. بإمكانك حاليًا مراجعة
-          المطلوب وتحميل الملفات المرفقة.
-        </span>
-      </div>
+      {status === "upcoming" ? (
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl border border-sky-500/30 bg-sky-500/5 p-6 text-center"
+        >
+          <div className="w-12 h-12 mx-auto rounded-full bg-sky-500/15 flex items-center justify-center mb-3">
+            <Clock className="w-6 h-6 text-sky-600" />
+          </div>
+          <h3 className="text-base font-bold mb-1">لم يبدأ الواجب بعد</h3>
+          <p className="text-sm text-muted-foreground">
+            سيكون متاحاً في {fmt(assignment.start_at)}
+          </p>
+        </motion.div>
+      ) : (
+        <AssignmentSubmissionPanel
+          assignmentId={assignment.id}
+          endAt={assignment.end_at}
+        />
+      )}
     </div>
   );
 };
