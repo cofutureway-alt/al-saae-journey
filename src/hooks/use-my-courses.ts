@@ -63,6 +63,7 @@ export function useMyCourses() {
       const quizzesCount: Record<string, number> = {};
       const assignmentsCount: Record<string, number> = {};
       const quizToCourse: Record<string, string> = {};
+      const assignmentToCourse: Record<string, string> = {};
       if (unitIds.length) {
         const { data: lessons } = await supabase
           .from("lessons_public")
