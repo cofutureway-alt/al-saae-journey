@@ -576,6 +576,33 @@ const AdminCourses = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={!!bulkAction} onOpenChange={(o) => !o && setBulkAction(null)}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {bulkAction === "delete" && `حذف ${selectedIds.size} دورة نهائيًا؟`}
+              {bulkAction === "draft" && `تحويل ${selectedIds.size} دورة إلى مسودة؟`}
+              {bulkAction === "publish" && `نشر ${selectedIds.size} دورة؟`}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {bulkAction === "delete"
+                ? "سيتم حذف الدورات المحددة وكل محتواها نهائيًا. لا يمكن التراجع."
+                : "سيتم تحديث حالة كل الدورات المحددة."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkBusy}>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); runBulk(); }}
+              disabled={bulkBusy}
+              className={bulkAction === "delete" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
+            >
+              تأكيد
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
