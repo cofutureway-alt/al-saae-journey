@@ -276,12 +276,47 @@ export default function AdminStudents() {
         {filtersUI}
       </motion.div>
 
+      {/* Bulk actions bar */}
+      <AnimatePresence>
+        {selectedIds.size > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-3"
+          >
+            <div className="text-sm font-semibold">تم تحديد {selectedIds.size} طالب</div>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => setBulkConfirm("ban")} className="gap-1.5 text-amber-600">
+                <Ban className="w-4 h-4" /> حظر
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setBulkConfirm("unban")} className="gap-1.5 text-emerald-600">
+                <ShieldCheck className="w-4 h-4" /> رفع الحظر
+              </Button>
+              <Button size="sm" variant="destructive" onClick={() => setBulkConfirm("delete")} className="gap-1.5">
+                <Trash2 className="w-4 h-4" /> حذف
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>إلغاء</Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Table */}
       <div className="rounded-2xl border border-border bg-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-muted-foreground">
               <tr className="text-right">
+                <th className="py-3 px-4 w-10">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 accent-primary cursor-pointer"
+                    checked={rows.length > 0 && selectedIds.size === rows.length}
+                    ref={(el) => { if (el) el.indeterminate = selectedIds.size > 0 && selectedIds.size < rows.length; }}
+                    onChange={toggleAll}
+                  />
+                </th>
                 <th className="py-3 px-4 font-semibold">الطالب</th>
                 <th className="py-3 px-4 font-semibold hidden sm:table-cell">الهاتف</th>
                 <th className="py-3 px-4 font-semibold hidden md:table-cell">رقم الطالب</th>
