@@ -1252,6 +1252,47 @@ const CourseBuilder = () => {
         />
       )}
 
+      {assignmentUnitId && id && (
+        <AssignmentModal
+          open={assignmentModalOpen}
+          onOpenChange={(v) => {
+            setAssignmentModalOpen(v);
+            if (!v) load();
+          }}
+          unitId={assignmentUnitId}
+          courseId={id}
+          assignment={editingAssignment}
+          onSaved={load}
+        />
+      )}
+
+      {/* Delete assignment */}
+      <AlertDialog
+        open={!!deletingAssignment}
+        onOpenChange={(v) => !v && setDeletingAssignment(null)}
+      >
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>حذف الواجب</AlertDialogTitle>
+            <AlertDialogDescription>
+              سيتم حذف "{deletingAssignment?.title}" وجميع ملفاته.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                deleteAssignment();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              حذف
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Delete quiz */}
       <AlertDialog
         open={!!deletingQuiz}
