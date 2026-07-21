@@ -8,6 +8,7 @@ import {
   ClipboardCheck,
   ClipboardEdit,
   CreditCard,
+  Landmark,
   Layers,
   LogOut,
   Menu,
@@ -43,6 +44,7 @@ const nav = [
   { to: "/admin/subjects", label: "المواد الدراسية", icon: BookMarked },
   { to: "/admin/cards", label: "كروت الطلاب", icon: CreditCard },
   { to: "/admin/wallets", label: "إدارة المحافظ والكروت", icon: WalletIcon },
+  { to: "/admin/payment-gateways", label: "إدارة بوابات الدفع", icon: Landmark },
   { to: "/admin/settings", label: "الإعدادات", icon: Settings2 },
   { to: "/admin/account", label: "الملف الشخصي", icon: UserIcon },
 ];

@@ -140,6 +140,7 @@ const App = () => (
               <Route path="settings/student-qr" element={<AdminQrSettings />} />
               <Route path="cards" element={<AdminCards />} />
               <Route path="wallets" element={<AdminWallets />} />
+              <Route path="payment-gateways" element={<AdminPaymentGateways />} />
               <Route path="cards/:templateId/edit" element={<CardBuilder />} />
               <Route path="account" element={<MyAccount />} />
             </Route>
