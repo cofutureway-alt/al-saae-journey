@@ -90,11 +90,14 @@ export function useMyCourses() {
 
         const { data: assignments } = await (supabase as any)
           .from("assignments")
-          .select("unit_id")
+          .select("id, unit_id")
           .in("unit_id", unitIds);
         (assignments ?? []).forEach((a: any) => {
           const cId = unitToCourse[a.unit_id];
-          if (cId) assignmentsCount[cId] = (assignmentsCount[cId] ?? 0) + 1;
+          if (cId) {
+            assignmentsCount[cId] = (assignmentsCount[cId] ?? 0) + 1;
+            assignmentToCourse[a.id] = cId;
+          }
         });
       }
 
