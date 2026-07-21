@@ -585,12 +585,18 @@ const CourseBuilder = () => {
   const [editingQuiz, setEditingQuiz] = useState<QuizRecord | null>(null);
   const [deletingQuiz, setDeletingQuiz] = useState<QuizRecord | null>(null);
 
+  const [assignmentModalOpen, setAssignmentModalOpen] = useState(false);
+  const [assignmentUnitId, setAssignmentUnitId] = useState<string | null>(null);
+  const [editingAssignment, setEditingAssignment] = useState<AssignmentRecord | null>(null);
+  const [deletingAssignment, setDeletingAssignment] = useState<AssignmentRecord | null>(null);
+
   const [publishOpen, setPublishOpen] = useState(false);
 
   const [activeDrag, setActiveDrag] = useState<
     | { type: "unit"; unit: Unit }
     | { type: "lesson"; lesson: LessonRecord }
     | { type: "quiz"; quiz: QuizRecord }
+    | { type: "assignment"; assignment: AssignmentRecord }
     | null
   >(null);
 
