@@ -113,6 +113,50 @@ const StudentStatistics = () => {
             </div>
           </motion.div>
 
+          {/* ==== Assignments section (Phase 32) ==== */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.18 }}
+            className="space-y-4"
+          >
+            <div className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-primary" />
+              <h2 className="text-lg md:text-xl font-bold">الواجبات</h2>
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <StatCard
+                label="إجمالي الواجبات"
+                value={stats.assignmentsTotal}
+                icon={FileText}
+                accent="primary"
+                delay={0}
+              />
+              <StatCard
+                label="الواجبات المكتملة"
+                value={stats.assignmentsCompleted}
+                icon={ClipboardCheck}
+                accent="violet"
+                delay={0.05}
+              />
+              <StatCard
+                label="الواجبات الناجح بها"
+                value={stats.assignmentsPassed}
+                icon={ShieldCheck}
+                accent="emerald"
+                delay={0.1}
+              />
+              <StatCard
+                label="الواجبات الراسب بها"
+                value={stats.assignmentsFailed}
+                icon={ShieldX}
+                accent="amber"
+                delay={0.15}
+              />
+            </div>
+          </motion.div>
+
+
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
