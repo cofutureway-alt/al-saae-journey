@@ -15,6 +15,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import ThemeToggle from "@/components/ThemeToggle";
+import WalletWidget from "@/components/WalletWidget";
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
@@ -162,11 +163,14 @@ const Navbar = () => {
             </a>
           ))}
           <ThemeToggle />
+          {user && profile?.role !== "admin" && <WalletWidget to="/dashboard/wallet" />}
+          {user && profile?.role === "admin" && <WalletWidget to="/admin/wallets" />}
           <AuthArea />
         </div>
 
         <div className="md:hidden flex items-center gap-2">
           <ThemeToggle />
+          {user && <WalletWidget to={profile?.role === "admin" ? "/admin/wallets" : "/dashboard/wallet"} />}
 
           {user && (
             <Avatar className="w-8 h-8 border border-border">
