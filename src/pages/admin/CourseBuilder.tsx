@@ -869,11 +869,20 @@ const CourseBuilder = () => {
                   .eq("id", c.id),
               ),
             );
-          } else {
+          } else if (c.kind === "quiz") {
             ops.push(
               Promise.resolve(
                 supabase
                   .from("quizzes")
+                  .update({ order_index: idx, unit_id: u.id })
+                  .eq("id", c.id),
+              ),
+            );
+          } else {
+            ops.push(
+              Promise.resolve(
+                (supabase as any)
+                  .from("assignments")
                   .update({ order_index: idx, unit_id: u.id })
                   .eq("id", c.id),
               ),
