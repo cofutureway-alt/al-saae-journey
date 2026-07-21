@@ -737,12 +737,16 @@ const CourseBuilder = () => {
   };
 
   // ---- Drag & drop (content items share same order sequence) ----
-  const findUnitByContentId = (kind: "lesson" | "quiz", itemId: string) =>
+  type ContentKind = "lesson" | "quiz" | "assignment";
+  const findUnitByContentId = (kind: ContentKind, itemId: string) =>
     units.find((u) => u.content.some((c) => c.kind === kind && c.id === itemId));
 
-  const parseDragId = (raw: string): { kind: "lesson" | "quiz" | "unit"; id: string } | null => {
+  const parseDragId = (
+    raw: string,
+  ): { kind: ContentKind | "unit"; id: string } | null => {
     if (raw.startsWith("lesson:")) return { kind: "lesson", id: raw.slice(7) };
     if (raw.startsWith("quiz:")) return { kind: "quiz", id: raw.slice(5) };
+    if (raw.startsWith("assignment:")) return { kind: "assignment", id: raw.slice(11) };
     if (raw.startsWith("unit:")) return { kind: "unit", id: raw.slice(5) };
     return null;
   };
@@ -756,6 +760,8 @@ const CourseBuilder = () => {
       setActiveDrag({ type: "lesson", lesson: data.lesson });
     } else if (data?.type === "quiz") {
       setActiveDrag({ type: "quiz", quiz: data.quiz });
+    } else if (data?.type === "assignment") {
+      setActiveDrag({ type: "assignment", assignment: data.assignment });
     }
   };
 
@@ -763,7 +769,12 @@ const CourseBuilder = () => {
     const { active, over } = e;
     if (!over) return;
     const activeData = active.data.current as any;
-    if (activeData?.type !== "lesson" && activeData?.type !== "quiz") return;
+    if (
+      activeData?.type !== "lesson" &&
+      activeData?.type !== "quiz" &&
+      activeData?.type !== "assignment"
+    )
+      return;
 
     const parsedActive = parseDragId(String(active.id));
     const parsedOver = parseDragId(String(over.id));
@@ -789,10 +800,17 @@ const CourseBuilder = () => {
         (c) => c.kind === parsedActive.kind && c.id === parsedActive.id,
       );
       if (!item) return prev;
-      const movedItem: ContentItem =
-        item.kind === "lesson"
-          ? { ...item, lesson: { ...item.lesson, unit_id: to.id } }
-          : { ...item, quiz: { ...item.quiz, unit_id: to.id } };
+      let movedItem: ContentItem;
+      if (item.kind === "lesson") {
+        movedItem = { ...item, lesson: { ...item.lesson, unit_id: to.id } };
+      } else if (item.kind === "quiz") {
+        movedItem = { ...item, quiz: { ...item.quiz, unit_id: to.id } };
+      } else {
+        movedItem = {
+          ...item,
+          assignment: { ...item.assignment, unit_id: to.id },
+        };
+      }
       return prev.map((u) => {
         if (u.id === from.id)
           return {
