@@ -259,14 +259,34 @@ const AdminCourses = () => {
             إدارة الدورات وبناء المحتوى التعليمي.
           </p>
         </div>
-        <Button
-          onClick={() => navigate("/admin/courses/new")}
-          size="lg"
-          className="shadow-lg shadow-primary/20"
-        >
-          <Plus className="w-4 h-4 ml-2" />
-          دورة جديدة
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="inline-flex rounded-lg border border-border overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setView("grid")}
+              className={`px-3 py-2 text-sm inline-flex items-center gap-1.5 transition ${view === "grid" ? "bg-primary text-primary-foreground" : "bg-transparent hover:bg-muted"}`}
+              title="عرض شبكي"
+            >
+              <LayoutGrid className="w-4 h-4" /> شبكة
+            </button>
+            <button
+              type="button"
+              onClick={() => setView("table")}
+              className={`px-3 py-2 text-sm inline-flex items-center gap-1.5 transition ${view === "table" ? "bg-primary text-primary-foreground" : "bg-transparent hover:bg-muted"}`}
+              title="عرض جدول"
+            >
+              <List className="w-4 h-4" /> جدول
+            </button>
+          </div>
+          <Button
+            onClick={() => navigate("/admin/courses/new")}
+            size="lg"
+            className="shadow-lg shadow-primary/20"
+          >
+            <Plus className="w-4 h-4 ml-2" />
+            دورة جديدة
+          </Button>
+        </div>
       </motion.div>
 
       <motion.div
