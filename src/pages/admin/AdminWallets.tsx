@@ -452,14 +452,14 @@ function CardsTab() {
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="border-t">
-                    <td colSpan={6} className="p-3">
+                    <td colSpan={7} className="p-3">
                       <Skeleton className="h-6 w-full" />
                     </td>
                   </tr>
                 ))
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-muted-foreground">
+                  <td colSpan={7} className="p-8 text-center text-muted-foreground">
                     <Ticket className="w-8 h-8 mx-auto mb-2 opacity-50" />
                     لا توجد كروت
                   </td>
@@ -475,6 +475,14 @@ function CardsTab() {
                       transition={{ delay: Math.min(idx * 0.02, 0.3) }}
                       className="border-t hover:bg-muted/30"
                     >
+                      <td className="p-3 w-10">
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 accent-primary cursor-pointer"
+                          checked={selectedIds.has(c.id)}
+                          onChange={() => toggleOne(c.id)}
+                        />
+                      </td>
                       <td className="p-3 font-mono font-bold tracking-widest">
                         <button
                           onClick={() => copyCode(c.code)}
