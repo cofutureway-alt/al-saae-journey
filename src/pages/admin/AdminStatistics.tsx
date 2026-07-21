@@ -11,6 +11,7 @@ import {
   Users,
   ClipboardList,
   HelpCircle,
+  FileText,
   AlertTriangle,
   BarChart3,
 } from "lucide-react";
