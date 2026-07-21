@@ -208,6 +208,44 @@ const AdminCourses = () => {
     }
   };
 
+  const toggleOne = (id: string) =>
+    setSelectedIds((p) => {
+      const n = new Set(p);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+  const toggleAllVisible = () => {
+    if (!filtered) return;
+    setSelectedIds((p) =>
+      p.size === filtered.length ? new Set() : new Set(filtered.map((c) => c.id))
+    );
+  };
+
+  const runBulk = async () => {
+    if (!bulkAction || selectedIds.size === 0) return;
+    setBulkBusy(true);
+    const ids = Array.from(selectedIds);
+    try {
+      if (bulkAction === "delete") {
+        const { error } = await supabase.from("courses").delete().in("id", ids);
+        if (error) throw error;
+        toast.success(`تم حذف ${ids.length} دورة`);
+      } else {
+        const status = bulkAction === "draft" ? "draft" : "published";
+        const { error } = await supabase.from("courses").update({ status }).in("id", ids);
+        if (error) throw error;
+        toast.success(`تم تحديث ${ids.length} دورة`);
+      }
+      setSelectedIds(new Set());
+      setBulkAction(null);
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message || "تعذّر التنفيذ");
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto">
       <motion.div
