@@ -358,7 +358,21 @@ const CourseDetails = () => {
               onEnroll={handleEnroll}
               onStart={startCourse}
               progress={progress}
+              effective={effective}
             />
+            {course && (
+              <PurchaseCourseModal
+                open={purchaseOpen}
+                onOpenChange={setPurchaseOpen}
+                courseId={course.id}
+                courseTitle={course.title}
+                amountPiastres={effective.amount}
+                onPurchased={() => {
+                  setEnrolled(true);
+                  load();
+                }}
+              />
+            )}
 
             <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
               <div className="flex items-center gap-2 text-sm">
