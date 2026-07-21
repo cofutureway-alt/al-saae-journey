@@ -485,6 +485,33 @@ export default function AdminStudents() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={!!bulkConfirm} onOpenChange={(o) => !o && setBulkConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-right">
+              {bulkConfirm === "delete" && `حذف ${selectedIds.size} طالب نهائيًا؟`}
+              {bulkConfirm === "ban" && `حظر ${selectedIds.size} طالب؟`}
+              {bulkConfirm === "unban" && `رفع الحظر عن ${selectedIds.size} طالب؟`}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-right">
+              {bulkConfirm === "delete"
+                ? "سيتم حذف الحسابات المحددة نهائيًا مع كل بياناتها. لا يمكن التراجع."
+                : "سيتم تطبيق العملية على كل الطلاب المحددين."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={busy}
+              className={bulkConfirm === "delete" ? "bg-destructive hover:bg-destructive/90" : ""}
+              onClick={(e) => { e.preventDefault(); runBulk(); }}
+            >
+              {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : "تأكيد"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
