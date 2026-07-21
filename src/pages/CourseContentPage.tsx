@@ -241,11 +241,16 @@ const CourseContentPage = () => {
                   totalItems={totalCount}
                   onCompleted={reload}
                 />
-              ) : (
+              ) : activeItem.type === "quiz" ? (
                 <QuizInlinePanel
                   key={activeItem.id}
                   quizId={activeItem.id}
                   onAttemptCreated={reload}
+                />
+              ) : (
+                <AssignmentInlinePanel
+                  key={activeItem.id}
+                  assignmentId={activeItem.id}
                 />
               )}
             </motion.div>
