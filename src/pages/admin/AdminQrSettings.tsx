@@ -18,6 +18,7 @@ import {
   QrCode,
   ListChecks,
   ClipboardList,
+  FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
