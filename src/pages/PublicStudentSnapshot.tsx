@@ -72,9 +72,16 @@ interface Snapshot {
     failed: number;
     graded_total: number;
   };
+  assignment_stats?: {
+    total: number;
+    completed: number;
+    passed: number;
+    failed: number; // includes 'not_submitted'
+  };
   weak_data?: {
     quizzes: any[];
     attempts: any[];
+    assignments?: AssignmentEval[];
   };
   weak_flags?: {
     subjects: boolean;
