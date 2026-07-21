@@ -1306,10 +1306,10 @@ export default function AdminWallets() {
             transition={{ duration: 0.2 }}
             className="mt-6"
           >
-            <TabsContent value="cards" forceMount={tab === "cards" as any}>
+            <TabsContent value="cards">
               {tab === "cards" && <CardsTab />}
             </TabsContent>
-            <TabsContent value="logs" forceMount={tab === "logs" as any}>
+            <TabsContent value="logs">
               {tab === "logs" && <WalletLogsTab />}
             </TabsContent>
           </motion.div>
