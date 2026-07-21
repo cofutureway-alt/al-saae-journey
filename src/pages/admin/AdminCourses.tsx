@@ -51,6 +51,7 @@ interface CourseRow {
   units_count: number;
   lessons_count: number;
   quizzes_count: number;
+  assignments_count: number;
   questions_count: number;
 }
 
