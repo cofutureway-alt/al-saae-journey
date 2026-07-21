@@ -1174,10 +1174,13 @@ const CourseBuilder = () => {
                   onDelete={() => setDeletingUnit(u)}
                   onAddLesson={() => openAddLesson(u.id)}
                   onAddQuiz={() => openAddQuiz(u.id)}
+                  onAddAssignment={() => openAddAssignment(u.id)}
                   onEditLesson={openEditLesson}
                   onDeleteLesson={setDeletingLesson}
                   onEditQuiz={openEditQuiz}
                   onDeleteQuiz={setDeletingQuiz}
+                  onEditAssignment={openEditAssignment}
+                  onDeleteAssignment={setDeletingAssignment}
                 />
               ))}
             </div>
@@ -1193,6 +1196,13 @@ const CourseBuilder = () => {
             ) : activeDrag?.type === "quiz" ? (
               <QuizItem
                 quiz={activeDrag.quiz}
+                onEdit={() => {}}
+                onDelete={() => {}}
+                isOverlay
+              />
+            ) : activeDrag?.type === "assignment" ? (
+              <AssignmentItem
+                assignment={activeDrag.assignment}
                 onEdit={() => {}}
                 onDelete={() => {}}
                 isOverlay
