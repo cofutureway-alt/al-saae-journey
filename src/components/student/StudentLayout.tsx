@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { BarChart3, BookOpen, ClipboardList, Home, LogOut, Menu, UserCircle2, X } from "lucide-react";
+import { BarChart3, BookOpen, ClipboardEdit, ClipboardList, Home, LogOut, Menu, UserCircle2, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 const nav = [
   { to: "/dashboard", label: "دوراتي", icon: BookOpen, end: true },
   { to: "/dashboard/quiz-attempts", label: "محاولات اختباراتي", icon: ClipboardList },
+  { to: "/dashboard/assignment-submissions", label: "واجباتي", icon: ClipboardEdit },
   { to: "/dashboard/statistics", label: "الإحصائيات", icon: BarChart3 },
   { to: "/dashboard/account", label: "الملف الشخصي", icon: UserCircle2 },
 ];

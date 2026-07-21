@@ -32,6 +32,8 @@ import AdminVideoPlayerSettings from "./pages/admin/AdminVideoPlayerSettings";
 import QuizTake from "./pages/QuizTake";
 import AdminQuizAttempts from "./pages/admin/AdminQuizAttempts";
 import MyQuizAttempts from "./pages/student/MyQuizAttempts";
+import AdminAssignmentSubmissions from "./pages/admin/AdminAssignmentSubmissions";
+import MyAssignmentSubmissions from "./pages/student/MyAssignmentSubmissions";
 import QuizStatistics from "./pages/admin/QuizStatistics";
 import AdminRegistrationForm from "./pages/admin/AdminRegistrationForm";
 import MyAccount from "./pages/student/MyAccount";
@@ -104,6 +106,7 @@ const App = () => (
               <Route index element={<MyCourses />} />
               <Route path="statistics" element={<StudentStatistics />} />
               <Route path="quiz-attempts" element={<MyQuizAttempts />} />
+              <Route path="assignment-submissions" element={<MyAssignmentSubmissions />} />
               <Route path="account" element={<MyAccount />} />
             </Route>
             <Route
@@ -116,6 +119,7 @@ const App = () => (
             >
               <Route index element={<AdminStatistics />} />
               <Route path="quiz-attempts" element={<AdminQuizAttempts />} />
+              <Route path="assignment-submissions" element={<AdminAssignmentSubmissions />} />
               <Route path="quiz-statistics/:quizId" element={<QuizStatistics />} />
               <Route path="students" element={<AdminStudents />} />
               <Route path="students/:id" element={<AdminStudentDetail />} />
