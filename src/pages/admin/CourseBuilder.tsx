@@ -20,6 +20,7 @@ import {
   Info,
   Settings,
   ClipboardList,
+  ClipboardCheck,
 } from "lucide-react";
 import {
   DndContext,
@@ -70,6 +71,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import LessonModal, { type LessonRecord } from "@/components/admin/LessonModal";
 import QuizWizard, { type QuizRecord } from "@/components/admin/QuizWizard";
+import AssignmentModal, { type AssignmentRecord } from "@/components/admin/AssignmentModal";
 
 // ---------- Types ----------
 interface Course {
@@ -80,7 +82,8 @@ interface Course {
 
 type ContentItem =
   | { kind: "lesson"; id: string; order: number; lesson: LessonRecord }
-  | { kind: "quiz"; id: string; order: number; quiz: QuizRecord };
+  | { kind: "quiz"; id: string; order: number; quiz: QuizRecord }
+  | { kind: "assignment"; id: string; order: number; assignment: AssignmentRecord };
 
 interface Unit {
   id: string;
@@ -298,6 +301,83 @@ const QuizItem = ({
   );
 };
 
+// ---------- Sortable assignment row ----------
+const AssignmentItem = ({
+  assignment,
+  onEdit,
+  onDelete,
+  isOverlay,
+}: {
+  assignment: AssignmentRecord;
+  onEdit: () => void;
+  onDelete: () => void;
+  isOverlay?: boolean;
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: `assignment:${assignment.id}`,
+    data: { type: "assignment", assignment },
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging && !isOverlay ? 0.4 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`group flex items-center gap-2 p-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/5 hover:border-emerald-500/60 hover:bg-emerald-500/10 transition-colors ${
+        isOverlay ? "shadow-2xl border-emerald-500/70" : ""
+      }`}
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing p-1"
+        aria-label="اسحب لإعادة الترتيب"
+      >
+        <GripVertical className="w-4 h-4" />
+      </button>
+      <div className="w-7 h-7 rounded-md bg-emerald-500/15 flex items-center justify-center shrink-0">
+        <ClipboardCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-medium truncate">{assignment.title}</div>
+      </div>
+      <Badge
+        variant="outline"
+        className="text-[10px] border-emerald-500/40 text-emerald-700 dark:text-emerald-400 shrink-0"
+      >
+        واجب
+      </Badge>
+      {!isOverlay && (
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+          <Button variant="ghost" size="icon" onClick={onEdit} className="h-8 w-8">
+            <Pencil className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onDelete}
+            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ---------- Sortable unit card ----------
 const UnitCard = ({
   unit,
@@ -307,10 +387,13 @@ const UnitCard = ({
   onDelete,
   onAddLesson,
   onAddQuiz,
+  onAddAssignment,
   onEditLesson,
   onDeleteLesson,
   onEditQuiz,
   onDeleteQuiz,
+  onEditAssignment,
+  onDeleteAssignment,
 }: {
   unit: Unit;
   expanded: boolean;
@@ -319,10 +402,13 @@ const UnitCard = ({
   onDelete: () => void;
   onAddLesson: () => void;
   onAddQuiz: () => void;
+  onAddAssignment: () => void;
   onEditLesson: (l: LessonRecord) => void;
   onDeleteLesson: (l: LessonRecord) => void;
   onEditQuiz: (q: QuizRecord) => void;
   onDeleteQuiz: (q: QuizRecord) => void;
+  onEditAssignment: (a: AssignmentRecord) => void;
+  onDeleteAssignment: (a: AssignmentRecord) => void;
 }) => {
   const {
     attributes,
@@ -341,6 +427,7 @@ const UnitCard = ({
 
   const lessonCount = unit.content.filter((c) => c.kind === "lesson").length;
   const quizCount = unit.content.filter((c) => c.kind === "quiz").length;
+  const assignmentCount = unit.content.filter((c) => c.kind === "assignment").length;
 
   return (
     <div
@@ -364,7 +451,7 @@ const UnitCard = ({
           <div className="flex-1 min-w-0">
             <div className="font-bold text-foreground truncate">{unit.title}</div>
             <div className="text-xs text-muted-foreground">
-              {lessonCount} دروس · {quizCount} اختبارات
+              {lessonCount} دروس · {quizCount} اختبارات · {assignmentCount} واجبات
             </div>
           </div>
           <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
@@ -405,34 +492,47 @@ const UnitCard = ({
                 strategy={verticalListSortingStrategy}
               >
                 <div className="space-y-2 min-h-[8px]">
-                  {unit.content.map((c) =>
-                    c.kind === "lesson" ? (
-                      <LessonItem
-                        key={`l-${c.id}`}
-                        lesson={c.lesson}
-                        onEdit={() => onEditLesson(c.lesson)}
-                        onDelete={() => onDeleteLesson(c.lesson)}
+                  {unit.content.map((c) => {
+                    if (c.kind === "lesson") {
+                      return (
+                        <LessonItem
+                          key={`l-${c.id}`}
+                          lesson={c.lesson}
+                          onEdit={() => onEditLesson(c.lesson)}
+                          onDelete={() => onDeleteLesson(c.lesson)}
+                        />
+                      );
+                    }
+                    if (c.kind === "quiz") {
+                      return (
+                        <QuizItem
+                          key={`q-${c.id}`}
+                          quiz={c.quiz}
+                          onEdit={() => onEditQuiz(c.quiz)}
+                          onDelete={() => onDeleteQuiz(c.quiz)}
+                        />
+                      );
+                    }
+                    return (
+                      <AssignmentItem
+                        key={`a-${c.id}`}
+                        assignment={c.assignment}
+                        onEdit={() => onEditAssignment(c.assignment)}
+                        onDelete={() => onDeleteAssignment(c.assignment)}
                       />
-                    ) : (
-                      <QuizItem
-                        key={`q-${c.id}`}
-                        quiz={c.quiz}
-                        onEdit={() => onEditQuiz(c.quiz)}
-                        onDelete={() => onDeleteQuiz(c.quiz)}
-                      />
-                    ),
-                  )}
+                    );
+                  })}
                   {unit.content.length === 0 && (
                     <div className="text-center text-xs text-muted-foreground py-6 border border-dashed rounded-lg">
-                      أضف درسًا أو اختبارًا لهذه الوحدة
+                      أضف درسًا أو اختبارًا أو واجبًا لهذه الوحدة
                     </div>
                   )}
                 </div>
               </SortableContext>
-              <div className="grid grid-cols-2 gap-2 mt-2">
+              <div className="grid grid-cols-3 gap-2 mt-2">
                 <Button variant="outline" size="sm" onClick={onAddLesson}>
-                  <Plus className="w-4 h-4 ml-2" />
-                  إضافة درس
+                  <Plus className="w-4 h-4 ml-1" />
+                  درس
                 </Button>
                 <Button
                   variant="outline"
@@ -440,8 +540,17 @@ const UnitCard = ({
                   onClick={onAddQuiz}
                   className="border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
                 >
-                  <ClipboardList className="w-4 h-4 ml-2" />
-                  إضافة اختبار
+                  <ClipboardList className="w-4 h-4 ml-1" />
+                  اختبار
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onAddAssignment}
+                  className="border-emerald-500/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10"
+                >
+                  <ClipboardCheck className="w-4 h-4 ml-1" />
+                  واجب
                 </Button>
               </div>
             </div>
@@ -476,12 +585,18 @@ const CourseBuilder = () => {
   const [editingQuiz, setEditingQuiz] = useState<QuizRecord | null>(null);
   const [deletingQuiz, setDeletingQuiz] = useState<QuizRecord | null>(null);
 
+  const [assignmentModalOpen, setAssignmentModalOpen] = useState(false);
+  const [assignmentUnitId, setAssignmentUnitId] = useState<string | null>(null);
+  const [editingAssignment, setEditingAssignment] = useState<AssignmentRecord | null>(null);
+  const [deletingAssignment, setDeletingAssignment] = useState<AssignmentRecord | null>(null);
+
   const [publishOpen, setPublishOpen] = useState(false);
 
   const [activeDrag, setActiveDrag] = useState<
     | { type: "unit"; unit: Unit }
     | { type: "lesson"; lesson: LessonRecord }
     | { type: "quiz"; quiz: QuizRecord }
+    | { type: "assignment"; assignment: AssignmentRecord }
     | null
   >(null);
 
@@ -515,7 +630,7 @@ const CourseBuilder = () => {
     }
     setCourse(c as Course);
 
-    const [{ data: u }, { data: qz }] = await Promise.all([
+    const [{ data: u }, { data: qz }, { data: asg }] = await Promise.all([
       supabase
         .from("units")
         .select(
@@ -527,6 +642,10 @@ const CourseBuilder = () => {
         .from("quizzes")
         .select("*")
         .eq("course_id", id),
+      (supabase as any)
+        .from("assignments")
+        .select("*")
+        .eq("course_id", id),
     ]);
 
     const quizzesByUnit = new Map<string, QuizRecord[]>();
@@ -534,6 +653,13 @@ const CourseBuilder = () => {
       const arr = quizzesByUnit.get(q.unit_id) ?? [];
       arr.push(q as QuizRecord);
       quizzesByUnit.set(q.unit_id, arr);
+    });
+
+    const assignmentsByUnit = new Map<string, AssignmentRecord[]>();
+    (asg ?? []).forEach((a: any) => {
+      const arr = assignmentsByUnit.get(a.unit_id) ?? [];
+      arr.push(a as AssignmentRecord);
+      assignmentsByUnit.set(a.unit_id, arr);
     });
 
     const mapped: Unit[] = (u ?? []).map((row: any) => {
@@ -549,7 +675,15 @@ const CourseBuilder = () => {
         order: q.order_index,
         quiz: q,
       }));
-      const content = [...lessonItems, ...quizItems].sort((a, b) => a.order - b.order);
+      const assignmentItems: ContentItem[] = (assignmentsByUnit.get(row.id) ?? []).map((a) => ({
+        kind: "assignment" as const,
+        id: a.id,
+        order: a.order_index,
+        assignment: a,
+      }));
+      const content = [...lessonItems, ...quizItems, ...assignmentItems].sort(
+        (a, b) => a.order - b.order,
+      );
       return {
         id: row.id,
         title: row.title,
@@ -628,12 +762,16 @@ const CourseBuilder = () => {
   };
 
   // ---- Drag & drop (content items share same order sequence) ----
-  const findUnitByContentId = (kind: "lesson" | "quiz", itemId: string) =>
+  type ContentKind = "lesson" | "quiz" | "assignment";
+  const findUnitByContentId = (kind: ContentKind, itemId: string) =>
     units.find((u) => u.content.some((c) => c.kind === kind && c.id === itemId));
 
-  const parseDragId = (raw: string): { kind: "lesson" | "quiz" | "unit"; id: string } | null => {
+  const parseDragId = (
+    raw: string,
+  ): { kind: ContentKind | "unit"; id: string } | null => {
     if (raw.startsWith("lesson:")) return { kind: "lesson", id: raw.slice(7) };
     if (raw.startsWith("quiz:")) return { kind: "quiz", id: raw.slice(5) };
+    if (raw.startsWith("assignment:")) return { kind: "assignment", id: raw.slice(11) };
     if (raw.startsWith("unit:")) return { kind: "unit", id: raw.slice(5) };
     return null;
   };
@@ -647,6 +785,8 @@ const CourseBuilder = () => {
       setActiveDrag({ type: "lesson", lesson: data.lesson });
     } else if (data?.type === "quiz") {
       setActiveDrag({ type: "quiz", quiz: data.quiz });
+    } else if (data?.type === "assignment") {
+      setActiveDrag({ type: "assignment", assignment: data.assignment });
     }
   };
 
@@ -654,7 +794,12 @@ const CourseBuilder = () => {
     const { active, over } = e;
     if (!over) return;
     const activeData = active.data.current as any;
-    if (activeData?.type !== "lesson" && activeData?.type !== "quiz") return;
+    if (
+      activeData?.type !== "lesson" &&
+      activeData?.type !== "quiz" &&
+      activeData?.type !== "assignment"
+    )
+      return;
 
     const parsedActive = parseDragId(String(active.id));
     const parsedOver = parseDragId(String(over.id));
@@ -680,10 +825,17 @@ const CourseBuilder = () => {
         (c) => c.kind === parsedActive.kind && c.id === parsedActive.id,
       );
       if (!item) return prev;
-      const movedItem: ContentItem =
-        item.kind === "lesson"
-          ? { ...item, lesson: { ...item.lesson, unit_id: to.id } }
-          : { ...item, quiz: { ...item.quiz, unit_id: to.id } };
+      let movedItem: ContentItem;
+      if (item.kind === "lesson") {
+        movedItem = { ...item, lesson: { ...item.lesson, unit_id: to.id } };
+      } else if (item.kind === "quiz") {
+        movedItem = { ...item, quiz: { ...item.quiz, unit_id: to.id } };
+      } else {
+        movedItem = {
+          ...item,
+          assignment: { ...item.assignment, unit_id: to.id },
+        };
+      }
       return prev.map((u) => {
         if (u.id === from.id)
           return {
@@ -717,11 +869,20 @@ const CourseBuilder = () => {
                   .eq("id", c.id),
               ),
             );
-          } else {
+          } else if (c.kind === "quiz") {
             ops.push(
               Promise.resolve(
                 supabase
                   .from("quizzes")
+                  .update({ order_index: idx, unit_id: u.id })
+                  .eq("id", c.id),
+              ),
+            );
+          } else {
+            ops.push(
+              Promise.resolve(
+                (supabase as any)
+                  .from("assignments")
                   .update({ order_index: idx, unit_id: u.id })
                   .eq("id", c.id),
               ),
@@ -751,7 +912,11 @@ const CourseBuilder = () => {
       return;
     }
 
-    if (activeData?.type === "lesson" || activeData?.type === "quiz") {
+    if (
+      activeData?.type === "lesson" ||
+      activeData?.type === "quiz" ||
+      activeData?.type === "assignment"
+    ) {
       const parsedActive = parseDragId(String(active.id));
       if (!parsedActive || parsedActive.kind === "unit") return;
 
@@ -826,6 +991,38 @@ const CourseBuilder = () => {
       if (error) throw error;
     });
     setDeletingQuiz(null);
+    load();
+  };
+
+  const openAddAssignment = (unitId: string) => {
+    setAssignmentUnitId(unitId);
+    setEditingAssignment(null);
+    setAssignmentModalOpen(true);
+  };
+  const openEditAssignment = (assignment: AssignmentRecord) => {
+    setAssignmentUnitId(assignment.unit_id);
+    setEditingAssignment(assignment);
+    setAssignmentModalOpen(true);
+  };
+  const deleteAssignment = async () => {
+    if (!deletingAssignment) return;
+    await markSaving(async () => {
+      const { data: files } = await (supabase as any)
+        .from("assignment_files")
+        .select("file_url")
+        .eq("assignment_id", deletingAssignment.id);
+      if (files?.length) {
+        await supabase.storage
+          .from("assignment-files")
+          .remove(files.map((f: any) => f.file_url));
+      }
+      const { error } = await (supabase as any)
+        .from("assignments")
+        .delete()
+        .eq("id", deletingAssignment.id);
+      if (error) throw error;
+    });
+    setDeletingAssignment(null);
     load();
   };
 
@@ -977,10 +1174,13 @@ const CourseBuilder = () => {
                   onDelete={() => setDeletingUnit(u)}
                   onAddLesson={() => openAddLesson(u.id)}
                   onAddQuiz={() => openAddQuiz(u.id)}
+                  onAddAssignment={() => openAddAssignment(u.id)}
                   onEditLesson={openEditLesson}
                   onDeleteLesson={setDeletingLesson}
                   onEditQuiz={openEditQuiz}
                   onDeleteQuiz={setDeletingQuiz}
+                  onEditAssignment={openEditAssignment}
+                  onDeleteAssignment={setDeletingAssignment}
                 />
               ))}
             </div>
@@ -996,6 +1196,13 @@ const CourseBuilder = () => {
             ) : activeDrag?.type === "quiz" ? (
               <QuizItem
                 quiz={activeDrag.quiz}
+                onEdit={() => {}}
+                onDelete={() => {}}
+                isOverlay
+              />
+            ) : activeDrag?.type === "assignment" ? (
+              <AssignmentItem
+                assignment={activeDrag.assignment}
                 onEdit={() => {}}
                 onDelete={() => {}}
                 isOverlay
@@ -1044,6 +1251,47 @@ const CourseBuilder = () => {
           onSaved={load}
         />
       )}
+
+      {assignmentUnitId && id && (
+        <AssignmentModal
+          open={assignmentModalOpen}
+          onOpenChange={(v) => {
+            setAssignmentModalOpen(v);
+            if (!v) load();
+          }}
+          unitId={assignmentUnitId}
+          courseId={id}
+          assignment={editingAssignment}
+          onSaved={load}
+        />
+      )}
+
+      {/* Delete assignment */}
+      <AlertDialog
+        open={!!deletingAssignment}
+        onOpenChange={(v) => !v && setDeletingAssignment(null)}
+      >
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>حذف الواجب</AlertDialogTitle>
+            <AlertDialogDescription>
+              سيتم حذف "{deletingAssignment?.title}" وجميع ملفاته.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                deleteAssignment();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              حذف
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete quiz */}
       <AlertDialog

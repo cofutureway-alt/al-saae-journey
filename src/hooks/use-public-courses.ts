@@ -13,6 +13,7 @@ export interface PublicCourse {
   units_count: number;
   lessons_count: number;
   quizzes_count: number;
+  assignments_count: number;
   questions_count: number;
   created_at: string;
 }
@@ -80,6 +81,17 @@ export function usePublicCourses(limit?: number) {
         }
       }
 
+      const assignmentsByCourse: Record<string, number> = {};
+      if (courseIds.length) {
+        const { data: assignments } = await (supabase as any)
+          .from("assignments")
+          .select("course_id")
+          .in("course_id", courseIds);
+        (assignments ?? []).forEach((a: any) => {
+          assignmentsByCourse[a.course_id] = (assignmentsByCourse[a.course_id] ?? 0) + 1;
+        });
+      }
+
       if (cancelled) return;
       setCourses(
         (data ?? []).map((c: any) => ({
@@ -97,6 +109,7 @@ export function usePublicCourses(limit?: number) {
             0,
           ),
           quizzes_count: quizzesByCourse[c.id] ?? 0,
+          assignments_count: assignmentsByCourse[c.id] ?? 0,
           questions_count: questionsByCourse[c.id] ?? 0,
           created_at: c.created_at,
         })),

@@ -4,11 +4,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { listUnitQuizzes } from "@/lib/quiz-api";
 
 /**
- * A generic content item that can be a lesson, a quiz, or (in the future)
- * another type such as an assignment. All new types must slot in here — the
- * sidebar, routing, and completion aggregation consume this normalized shape.
+ * A generic content item that can be a lesson, a quiz, or an assignment.
+ * All new types must slot in here — the sidebar, routing, and completion
+ * aggregation consume this normalized shape.
  */
-export type ContentItemType = "lesson" | "quiz";
+export type ContentItemType = "lesson" | "quiz" | "assignment";
 
 export interface ContentItem {
   id: string;
@@ -21,6 +21,7 @@ export interface ContentItem {
   // Extras used by the sidebar for type-specific badges/hints.
   extra?: {
     durationMinutes?: number;
+    endAt?: string;
   };
 }
 
@@ -55,9 +56,11 @@ export function contentRoute(
  * Load the merged, ordered list of content items for an entire course
  * (all units), together with per-item completion status for the current user.
  *
- * Completion rules (Phase 17):
+ * Completion rules:
  *  - lesson: has a `lesson_progress` row
  *  - quiz: has ANY `quiz_attempts` row (any status — first attempt marks done)
+ *  - assignment: always false in Phase 29 — submission-based completion
+ *    is defined in Phase 30/31 and will be wired in there.
  */
 export function useCourseContent(courseId: string | undefined) {
   const { user } = useAuth();
@@ -80,8 +83,8 @@ export function useCourseContent(courseId: string | undefined) {
     const uList = (unitRows ?? []) as { id: string; title: string; position: number }[];
     const unitIds = uList.map((u) => u.id);
 
-    // Lessons + quizzes for these units, in parallel.
-    const [lessonsRes, quizzesArrays] = await Promise.all([
+    // Lessons + quizzes + assignments for these units, in parallel.
+    const [lessonsRes, quizzesArrays, assignmentsRes] = await Promise.all([
       unitIds.length
         ? supabase
             .from("lessons_public")
@@ -91,6 +94,12 @@ export function useCourseContent(courseId: string | undefined) {
       unitIds.length
         ? Promise.all(unitIds.map((uid) => listUnitQuizzes(uid).catch(() => [])))
         : Promise.resolve([] as any[]),
+      unitIds.length
+        ? (supabase as any)
+            .from("assignments")
+            .select("id, unit_id, title, order_index, end_at")
+            .in("unit_id", unitIds)
+        : Promise.resolve({ data: [] as any[] }),
     ]);
 
     const lessons = (lessonsRes.data ?? []) as {
@@ -107,6 +116,14 @@ export function useCourseContent(courseId: string | undefined) {
       quizzesByUnit.set(uid, list);
       list.forEach((q) => allQuizIds.push(q.id));
     });
+
+    const assignments = ((assignmentsRes as any).data ?? []) as {
+      id: string;
+      unit_id: string;
+      title: string;
+      order_index: number;
+      end_at: string;
+    }[];
 
     // Completion lookups
     let completedLessonIds = new Set<string>();
@@ -154,7 +171,20 @@ export function useCourseContent(courseId: string | undefined) {
         routePath: contentRoute(courseId, "quiz", q.id),
         extra: { durationMinutes: q.duration_minutes },
       }));
-      const items = [...uLessons, ...uQuizzes].sort(
+      const uAssignments: ContentItem[] = assignments
+        .filter((a) => a.unit_id === u.id)
+        .map((a) => ({
+          id: a.id,
+          type: "assignment" as const,
+          unitId: u.id,
+          title: a.title,
+          orderIndex: a.order_index,
+          // Phase 30/31 will define assignment completion.
+          isCompleted: false,
+          routePath: contentRoute(courseId, "assignment", a.id),
+          extra: { endAt: a.end_at },
+        }));
+      const items = [...uLessons, ...uQuizzes, ...uAssignments].sort(
         (a, b) => a.orderIndex - b.orderIndex,
       );
       return { id: u.id, title: u.title, position: u.position, items };

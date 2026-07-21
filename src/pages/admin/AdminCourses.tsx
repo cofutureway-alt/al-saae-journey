@@ -51,6 +51,7 @@ interface CourseRow {
   units_count: number;
   lessons_count: number;
   quizzes_count: number;
+  assignments_count: number;
   questions_count: number;
 }
 
@@ -128,6 +129,17 @@ const AdminCourses = () => {
       }
     }
 
+    const assignmentsByCourse: Record<string, number> = {};
+    if (courseIds.length) {
+      const { data: assignments } = await (supabase as any)
+        .from("assignments")
+        .select("course_id")
+        .in("course_id", courseIds);
+      (assignments ?? []).forEach((a: any) => {
+        assignmentsByCourse[a.course_id] = (assignmentsByCourse[a.course_id] ?? 0) + 1;
+      });
+    }
+
     setCourses(
       (cRows ?? []).map((c: any) => ({
         id: c.id,
@@ -145,6 +157,7 @@ const AdminCourses = () => {
             0,
           ) ?? 0,
         quizzes_count: quizzesByCourse[c.id] ?? 0,
+        assignments_count: assignmentsByCourse[c.id] ?? 0,
         questions_count: questionsByCourse[c.id] ?? 0,
       })),
     );
@@ -314,6 +327,10 @@ const AdminCourses = () => {
                     <span className="inline-flex items-center gap-1">
                       <ClipboardList className="w-3.5 h-3.5" />
                       {c.quizzes_count} اختبار
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <ClipboardList className="w-3.5 h-3.5" />
+                      {c.assignments_count} واجب
                     </span>
                     <span className="inline-flex items-center gap-1">
                       <HelpCircle className="w-3.5 h-3.5" />

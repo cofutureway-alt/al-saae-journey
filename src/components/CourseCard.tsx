@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { BookOpen, Layers, ArrowLeft, ClipboardList, HelpCircle } from "lucide-react";
+import { BookOpen, Layers, ArrowLeft, ClipboardList, ClipboardCheck, HelpCircle } from "lucide-react";
 import { useSignedThumbnail } from "@/hooks/use-signed-thumbnail";
 import { EightPointStar } from "@/components/IslamicPatterns";
 import type { PublicCourse } from "@/hooks/use-public-courses";
@@ -78,6 +78,10 @@ export const CourseCard = ({ course, index = 0, progress }: Props) => {
             <span className="inline-flex items-center gap-1.5">
               <ClipboardList className="w-3.5 h-3.5" />
               {course.quizzes_count} اختبار
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <ClipboardCheck className="w-3.5 h-3.5" />
+              {course.assignments_count} واجب
             </span>
             <span className="inline-flex items-center gap-1.5">
               <HelpCircle className="w-3.5 h-3.5" />
