@@ -43,6 +43,10 @@ interface Course {
   stage_name: string | null;
   subject_name: string | null;
   status: "draft" | "published";
+  is_paid: boolean | null;
+  price_piastres: number | null;
+  discount_price_piastres: number | null;
+  discount_expires_at: string | null;
 }
 
 interface LessonLite {
