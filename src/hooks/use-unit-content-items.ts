@@ -196,8 +196,8 @@ export function useCourseContent(courseId: string | undefined) {
           unitId: u.id,
           title: a.title,
           orderIndex: a.order_index,
-          // Phase 30/31 will define assignment completion.
-          isCompleted: false,
+          // Phase 32: evaluated (passed OR failed) => complete.
+          isCompleted: evaluatedAssignmentIds.has(a.id),
           routePath: contentRoute(courseId, "assignment", a.id),
           extra: { endAt: a.end_at },
         }));
