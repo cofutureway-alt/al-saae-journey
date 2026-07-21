@@ -44,6 +44,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { formatPiastres, parseEgpToPiastres } from "@/lib/money";
 import { cn } from "@/lib/utils";
+import StrongConfirmDialog from "@/components/admin/StrongConfirmDialog";
 
 // ============================================================
 // Types
@@ -153,101 +154,7 @@ const STATUS_META = {
   expired: { label: "منتهية الصلاحية", cls: "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30" },
 };
 
-// ============================================================
-// Strong Confirmation Dialog
-// ============================================================
-interface StrongConfirmProps {
-  open: boolean;
-  onOpenChange: (o: boolean) => void;
-  title: string;
-  description: React.ReactNode;
-  confirmWord?: string;
-  destructive?: boolean;
-  onConfirm: () => Promise<void> | void;
-  confirmLabel?: string;
-}
-function StrongConfirmDialog({
-  open,
-  onOpenChange,
-  title,
-  description,
-  confirmWord = "تأكيد",
-  destructive,
-  onConfirm,
-  confirmLabel = "تنفيذ",
-}: StrongConfirmProps) {
-  const [typed, setTyped] = useState("");
-  const [loading, setLoading] = useState(false);
-  useEffect(() => {
-    if (open) {
-      setTyped("");
-      setLoading(false);
-    }
-  }, [open]);
-  const matches = typed.trim() === confirmWord;
-  return (
-    <Dialog open={open} onOpenChange={(o) => !loading && onOpenChange(o)}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <div className="flex items-center gap-3 mb-2">
-            <div
-              className={cn(
-                "w-11 h-11 rounded-full flex items-center justify-center",
-                destructive
-                  ? "bg-rose-500/10 text-rose-600 dark:text-rose-400"
-                  : "bg-primary/10 text-primary"
-              )}
-            >
-              <ShieldAlert className="w-5 h-5" />
-            </div>
-            <DialogTitle className="text-lg">{title}</DialogTitle>
-          </div>
-          <DialogDescription asChild>
-            <div className="text-sm text-foreground/80 leading-relaxed space-y-2">
-              {description}
-            </div>
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-2 pt-2">
-          <Label className="text-xs text-muted-foreground">
-            للتأكيد اكتب كلمة <span className="font-bold text-foreground">{confirmWord}</span> بالأسفل:
-          </Label>
-          <Input
-            value={typed}
-            onChange={(e) => setTyped(e.target.value)}
-            placeholder={confirmWord}
-            className="text-center font-bold tracking-widest"
-            autoFocus
-            dir="rtl"
-          />
-        </div>
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
-            إلغاء
-          </Button>
-          <Button
-            variant={destructive ? "destructive" : "default"}
-            disabled={!matches || loading}
-            onClick={async () => {
-              try {
-                setLoading(true);
-                await onConfirm();
-                onOpenChange(false);
-              } catch (e: any) {
-                toast.error(e?.message ?? "فشل تنفيذ العملية");
-              } finally {
-                setLoading(false);
-              }
-            }}
-          >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : null}
-            {confirmLabel}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
+// (StrongConfirmDialog moved to src/components/admin/StrongConfirmDialog.tsx)
 
 // ============================================================
 // Cards Tab
