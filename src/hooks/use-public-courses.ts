@@ -81,6 +81,17 @@ export function usePublicCourses(limit?: number) {
         }
       }
 
+      const assignmentsByCourse: Record<string, number> = {};
+      if (courseIds.length) {
+        const { data: assignments } = await (supabase as any)
+          .from("assignments")
+          .select("course_id")
+          .in("course_id", courseIds);
+        (assignments ?? []).forEach((a: any) => {
+          assignmentsByCourse[a.course_id] = (assignmentsByCourse[a.course_id] ?? 0) + 1;
+        });
+      }
+
       if (cancelled) return;
       setCourses(
         (data ?? []).map((c: any) => ({
