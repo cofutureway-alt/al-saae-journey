@@ -155,6 +155,12 @@ const CourseInfoEditor = () => {
             description: data.description ?? "",
             stage_id: data.stage_id ?? "",
             subject_id: (data as any).subject_id ?? "",
+            is_paid: !!(data as any).is_paid,
+            price_egp: piastresToEgpNumber((data as any).price_piastres),
+            discount_price_egp: piastresToEgpNumber((data as any).discount_price_piastres),
+            discount_expires_at: (data as any).discount_expires_at
+              ? new Date((data as any).discount_expires_at).toISOString().slice(0, 16)
+              : "",
           });
           setExistingThumb(data.thumbnail_url);
           setLoading(false);
