@@ -394,6 +394,7 @@ const AdminLayout = ({ children }: { children?: ReactNode }) => {
           </div>
 
           <div className="flex items-center gap-2">
+            <WalletWidget to="/admin/wallets" />
             <ThemeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
