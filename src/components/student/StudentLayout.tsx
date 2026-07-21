@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import ThemeToggle from "@/components/ThemeToggle";
+import WalletWidget from "@/components/WalletWidget";
 
 const nav = [
   { to: "/dashboard", label: "دوراتي", icon: BookOpen, end: true },
@@ -182,6 +183,7 @@ const StudentLayout = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            <WalletWidget to="/dashboard/wallet" />
             <ThemeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
