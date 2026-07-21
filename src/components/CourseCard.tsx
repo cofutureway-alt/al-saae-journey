@@ -1,11 +1,12 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { BookOpen, Layers, ArrowLeft, ClipboardList, ClipboardCheck, HelpCircle } from "lucide-react";
+import { BookOpen, Layers, ArrowLeft, ClipboardList, ClipboardCheck, HelpCircle, Tag } from "lucide-react";
 import { useSignedThumbnail } from "@/hooks/use-signed-thumbnail";
 import { EightPointStar } from "@/components/IslamicPatterns";
 import type { PublicCourse } from "@/hooks/use-public-courses";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { formatPiastres, getEffectiveCoursePrice } from "@/lib/money";
 
 interface Props {
   course: PublicCourse;
@@ -15,6 +16,7 @@ interface Props {
 
 export const CourseCard = ({ course, index = 0, progress }: Props) => {
   const thumb = useSignedThumbnail(course.thumbnail_url);
+  const price = getEffectiveCoursePrice(course);
 
   return (
     <motion.div
@@ -99,10 +101,28 @@ export const CourseCard = ({ course, index = 0, progress }: Props) => {
             </div>
           )}
 
-          <div className="mt-4 flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">
-              {typeof progress === "number" ? "تابع التعلم" : "مجانًا"}
-            </span>
+          <div className="mt-4 flex items-center justify-between gap-2">
+            <div className="flex flex-col">
+              {price.isFree ? (
+                <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">مجانًا</span>
+              ) : price.discountActive && price.originalAmount !== null ? (
+                <div className="flex items-baseline gap-2 flex-wrap">
+                  <span className="text-base font-extrabold text-primary">{formatPiastres(price.amount)}</span>
+                  <span className="text-[11px] text-muted-foreground line-through">
+                    {formatPiastres(price.originalAmount)}
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+                    <Tag className="w-3 h-3" />
+                    خصم
+                  </span>
+                </div>
+              ) : (
+                <span className="text-base font-extrabold text-foreground">{formatPiastres(price.amount)}</span>
+              )}
+              {typeof progress === "number" && (
+                <span className="text-[10px] text-muted-foreground mt-0.5">تابع التعلم</span>
+              )}
+            </div>
             <Button
               variant="ghost"
               size="sm"

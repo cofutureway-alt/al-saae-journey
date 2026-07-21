@@ -13,6 +13,8 @@ import {
   AlertTriangle,
   Layers,
   BookMarked,
+  Wallet,
+  Tag,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -26,14 +28,49 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { parseEgpToPiastres, piastresToEgpNumber, formatPiastres } from "@/lib/money";
 import { useSignedThumbnail } from "@/hooks/use-signed-thumbnail";
 
-const schema = z.object({
-  title: z.string().trim().min(2, "العنوان قصير جدًا").max(120),
-  description: z.string().trim().max(1000).optional(),
-  stage_id: z.string().uuid("اختر مرحلة"),
-  subject_id: z.string().uuid("اختر مادة دراسية"),
-});
+const schema = z
+  .object({
+    title: z.string().trim().min(2, "العنوان قصير جدًا").max(120),
+    description: z.string().trim().max(1000).optional(),
+    stage_id: z.string().uuid("اختر مرحلة"),
+    subject_id: z.string().uuid("اختر مادة دراسية"),
+    is_paid: z.boolean(),
+    price_egp: z.string().optional(),
+    discount_price_egp: z.string().optional(),
+    discount_expires_at: z.string().optional(),
+  })
+  .superRefine((val, ctx) => {
+    if (val.is_paid) {
+      const p = Number(val.price_egp);
+      if (!val.price_egp || !Number.isFinite(p) || p < 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["price_egp"],
+          message: "أدخل سعرًا صالحًا",
+        });
+      }
+      if (val.discount_price_egp) {
+        const d = Number(val.discount_price_egp);
+        if (!Number.isFinite(d) || d < 0) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["discount_price_egp"],
+            message: "سعر الخصم غير صالح",
+          });
+        } else if (Number.isFinite(p) && d >= p) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["discount_price_egp"],
+            message: "يجب أن يكون سعر الخصم أقل من السعر الأصلي",
+          });
+        }
+      }
+    }
+  });
 type FormValues = z.infer<typeof schema>;
 
 const MAX_MB = 3;
@@ -71,10 +108,22 @@ const CourseInfoEditor = () => {
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { title: "", description: "", stage_id: "", subject_id: "" },
+    defaultValues: {
+      title: "",
+      description: "",
+      stage_id: "",
+      subject_id: "",
+      is_paid: false,
+      price_egp: "",
+      discount_price_egp: "",
+      discount_expires_at: "",
+    },
   });
   const stageVal = watch("stage_id");
   const subjectVal = watch("subject_id");
+  const isPaid = watch("is_paid");
+  const priceEgp = watch("price_egp");
+  const discountEgp = watch("discount_price_egp");
 
   useEffect(() => {
     supabase
@@ -106,6 +155,12 @@ const CourseInfoEditor = () => {
             description: data.description ?? "",
             stage_id: data.stage_id ?? "",
             subject_id: (data as any).subject_id ?? "",
+            is_paid: !!(data as any).is_paid,
+            price_egp: piastresToEgpNumber((data as any).price_piastres),
+            discount_price_egp: piastresToEgpNumber((data as any).discount_price_piastres),
+            discount_expires_at: (data as any).discount_expires_at
+              ? new Date((data as any).discount_expires_at).toISOString().slice(0, 16)
+              : "",
           });
           setExistingThumb(data.thumbnail_url);
           setLoading(false);
@@ -150,6 +205,23 @@ const CourseInfoEditor = () => {
         thumbPath = path;
       }
 
+      const pricePia = values.is_paid ? parseEgpToPiastres(values.price_egp) : null;
+      const discountPia =
+        values.is_paid && values.discount_price_egp
+          ? parseEgpToPiastres(values.discount_price_egp)
+          : null;
+      const discountExp =
+        values.is_paid && discountPia !== null && values.discount_expires_at
+          ? new Date(values.discount_expires_at).toISOString()
+          : null;
+
+      const pricingPayload = {
+        is_paid: values.is_paid,
+        price_piastres: pricePia,
+        discount_price_piastres: discountPia,
+        discount_expires_at: discountExp,
+      };
+
       if (isEdit) {
         const { error } = await (supabase as any)
           .from("courses")
@@ -159,6 +231,7 @@ const CourseInfoEditor = () => {
             stage_id: values.stage_id,
             subject_id: values.subject_id,
             thumbnail_url: thumbPath,
+            ...pricingPayload,
           })
           .eq("id", id!);
         if (error) throw error;
@@ -176,6 +249,7 @@ const CourseInfoEditor = () => {
             thumbnail_url: thumbPath,
             status: "draft",
             created_by: userRes.user?.id ?? null,
+            ...pricingPayload,
           })
           .select("id")
           .single();
@@ -334,6 +408,159 @@ const CourseInfoEditor = () => {
             )}
           </div>
         </div>
+
+        {/* Pricing section */}
+        <div className="rounded-xl border border-border/70 bg-accent/20 p-4 md:p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <Wallet className="w-4 h-4 text-primary" />
+            <Label className="text-base font-bold">تسعير الدورة</Label>
+          </div>
+
+          <div className="space-y-2">
+            <Label>نوع الكورس</Label>
+            <RadioGroup
+              value={isPaid ? "paid" : "free"}
+              onValueChange={(v) => {
+                const paid = v === "paid";
+                setValue("is_paid", paid, { shouldValidate: true });
+                if (!paid) {
+                  setValue("price_egp", "");
+                  setValue("discount_price_egp", "");
+                  setValue("discount_expires_at", "");
+                }
+              }}
+              className="grid grid-cols-2 gap-3"
+            >
+              <label
+                htmlFor="type-free"
+                className={`flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
+                  !isPaid ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
+                }`}
+              >
+                <RadioGroupItem id="type-free" value="free" />
+                <div className="flex-1">
+                  <div className="text-sm font-bold">مجاني</div>
+                  <div className="text-xs text-muted-foreground">تسجيل مباشر بدون دفع</div>
+                </div>
+              </label>
+              <label
+                htmlFor="type-paid"
+                className={`flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
+                  isPaid ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
+                }`}
+              >
+                <RadioGroupItem id="type-paid" value="paid" />
+                <div className="flex-1">
+                  <div className="text-sm font-bold">مدفوع</div>
+                  <div className="text-xs text-muted-foreground">يشتري الطالب الوصول</div>
+                </div>
+              </label>
+            </RadioGroup>
+          </div>
+
+          <AnimatePresence initial={false}>
+            {isPaid && (
+              <motion.div
+                key="paid-fields"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.25 }}
+                className="space-y-4 overflow-hidden"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="price_egp">السعر (ج.م)</Label>
+                    <Input
+                      id="price_egp"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      inputMode="decimal"
+                      placeholder="100"
+                      {...register("price_egp")}
+                    />
+                    {errors.price_egp && (
+                      <p className="text-xs text-destructive">{errors.price_egp.message}</p>
+                    )}
+                    {priceEgp && Number(priceEgp) > 0 && (
+                      <p className="text-[11px] text-muted-foreground">
+                        يُخزَّن كـ {parseEgpToPiastres(priceEgp)?.toLocaleString("ar-EG")} قرش
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="discount_price_egp" className="flex items-center gap-1.5">
+                      <Tag className="w-3.5 h-3.5" />
+                      سعر الخصم (اختياري)
+                    </Label>
+                    <Input
+                      id="discount_price_egp"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      inputMode="decimal"
+                      placeholder="80"
+                      {...register("discount_price_egp")}
+                    />
+                    {errors.discount_price_egp && (
+                      <p className="text-xs text-destructive">
+                        {errors.discount_price_egp.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <AnimatePresence initial={false}>
+                  {discountEgp && Number(discountEgp) >= 0 && (
+                    <motion.div
+                      key="expiry"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="space-y-2 overflow-hidden"
+                    >
+                      <Label htmlFor="discount_expires_at">تاريخ انتهاء الخصم (اختياري)</Label>
+                      <Input
+                        id="discount_expires_at"
+                        type="datetime-local"
+                        {...register("discount_expires_at")}
+                      />
+                      <p className="text-[11px] text-muted-foreground">
+                        اتركه فارغًا لجعل الخصم دائمًا (بدون عدّاد تنازلي).
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {priceEgp && Number(priceEgp) > 0 && (
+                  <div className="rounded-lg bg-background border border-border p-3 flex items-baseline gap-2 flex-wrap">
+                    <span className="text-xs text-muted-foreground">السعر النهائي المعروض:</span>
+                    {discountEgp &&
+                    Number(discountEgp) >= 0 &&
+                    Number(discountEgp) < Number(priceEgp) ? (
+                      <>
+                        <span className="text-lg font-extrabold text-primary">
+                          {formatPiastres(parseEgpToPiastres(discountEgp))}
+                        </span>
+                        <span className="text-xs text-muted-foreground line-through">
+                          {formatPiastres(parseEgpToPiastres(priceEgp))}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-lg font-extrabold text-foreground">
+                        {formatPiastres(parseEgpToPiastres(priceEgp))}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
 
         <div className="space-y-2">
           <Label>الصورة المصغّرة</Label>
