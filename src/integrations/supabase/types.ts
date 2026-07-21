@@ -14,6 +14,101 @@ export type Database = {
   }
   public: {
     Tables: {
+      assignment_files: {
+        Row: {
+          assignment_id: string
+          created_at: string
+          file_name: string
+          file_size_bytes: number
+          file_url: string
+          id: string
+        }
+        Insert: {
+          assignment_id: string
+          created_at?: string
+          file_name: string
+          file_size_bytes?: number
+          file_url: string
+          id?: string
+        }
+        Update: {
+          assignment_id?: string
+          created_at?: string
+          file_name?: string
+          file_size_bytes?: number
+          file_url?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignment_files_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assignments: {
+        Row: {
+          course_id: string
+          created_at: string
+          description: string | null
+          end_at: string
+          id: string
+          order_index: number
+          pass_grade: number
+          start_at: string
+          title: string
+          total_grade: number
+          unit_id: string
+          updated_at: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          description?: string | null
+          end_at: string
+          id?: string
+          order_index?: number
+          pass_grade: number
+          start_at: string
+          title: string
+          total_grade: number
+          unit_id: string
+          updated_at?: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          description?: string | null
+          end_at?: string
+          id?: string
+          order_index?: number
+          pass_grade?: number
+          start_at?: string
+          title?: string
+          total_grade?: number
+          unit_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignments_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       card_templates: {
         Row: {
           back_design: Json
