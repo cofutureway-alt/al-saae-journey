@@ -252,7 +252,11 @@ export type Database = {
           created_at: string
           created_by: string | null
           description: string | null
+          discount_expires_at: string | null
+          discount_price_piastres: number | null
           id: string
+          is_paid: boolean
+          price_piastres: number | null
           stage_id: string | null
           status: Database["public"]["Enums"]["course_status"]
           subject_id: string | null
@@ -264,7 +268,11 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          discount_expires_at?: string | null
+          discount_price_piastres?: number | null
           id?: string
+          is_paid?: boolean
+          price_piastres?: number | null
           stage_id?: string | null
           status?: Database["public"]["Enums"]["course_status"]
           subject_id?: string | null
@@ -276,7 +284,11 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          discount_expires_at?: string | null
+          discount_price_piastres?: number | null
           id?: string
+          is_paid?: boolean
+          price_piastres?: number | null
           stage_id?: string | null
           status?: Database["public"]["Enums"]["course_status"]
           subject_id?: string | null
@@ -1179,6 +1191,38 @@ export type Database = {
           watermark_speed_seconds?: number
         }
         Relationships: []
+      }
+      wallets: {
+        Row: {
+          balance_piastres: number
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance_piastres?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance_piastres?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
