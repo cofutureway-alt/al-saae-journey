@@ -205,6 +205,23 @@ const CourseInfoEditor = () => {
         thumbPath = path;
       }
 
+      const pricePia = values.is_paid ? parseEgpToPiastres(values.price_egp) : null;
+      const discountPia =
+        values.is_paid && values.discount_price_egp
+          ? parseEgpToPiastres(values.discount_price_egp)
+          : null;
+      const discountExp =
+        values.is_paid && discountPia !== null && values.discount_expires_at
+          ? new Date(values.discount_expires_at).toISOString()
+          : null;
+
+      const pricingPayload = {
+        is_paid: values.is_paid,
+        price_piastres: pricePia,
+        discount_price_piastres: discountPia,
+        discount_expires_at: discountExp,
+      };
+
       if (isEdit) {
         const { error } = await (supabase as any)
           .from("courses")
@@ -214,6 +231,7 @@ const CourseInfoEditor = () => {
             stage_id: values.stage_id,
             subject_id: values.subject_id,
             thumbnail_url: thumbPath,
+            ...pricingPayload,
           })
           .eq("id", id!);
         if (error) throw error;
@@ -231,6 +249,7 @@ const CourseInfoEditor = () => {
             thumbnail_url: thumbPath,
             status: "draft",
             created_by: userRes.user?.id ?? null,
+            ...pricingPayload,
           })
           .select("id")
           .single();
