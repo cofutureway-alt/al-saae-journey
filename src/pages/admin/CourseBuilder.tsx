@@ -630,7 +630,7 @@ const CourseBuilder = () => {
     }
     setCourse(c as Course);
 
-    const [{ data: u }, { data: qz }] = await Promise.all([
+    const [{ data: u }, { data: qz }, { data: asg }] = await Promise.all([
       supabase
         .from("units")
         .select(
@@ -642,6 +642,10 @@ const CourseBuilder = () => {
         .from("quizzes")
         .select("*")
         .eq("course_id", id),
+      (supabase as any)
+        .from("assignments")
+        .select("*")
+        .eq("course_id", id),
     ]);
 
     const quizzesByUnit = new Map<string, QuizRecord[]>();
@@ -649,6 +653,13 @@ const CourseBuilder = () => {
       const arr = quizzesByUnit.get(q.unit_id) ?? [];
       arr.push(q as QuizRecord);
       quizzesByUnit.set(q.unit_id, arr);
+    });
+
+    const assignmentsByUnit = new Map<string, AssignmentRecord[]>();
+    (asg ?? []).forEach((a: any) => {
+      const arr = assignmentsByUnit.get(a.unit_id) ?? [];
+      arr.push(a as AssignmentRecord);
+      assignmentsByUnit.set(a.unit_id, arr);
     });
 
     const mapped: Unit[] = (u ?? []).map((row: any) => {
@@ -664,7 +675,15 @@ const CourseBuilder = () => {
         order: q.order_index,
         quiz: q,
       }));
-      const content = [...lessonItems, ...quizItems].sort((a, b) => a.order - b.order);
+      const assignmentItems: ContentItem[] = (assignmentsByUnit.get(row.id) ?? []).map((a) => ({
+        kind: "assignment" as const,
+        id: a.id,
+        order: a.order_index,
+        assignment: a,
+      }));
+      const content = [...lessonItems, ...quizItems, ...assignmentItems].sort(
+        (a, b) => a.order - b.order,
+      );
       return {
         id: row.id,
         title: row.title,
