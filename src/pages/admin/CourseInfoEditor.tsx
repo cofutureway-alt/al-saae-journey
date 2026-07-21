@@ -29,7 +29,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { AnimatePresence as AP } from "framer-motion";
 import { parseEgpToPiastres, piastresToEgpNumber, formatPiastres } from "@/lib/money";
 import { useSignedThumbnail } from "@/hooks/use-signed-thumbnail";
 
