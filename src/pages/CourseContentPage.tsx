@@ -26,6 +26,7 @@ import {
 import ContentSidebarItem from "@/components/course-content/ContentSidebarItem";
 import LessonContentPanel from "@/components/course-content/LessonContentPanel";
 import QuizInlinePanel from "@/components/course-content/QuizInlinePanel";
+import AssignmentInlinePanel from "@/components/course-content/AssignmentInlinePanel";
 
 interface CourseLite {
   id: string;
