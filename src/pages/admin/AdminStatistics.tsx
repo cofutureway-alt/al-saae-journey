@@ -87,6 +87,13 @@ const AdminStatistics = () => {
             accent="emerald"
             delay={0.25}
           />
+          <StatCard
+            label="إجمالي الواجبات"
+            value={stats.totalAssignments}
+            icon={FileText}
+            accent="violet"
+            delay={0.3}
+          />
         </div>
       )}
 
