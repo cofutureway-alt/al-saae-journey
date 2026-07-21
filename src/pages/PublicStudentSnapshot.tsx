@@ -29,7 +29,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { classifyGroups, LEVEL_META, type GroupClassification } from "@/lib/weak-analysis";
+import {
+  classifyCombinedGroups, LEVEL_META, type GroupClassification,
+  type AssignmentEval,
+} from "@/lib/weak-analysis";
 
 interface EnrolledCourseRow {
   course_id: string;
