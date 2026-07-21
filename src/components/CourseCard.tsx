@@ -16,6 +16,7 @@ interface Props {
 
 export const CourseCard = ({ course, index = 0, progress }: Props) => {
   const thumb = useSignedThumbnail(course.thumbnail_url);
+  const price = getEffectiveCoursePrice(course);
 
   return (
     <motion.div
