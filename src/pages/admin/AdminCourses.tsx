@@ -88,6 +88,10 @@ const AdminCourses = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [deleting, setDeleting] = useState<CourseRow | null>(null);
   const [deletePending, setDeletePending] = useState(false);
+  const [view, setView] = useState<"grid" | "table">("grid");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkAction, setBulkAction] = useState<null | "delete" | "draft" | "publish">(null);
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const load = useCallback(async () => {
     const [{ data: cRows, error }, { data: sRows }] = await Promise.all([
