@@ -655,6 +655,7 @@ export type Database = {
       qr_display_settings: {
         Row: {
           id: number
+          show_assignment_stats: boolean
           show_avatar: boolean
           show_enrolled_courses_count: boolean
           show_enrolled_courses_list: boolean
@@ -670,6 +671,7 @@ export type Database = {
         }
         Insert: {
           id: number
+          show_assignment_stats?: boolean
           show_avatar?: boolean
           show_enrolled_courses_count?: boolean
           show_enrolled_courses_list?: boolean
@@ -685,6 +687,7 @@ export type Database = {
         }
         Update: {
           id?: number
+          show_assignment_stats?: boolean
           show_avatar?: boolean
           show_enrolled_courses_count?: boolean
           show_enrolled_courses_list?: boolean
