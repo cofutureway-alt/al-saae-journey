@@ -133,11 +133,26 @@ const AssignmentInlinePanel = ({ assignmentId }: Props) => {
     );
   }
 
-  const now = Date.now();
-  const start = new Date(assignment.start_at).getTime();
-  const end = new Date(assignment.end_at).getTime();
-  const status =
-    now < start ? "upcoming" : now > end ? "closed" : "open";
+  return <AssignmentBody assignment={assignment} files={files} downloading={downloading} openFile={openFile} />;
+};
+
+interface BodyProps {
+  assignment: AssignmentRow;
+  files: FileRow[];
+  downloading: string | null;
+  openFile: (row: FileRow) => void;
+}
+
+const AssignmentBody = ({ assignment, files, downloading, openFile }: BodyProps) => {
+  // Live clock so the window state changes without needing a manual refresh.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const start = useMemo(() => new Date(assignment.start_at).getTime(), [assignment.start_at]);
+  const end = useMemo(() => new Date(assignment.end_at).getTime(), [assignment.end_at]);
+  const status = now < start ? "upcoming" : now > end ? "closed" : "open";
 
   const statusMeta: Record<
     typeof status,
