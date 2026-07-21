@@ -9,6 +9,7 @@ import {
   ClipboardCheck,
   Compass,
   Eye,
+  FileText,
   ListChecks,
   Percent,
   PlayCircle,
