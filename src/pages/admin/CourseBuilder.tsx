@@ -71,6 +71,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import LessonModal, { type LessonRecord } from "@/components/admin/LessonModal";
 import QuizWizard, { type QuizRecord } from "@/components/admin/QuizWizard";
+import AssignmentModal, { type AssignmentRecord } from "@/components/admin/AssignmentModal";
 
 // ---------- Types ----------
 interface Course {
@@ -81,7 +82,8 @@ interface Course {
 
 type ContentItem =
   | { kind: "lesson"; id: string; order: number; lesson: LessonRecord }
-  | { kind: "quiz"; id: string; order: number; quiz: QuizRecord };
+  | { kind: "quiz"; id: string; order: number; quiz: QuizRecord }
+  | { kind: "assignment"; id: string; order: number; assignment: AssignmentRecord };
 
 interface Unit {
   id: string;
