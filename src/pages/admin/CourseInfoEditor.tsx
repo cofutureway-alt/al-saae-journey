@@ -28,12 +28,45 @@ import {
 } from "@/components/ui/select";
 import { useSignedThumbnail } from "@/hooks/use-signed-thumbnail";
 
-const schema = z.object({
-  title: z.string().trim().min(2, "العنوان قصير جدًا").max(120),
-  description: z.string().trim().max(1000).optional(),
-  stage_id: z.string().uuid("اختر مرحلة"),
-  subject_id: z.string().uuid("اختر مادة دراسية"),
-});
+const schema = z
+  .object({
+    title: z.string().trim().min(2, "العنوان قصير جدًا").max(120),
+    description: z.string().trim().max(1000).optional(),
+    stage_id: z.string().uuid("اختر مرحلة"),
+    subject_id: z.string().uuid("اختر مادة دراسية"),
+    is_paid: z.boolean(),
+    price_egp: z.string().optional(),
+    discount_price_egp: z.string().optional(),
+    discount_expires_at: z.string().optional(),
+  })
+  .superRefine((val, ctx) => {
+    if (val.is_paid) {
+      const p = Number(val.price_egp);
+      if (!val.price_egp || !Number.isFinite(p) || p < 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["price_egp"],
+          message: "أدخل سعرًا صالحًا",
+        });
+      }
+      if (val.discount_price_egp) {
+        const d = Number(val.discount_price_egp);
+        if (!Number.isFinite(d) || d < 0) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["discount_price_egp"],
+            message: "سعر الخصم غير صالح",
+          });
+        } else if (Number.isFinite(p) && d >= p) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["discount_price_egp"],
+            message: "يجب أن يكون سعر الخصم أقل من السعر الأصلي",
+          });
+        }
+      }
+    }
+  });
 type FormValues = z.infer<typeof schema>;
 
 const MAX_MB = 3;
