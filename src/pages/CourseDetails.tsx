@@ -98,7 +98,7 @@ const CourseDetails = () => {
     // Fetch course (RLS: published visible to all, admin sees all)
     const { data: cData, error: cErr } = await (supabase as any)
       .from("courses")
-      .select("id, title, description, thumbnail_url, stage_id, status, stages(name), subjects(name)")
+      .select("id, title, description, thumbnail_url, stage_id, status, is_paid, price_piastres, discount_price_piastres, discount_expires_at, stages(name), subjects(name)")
       .eq("id", id)
       .maybeSingle();
 
@@ -116,6 +116,10 @@ const CourseDetails = () => {
       stage_name: (cData as any).stages?.name ?? null,
       subject_name: (cData as any).subjects?.name ?? null,
       status: cData.status,
+      is_paid: cData.is_paid ?? false,
+      price_piastres: cData.price_piastres ?? null,
+      discount_price_piastres: cData.discount_price_piastres ?? null,
+      discount_expires_at: cData.discount_expires_at ?? null,
     });
 
     // Units
