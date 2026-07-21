@@ -474,6 +474,27 @@ export interface MostFailedQuizRow {
   total_official: number;
 }
 
+export interface MostFailedAssignmentRow {
+  assignment_id: string;
+  assignment_title: string;
+  course_id: string;
+  course_title: string;
+  stage_id: string | null;
+  stage_name: string | null;
+  subject_id: string | null;
+  subject_name: string | null;
+  failed_count: number;
+  total_evaluated: number;
+  failure_rate: number;
+}
+
+export interface AssignmentPlatformMetrics {
+  avg_submission_rate: number | null;
+  rate_sample_size: number;
+  avg_response_seconds: number | null;
+  time_sample_size: number;
+}
+
 export interface AdminStats {
   publishedCourses: number;
   studentsCount: number;
@@ -484,6 +505,8 @@ export interface AdminStats {
   totalAssignments: number;
   topCourses: TopCourseRow[];
   mostFailedQuizzes: MostFailedQuizRow[];
+  mostFailedAssignments: MostFailedAssignmentRow[];
+  assignmentMetrics: AssignmentPlatformMetrics;
 }
 
 export function useAdminStats() {
@@ -503,6 +526,8 @@ export function useAdminStats() {
         { data: enrollments },
         { data: courses },
         { data: mostFailed },
+        { data: mostFailedAsg },
+        { data: asgMetrics },
       ] = await Promise.all([
         supabase
           .from("courses")
@@ -520,6 +545,8 @@ export function useAdminStats() {
         supabase.from("enrollments").select("course_id"),
         supabase.from("courses").select("id, title, thumbnail_url, created_at, stages(name)"),
         (supabase as any).rpc("get_most_failed_quizzes", { _limit: 10 }),
+        (supabase as any).rpc("get_most_failed_assignments", { _limit: 10 }),
+        (supabase as any).rpc("get_assignment_platform_metrics"),
       ]);
 
       const counts = new Map<string, number>();
@@ -545,6 +572,7 @@ export function useAdminStats() {
         .slice(0, 5)
         .map(({ created_at, ...rest }) => rest);
 
+      const metrics = (asgMetrics ?? {}) as any;
       if (!cancelled)
         setData({
           publishedCourses: publishedCourses ?? 0,
@@ -556,6 +584,15 @@ export function useAdminStats() {
           totalAssignments: totalAssignments ?? 0,
           topCourses: enriched,
           mostFailedQuizzes: (mostFailed ?? []) as MostFailedQuizRow[],
+          mostFailedAssignments: (mostFailedAsg ?? []) as MostFailedAssignmentRow[],
+          assignmentMetrics: {
+            avg_submission_rate:
+              metrics.avg_submission_rate != null ? Number(metrics.avg_submission_rate) : null,
+            rate_sample_size: Number(metrics.rate_sample_size ?? 0),
+            avg_response_seconds:
+              metrics.avg_response_seconds != null ? Number(metrics.avg_response_seconds) : null,
+            time_sample_size: Number(metrics.time_sample_size ?? 0),
+          },
         });
     })();
     return () => {

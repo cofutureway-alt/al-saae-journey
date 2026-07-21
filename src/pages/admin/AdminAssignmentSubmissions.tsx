@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import {
   listAssignmentSubmissions,
@@ -32,8 +33,10 @@ const PAGE_SIZE = 50;
 
 interface Option { id: string; name: string }
 interface CourseOption extends Option { stage_id: string | null; subject_id: string | null }
+interface AssignmentOption extends Option { course_id: string }
 
 export default function AdminAssignmentSubmissions() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [rows, setRows] = useState<SubmissionListRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -44,11 +47,15 @@ export default function AdminAssignmentSubmissions() {
   const [courseId, setCourseId] = useState<string>(ALL);
   const [stageId, setStageId] = useState<string>(ALL);
   const [subjectId, setSubjectId] = useState<string>(ALL);
+  const [assignmentId, setAssignmentId] = useState<string>(
+    searchParams.get("assignmentId") || ALL,
+  );
   const [ungradedOnly, setUngradedOnly] = useState(false);
 
   const [courses, setCourses] = useState<CourseOption[]>([]);
   const [stages, setStages] = useState<Option[]>([]);
   const [subjects, setSubjects] = useState<Option[]>([]);
+  const [assignments, setAssignments] = useState<AssignmentOption[]>([]);
 
   const [openId, setOpenId] = useState<string | null>(null);
 
@@ -59,18 +66,35 @@ export default function AdminAssignmentSubmissions() {
 
   useEffect(() => {
     (async () => {
-      const [c, s, sub] = await Promise.all([
+      const [c, s, sub, a] = await Promise.all([
         (supabase as any).from("courses").select("id,title,stage_id,subject_id").order("title"),
         (supabase as any).from("stages").select("id,name").order("name"),
         (supabase as any).from("subjects").select("id,name").order("name"),
+        (supabase as any).from("assignments").select("id,title,course_id").order("title"),
       ]);
       setCourses(((c.data ?? []) as any[]).map((r) => ({ id: r.id, name: r.title, stage_id: r.stage_id, subject_id: r.subject_id })));
       setStages(((s.data ?? []) as any[]).map((r) => ({ id: r.id, name: r.name })));
       setSubjects(((sub.data ?? []) as any[]).map((r) => ({ id: r.id, name: r.name })));
+      setAssignments(((a.data ?? []) as any[]).map((r) => ({ id: r.id, name: r.title, course_id: r.course_id })));
     })();
   }, []);
 
-  useEffect(() => { setPage(0); }, [debouncedSearch, courseId, stageId, subjectId, ungradedOnly]);
+  // Sync assignmentId → URL (?assignmentId=…) so deep links work both ways.
+  useEffect(() => {
+    const current = searchParams.get("assignmentId");
+    if (assignmentId === ALL && current) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("assignmentId");
+      setSearchParams(next, { replace: true });
+    } else if (assignmentId !== ALL && current !== assignmentId) {
+      const next = new URLSearchParams(searchParams);
+      next.set("assignmentId", assignmentId);
+      setSearchParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assignmentId]);
+
+  useEffect(() => { setPage(0); }, [debouncedSearch, courseId, stageId, subjectId, assignmentId, ungradedOnly]);
 
   const fetchRows = () => {
     setLoading(true);
@@ -79,6 +103,7 @@ export default function AdminAssignmentSubmissions() {
       courseId: courseId === ALL ? undefined : courseId,
       stageId: stageId === ALL ? undefined : stageId,
       subjectId: subjectId === ALL ? undefined : subjectId,
+      assignmentId: assignmentId === ALL ? undefined : assignmentId,
       ungradedOnly,
       limit: PAGE_SIZE,
       offset: page * PAGE_SIZE,
@@ -91,7 +116,7 @@ export default function AdminAssignmentSubmissions() {
   useEffect(() => {
     fetchRows();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch, courseId, stageId, subjectId, ungradedOnly, page]);
+  }, [debouncedSearch, courseId, stageId, subjectId, assignmentId, ungradedOnly, page]);
 
   const filteredCourses = useMemo(
     () => courses.filter(
@@ -102,16 +127,28 @@ export default function AdminAssignmentSubmissions() {
     [courses, stageId, subjectId],
   );
 
+  const filteredAssignments = useMemo(
+    () => assignments.filter((a) => courseId === ALL || a.course_id === courseId),
+    [assignments, courseId],
+  );
+
+  const selectedAssignment = useMemo(
+    () => assignments.find((a) => a.id === assignmentId) || null,
+    [assignments, assignmentId],
+  );
+
   const activeFilterCount =
     (debouncedSearch ? 1 : 0) +
     (courseId !== ALL ? 1 : 0) +
     (stageId !== ALL ? 1 : 0) +
     (subjectId !== ALL ? 1 : 0) +
+    (assignmentId !== ALL ? 1 : 0) +
     (ungradedOnly ? 1 : 0);
 
   const clearAll = () => {
     setSearch(""); setDebouncedSearch("");
     setCourseId(ALL); setStageId(ALL); setSubjectId(ALL);
+    setAssignmentId(ALL);
     setUngradedOnly(false);
   };
 
@@ -134,6 +171,13 @@ export default function AdminAssignmentSubmissions() {
         <FilterSelect label="المادة الدراسية" value={subjectId} onChange={setSubjectId} options={subjects} />
         <FilterSelect label="الدورة" value={courseId} onChange={setCourseId} options={filteredCourses} />
       </div>
+
+      <FilterSelect
+        label="الواجب"
+        value={assignmentId}
+        onChange={setAssignmentId}
+        options={filteredAssignments}
+      />
 
       <label className="flex items-center gap-3 rounded-xl border border-border p-3 cursor-pointer">
         <Switch checked={ungradedOnly} onCheckedChange={setUngradedOnly} />
@@ -190,6 +234,27 @@ export default function AdminAssignmentSubmissions() {
           </SheetContent>
         </Sheet>
       </motion.div>
+
+      {selectedAssignment && (
+        <motion.div
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3"
+        >
+          <Badge className="bg-primary text-primary-foreground border-0 gap-1">
+            <ClipboardEdit className="w-3 h-3" /> واجب محدد
+          </Badge>
+          <div className="font-bold text-sm">{selectedAssignment.name}</div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setAssignmentId(ALL)}
+            className="ms-auto h-8 gap-1 text-xs"
+          >
+            <X className="w-3.5 h-3.5" /> إزالة
+          </Button>
+        </motion.div>
+      )}
 
       <motion.div
         initial={{ opacity: 0, y: 6 }}

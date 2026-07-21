@@ -19,6 +19,8 @@ import {
   DollarSign,
   Receipt,
   Sparkles,
+  PieChart,
+  Clock,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminStats } from "@/hooks/use-stats";
@@ -231,16 +233,234 @@ const AcademicTab = ({ stats }: { stats: ReturnType<typeof useAdminStats> }) => 
         )}
       </div>
 
-      <div className="rounded-2xl border border-dashed border-border/70 bg-muted/20 p-8 text-center">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-primary/10 text-primary mb-3">
-          <Sparkles className="w-5 h-5" />
+      <AssignmentAnalytics stats={stats} />
+    </>
+  );
+};
+
+/* ------------------------ Assignment Analytics (Phase 39) ------------------------ */
+
+const formatArabicDuration = (secondsInput: number | null): string => {
+  if (secondsInput == null || !isFinite(secondsInput) || secondsInput <= 0) return "—";
+  const s = Math.round(secondsInput);
+  const days = Math.floor(s / 86400);
+  const hours = Math.floor((s % 86400) / 3600);
+  const minutes = Math.floor((s % 3600) / 60);
+  const arDay = (n: number) => {
+    if (n === 1) return "يوم";
+    if (n === 2) return "يومان";
+    if (n >= 3 && n <= 10) return `${n} أيام`;
+    return `${n} يوماً`;
+  };
+  const arHour = (n: number) => {
+    if (n === 1) return "ساعة";
+    if (n === 2) return "ساعتان";
+    if (n >= 3 && n <= 10) return `${n} ساعات`;
+    return `${n} ساعة`;
+  };
+  const arMin = (n: number) => {
+    if (n === 1) return "دقيقة";
+    if (n === 2) return "دقيقتان";
+    if (n >= 3 && n <= 10) return `${n} دقائق`;
+    return `${n} دقيقة`;
+  };
+  const parts: string[] = [];
+  if (days > 0) parts.push(arDay(days));
+  if (hours > 0) parts.push(arHour(hours));
+  if (parts.length === 0) {
+    if (minutes > 0) parts.push(arMin(minutes));
+    else return "أقل من دقيقة";
+  }
+  return parts.join(" و ");
+};
+
+const AssignmentAnalytics = ({ stats }: { stats: ReturnType<typeof useAdminStats> }) => {
+  return (
+    <>
+      <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
+        <div className="p-5 md:p-6 border-b border-border/60 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
+              <FileText className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-lg md:text-xl font-bold">الواجبات الأكثر رسوباً</h2>
+              <p className="text-xs text-muted-foreground">
+                ترتيب حسب عدد الطلاب الذين رسبوا أو لم يسلّموا الواجب
+              </p>
+            </div>
+          </div>
         </div>
-        <div className="font-bold mb-1">المزيد من إحصائيات الأداء الأكاديمي قريباً</div>
-        <div className="text-sm text-muted-foreground">
-          سيتم إضافة تحليلات أعمق للأداء الأكاديمي في التحديث القادم.
-        </div>
+
+        {!stats ? (
+          <div className="p-4 space-y-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-14 rounded-xl" />
+            ))}
+          </div>
+        ) : stats.mostFailedAssignments.length === 0 ? (
+          <div className="p-10 text-center">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-500/10 mb-3">
+              <Trophy className="w-6 h-6 text-emerald-600" />
+            </div>
+            <div className="font-bold mb-1">لا توجد حالات رسوب في الواجبات بعد</div>
+            <div className="text-sm text-muted-foreground">
+              ستظهر هنا الواجبات التي يوجد بها طلاب راسبون أو لم يسلّموا.
+            </div>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border/60 bg-muted/30">
+                <tr>
+                  <th className="text-right p-4 w-12">#</th>
+                  <th className="text-right p-4">الواجب</th>
+                  <th className="text-right p-4 hidden md:table-cell">الكورس</th>
+                  <th className="text-right p-4 hidden lg:table-cell">المرحلة / المادة</th>
+                  <th className="text-right p-4 w-28">الراسبون</th>
+                  <th className="text-right p-4 w-24 hidden sm:table-cell">نسبة الرسوب</th>
+                  <th className="text-right p-4 w-40">إجراءات</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stats.mostFailedAssignments.map((a, i) => (
+                  <motion.tr
+                    key={a.assignment_id}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.05 + i * 0.05 }}
+                    className="border-b border-border/40 hover:bg-accent/30 transition-colors"
+                  >
+                    <td className="p-4 text-muted-foreground font-bold">{i + 1}</td>
+                    <td className="p-4 font-semibold text-foreground">{a.assignment_title}</td>
+                    <td className="p-4 hidden md:table-cell text-sm text-muted-foreground">
+                      {a.course_title}
+                    </td>
+                    <td className="p-4 hidden lg:table-cell">
+                      <div className="flex flex-wrap gap-1.5">
+                        {a.stage_name && (
+                          <Badge variant="secondary" className="font-medium text-[11px]">
+                            {a.stage_name}
+                          </Badge>
+                        )}
+                        {a.subject_name && (
+                          <Badge variant="outline" className="font-medium text-[11px]">
+                            {a.subject_name}
+                          </Badge>
+                        )}
+                        {!a.stage_name && !a.subject_name && (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <div className="inline-flex items-center gap-1.5 rounded-lg bg-destructive/10 text-destructive px-2.5 py-1 text-sm font-bold tabular-nums">
+                        {a.failed_count}
+                        <span className="text-xs opacity-70">/ {a.total_evaluated}</span>
+                      </div>
+                    </td>
+                    <td className="p-4 hidden sm:table-cell">
+                      <span className="text-sm font-bold tabular-nums text-destructive">
+                        {Number(a.failure_rate ?? 0).toFixed(1)}%
+                      </span>
+                    </td>
+                    <td className="p-4">
+                      <Link
+                        to={`/admin/assignment-submissions?assignmentId=${a.assignment_id}`}
+                        className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline"
+                      >
+                        عرض التسليمات <ArrowLeft className="w-3.5 h-3.5" />
+                      </Link>
+                    </td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Platform-wide summary indicators */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <AsgMetricCard
+          icon={PieChart}
+          tone="primary"
+          label="متوسط نسبة التسليم"
+          caption="متوسط نسبة الطلاب الذين سلّموا لكل واجب على مستوى المنصة"
+          loading={!stats}
+          empty={!!stats && stats.assignmentMetrics.rate_sample_size === 0}
+          display={
+            stats && stats.assignmentMetrics.avg_submission_rate != null
+              ? `${Number(stats.assignmentMetrics.avg_submission_rate).toFixed(1)}%`
+              : "—"
+          }
+        />
+        <AsgMetricCard
+          icon={Clock}
+          tone="emerald"
+          label="متوسط وقت الاستجابة"
+          caption="متوسط المدة بين إتاحة الواجب ووقت تسليم الطلاب له"
+          loading={!stats}
+          empty={!!stats && stats.assignmentMetrics.time_sample_size === 0}
+          display={
+            stats
+              ? formatArabicDuration(stats.assignmentMetrics.avg_response_seconds)
+              : "—"
+          }
+        />
       </div>
     </>
+  );
+};
+
+const AsgMetricCard = ({
+  icon: Icon,
+  tone,
+  label,
+  caption,
+  loading,
+  empty,
+  display,
+}: {
+  icon: any;
+  tone: "primary" | "emerald";
+  label: string;
+  caption: string;
+  loading: boolean;
+  empty: boolean;
+  display: string;
+}) => {
+  const toneClass =
+    tone === "primary"
+      ? "bg-primary/10 text-primary"
+      : "bg-emerald-500/10 text-emerald-600";
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="rounded-2xl border border-border/60 bg-card p-5 md:p-6"
+    >
+      <div className="flex items-start gap-4">
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${toneClass}`}>
+          <Icon className="w-6 h-6" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-semibold text-muted-foreground">{label}</div>
+          {loading ? (
+            <Skeleton className="h-9 w-32 mt-2" />
+          ) : empty ? (
+            <div className="mt-2 text-sm text-muted-foreground font-medium">
+              لا توجد بيانات كافية بعد
+            </div>
+          ) : (
+            <div className="mt-1 text-3xl md:text-4xl font-black tabular-nums text-foreground">
+              {display}
+            </div>
+          )}
+          <div className="text-xs text-muted-foreground mt-2 leading-relaxed">{caption}</div>
+        </div>
+      </div>
+    </motion.div>
   );
 };
 

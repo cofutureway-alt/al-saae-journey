@@ -1561,6 +1561,7 @@ export type Database = {
         Args: { _assignment_id: string }
         Returns: boolean
       }
+      get_assignment_platform_metrics: { Args: never; Returns: Json }
       get_attempt_details: { Args: { _attempt_id: string }; Returns: Json }
       get_attempt_questions: { Args: { _attempt_id: string }; Returns: Json }
       get_lessons_public: {
@@ -1570,6 +1571,22 @@ export type Database = {
           position: number
           title: string
           unit_id: string
+        }[]
+      }
+      get_most_failed_assignments: {
+        Args: { _limit?: number }
+        Returns: {
+          assignment_id: string
+          assignment_title: string
+          course_id: string
+          course_title: string
+          failed_count: number
+          failure_rate: number
+          stage_id: string
+          stage_name: string
+          subject_id: string
+          subject_name: string
+          total_evaluated: number
         }[]
       }
       get_most_failed_quizzes: {
@@ -1670,45 +1687,86 @@ export type Database = {
         Args: { _lesson_id: string; _user_id: string }
         Returns: boolean
       }
-      list_assignment_submissions: {
-        Args: {
-          _course_id?: string
-          _limit?: number
-          _offset?: number
-          _stage_id?: string
-          _subject_id?: string
-          _ungraded_only?: boolean
-          _user_search?: string
-        }
-        Returns: {
-          assignment_id: string
-          assignment_title: string
-          computed_outcome: string
-          course_id: string
-          course_title: string
-          end_at: string
-          feedback_given_at: string
-          grade: number
-          graded_at: string
-          has_feedback: boolean
-          outcome: string
-          pass_grade: number
-          stage_id: string
-          stage_name: string
-          status: string
-          student_email: string
-          student_name: string
-          student_phone: string
-          student_student_id: string
-          subject_id: string
-          subject_name: string
-          submission_id: string
-          submitted_at: string
-          total_count: number
-          total_grade: number
-          user_id: string
-        }[]
-      }
+      list_assignment_submissions:
+        | {
+            Args: {
+              _assignment_id?: string
+              _course_id?: string
+              _limit?: number
+              _offset?: number
+              _stage_id?: string
+              _subject_id?: string
+              _ungraded_only?: boolean
+              _user_search?: string
+            }
+            Returns: {
+              assignment_id: string
+              assignment_title: string
+              computed_outcome: string
+              course_id: string
+              course_title: string
+              end_at: string
+              feedback_given_at: string
+              grade: number
+              graded_at: string
+              has_feedback: boolean
+              outcome: string
+              pass_grade: number
+              stage_id: string
+              stage_name: string
+              status: string
+              student_email: string
+              student_name: string
+              student_phone: string
+              student_student_id: string
+              subject_id: string
+              subject_name: string
+              submission_id: string
+              submitted_at: string
+              total_count: number
+              total_grade: number
+              user_id: string
+            }[]
+          }
+        | {
+            Args: {
+              _course_id?: string
+              _limit?: number
+              _offset?: number
+              _stage_id?: string
+              _subject_id?: string
+              _ungraded_only?: boolean
+              _user_search?: string
+            }
+            Returns: {
+              assignment_id: string
+              assignment_title: string
+              computed_outcome: string
+              course_id: string
+              course_title: string
+              end_at: string
+              feedback_given_at: string
+              grade: number
+              graded_at: string
+              has_feedback: boolean
+              outcome: string
+              pass_grade: number
+              stage_id: string
+              stage_name: string
+              status: string
+              student_email: string
+              student_name: string
+              student_phone: string
+              student_student_id: string
+              subject_id: string
+              subject_name: string
+              submission_id: string
+              submitted_at: string
+              total_count: number
+              total_grade: number
+              user_id: string
+            }[]
+          }
       list_my_quiz_attempts: {
         Args: { _quiz_id: string }
         Returns: {
