@@ -474,6 +474,27 @@ export interface MostFailedQuizRow {
   total_official: number;
 }
 
+export interface MostFailedAssignmentRow {
+  assignment_id: string;
+  assignment_title: string;
+  course_id: string;
+  course_title: string;
+  stage_id: string | null;
+  stage_name: string | null;
+  subject_id: string | null;
+  subject_name: string | null;
+  failed_count: number;
+  total_evaluated: number;
+  failure_rate: number;
+}
+
+export interface AssignmentPlatformMetrics {
+  avg_submission_rate: number | null;
+  rate_sample_size: number;
+  avg_response_seconds: number | null;
+  time_sample_size: number;
+}
+
 export interface AdminStats {
   publishedCourses: number;
   studentsCount: number;
@@ -484,6 +505,8 @@ export interface AdminStats {
   totalAssignments: number;
   topCourses: TopCourseRow[];
   mostFailedQuizzes: MostFailedQuizRow[];
+  mostFailedAssignments: MostFailedAssignmentRow[];
+  assignmentMetrics: AssignmentPlatformMetrics;
 }
 
 export function useAdminStats() {
