@@ -15,6 +15,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import ThemeToggle from "@/components/ThemeToggle";
+import WalletWidget from "@/components/WalletWidget";
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
