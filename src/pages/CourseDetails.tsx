@@ -91,6 +91,7 @@ const CourseDetails = () => {
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState(false);
   const [purchaseOpen, setPurchaseOpen] = useState(false);
+  const [openUnits, setOpenUnits] = useState<Record<string, boolean>>({});
 
   const load = useCallback(async () => {
     if (!id) return;
