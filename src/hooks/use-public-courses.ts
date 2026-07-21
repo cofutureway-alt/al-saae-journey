@@ -31,7 +31,7 @@ export function usePublicCourses(limit?: number) {
       let q = (supabase as any)
         .from("courses")
         .select(
-          "id, title, description, thumbnail_url, stage_id, subject_id, created_at, stages(name), subjects(name), units(id)",
+          "id, title, description, thumbnail_url, stage_id, subject_id, created_at, is_paid, price_piastres, discount_price_piastres, discount_expires_at, stages(name), subjects(name), units(id)",
         )
         .eq("status", "published")
         .order("created_at", { ascending: false });
