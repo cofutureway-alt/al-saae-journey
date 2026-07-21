@@ -1,21 +1,21 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   CalendarClock,
   ClipboardList,
+  Clock,
   Download,
   File as FileIcon,
   FileImage,
   FileText,
-  Info,
   Loader2,
   Target,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import AssignmentSubmissionPanel from "./AssignmentSubmissionPanel";
 
 interface AssignmentRow {
   id: string;
