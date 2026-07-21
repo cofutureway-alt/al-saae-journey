@@ -329,6 +329,10 @@ const AdminCourses = () => {
                       {c.quizzes_count} اختبار
                     </span>
                     <span className="inline-flex items-center gap-1">
+                      <ClipboardList className="w-3.5 h-3.5" />
+                      {c.assignments_count} واجب
+                    </span>
+                    <span className="inline-flex items-center gap-1">
                       <HelpCircle className="w-3.5 h-3.5" />
                       {c.questions_count} سؤال
                     </span>
