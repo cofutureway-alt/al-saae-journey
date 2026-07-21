@@ -19,6 +19,8 @@ import {
   DollarSign,
   Receipt,
   Sparkles,
+  PieChart,
+  Clock,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminStats } from "@/hooks/use-stats";
