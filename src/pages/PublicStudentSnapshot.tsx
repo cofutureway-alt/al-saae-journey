@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   BookOpen,
   ClipboardList,
+  FileText,
   Focus,
   GraduationCap,
   IdCard,
