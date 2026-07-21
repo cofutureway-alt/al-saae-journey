@@ -30,7 +30,7 @@ interface Props {
   courseId: string;
   courseTitle: string;
   amountPiastres: number;
-  onPurchased?: () => void;
+  onPurchased?: (info: { newBalance: number; reference: string }) => void;
 }
 
 export default function PurchaseCourseModal({
@@ -98,12 +98,13 @@ export default function PurchaseCourseModal({
       });
       if (error) throw error;
       if (data?.success) {
-        setResult({
-          type: "success",
+        // Close the modal immediately so it can never reopen from re-renders,
+        // then let the parent celebrate + navigate.
+        onPurchased?.({
           newBalance: data.new_balance_piastres ?? 0,
           reference: data.reference_number ?? "",
         });
-        onPurchased?.();
+        onOpenChange(false);
       } else {
         setResult({
           type: "error",
