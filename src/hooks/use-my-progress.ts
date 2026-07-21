@@ -153,27 +153,32 @@ export function useMyProgressMap() {
 
       const lessonTotals: Record<string, number> = {};
       const quizTotals: Record<string, number> = {};
+      const assignmentTotals: Record<string, number> = {};
       const quizToCourse: Record<string, string> = {};
+      const assignmentToCourse: Record<string, string> = {};
 
       if (unitIds.length) {
-        const { data: lessons } = await supabase
-          .from("lessons_public")
-          .select("unit_id")
-          .in("unit_id", unitIds);
+        const [{ data: lessons }, { data: quizzes }, { data: assignments }] = await Promise.all([
+          supabase.from("lessons_public").select("unit_id").in("unit_id", unitIds),
+          (supabase as any).from("quizzes").select("id, unit_id").in("unit_id", unitIds),
+          (supabase as any).from("assignments").select("id, unit_id").in("unit_id", unitIds),
+        ]);
         (lessons ?? []).forEach((l: any) => {
           const cId = unitToCourse[l.unit_id];
           if (cId) lessonTotals[cId] = (lessonTotals[cId] ?? 0) + 1;
         });
-
-        const { data: quizzes } = await (supabase as any)
-          .from("quizzes")
-          .select("id, unit_id")
-          .in("unit_id", unitIds);
         (quizzes ?? []).forEach((q: any) => {
           const cId = unitToCourse[q.unit_id];
           if (cId) {
             quizTotals[cId] = (quizTotals[cId] ?? 0) + 1;
             quizToCourse[q.id] = cId;
+          }
+        });
+        (assignments ?? []).forEach((a: any) => {
+          const cId = unitToCourse[a.unit_id];
+          if (cId) {
+            assignmentTotals[cId] = (assignmentTotals[cId] ?? 0) + 1;
+            assignmentToCourse[a.id] = cId;
           }
         });
       }
@@ -204,10 +209,32 @@ export function useMyProgressMap() {
         });
       }
 
+      const doneEvaluatedAssignments: Record<string, Set<string>> = {};
+      const assignmentIds = Object.keys(assignmentToCourse);
+      if (assignmentIds.length) {
+        const { data: subs } = await (supabase as any)
+          .from("assignment_submissions")
+          .select("assignment_id, outcome")
+          .eq("user_id", user.id)
+          .in("assignment_id", assignmentIds);
+        (subs ?? [])
+          .filter((s: any) => s.outcome === "passed" || s.outcome === "failed")
+          .forEach((s: any) => {
+            const cId = assignmentToCourse[s.assignment_id];
+            if (!cId) return;
+            if (!doneEvaluatedAssignments[cId]) doneEvaluatedAssignments[cId] = new Set();
+            doneEvaluatedAssignments[cId].add(s.assignment_id);
+          });
+      }
+
       const result: Record<string, number> = {};
       courseIds.forEach((id) => {
-        const t = (lessonTotals[id] ?? 0) + (quizTotals[id] ?? 0);
-        const d = (doneLessons[id] ?? 0) + (doneAttemptedQuizzes[id]?.size ?? 0);
+        const t =
+          (lessonTotals[id] ?? 0) + (quizTotals[id] ?? 0) + (assignmentTotals[id] ?? 0);
+        const d =
+          (doneLessons[id] ?? 0) +
+          (doneAttemptedQuizzes[id]?.size ?? 0) +
+          (doneEvaluatedAssignments[id]?.size ?? 0);
         result[id] = t ? Math.round((d / t) * 100) : 0;
       });
       if (!cancelled) setMap(result);
