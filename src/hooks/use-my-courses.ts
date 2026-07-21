@@ -61,6 +61,7 @@ export function useMyCourses() {
 
       const lessonsCount: Record<string, number> = {};
       const quizzesCount: Record<string, number> = {};
+      const assignmentsCount: Record<string, number> = {};
       const quizToCourse: Record<string, string> = {};
       if (unitIds.length) {
         const { data: lessons } = await supabase
@@ -84,6 +85,15 @@ export function useMyCourses() {
               quizToCourse[q.id] = cId;
             }
           });
+        });
+
+        const { data: assignments } = await (supabase as any)
+          .from("assignments")
+          .select("unit_id")
+          .in("unit_id", unitIds);
+        (assignments ?? []).forEach((a: any) => {
+          const cId = unitToCourse[a.unit_id];
+          if (cId) assignmentsCount[cId] = (assignmentsCount[cId] ?? 0) + 1;
         });
       }
 
