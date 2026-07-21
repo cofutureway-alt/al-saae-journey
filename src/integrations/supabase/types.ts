@@ -1349,8 +1349,24 @@ export type Database = {
         Args: { _attempt_id: string; _delta: number; _question_id: string }
         Returns: undefined
       }
+      admin_adjust_wallet: {
+        Args: { p_amount_piastres: number; p_type: string; p_user_id: string }
+        Returns: Json
+      }
+      admin_bulk_adjust_wallets: {
+        Args: { p_amount_piastres: number; p_type: string }
+        Returns: Json
+      }
       admin_finalize_not_submitted: {
         Args: { _submission_id: string }
+        Returns: Json
+      }
+      admin_generate_top_up_cards: {
+        Args: {
+          p_expires_at?: string
+          p_quantity: number
+          p_value_piastres: number
+        }
         Returns: Json
       }
       admin_get_student: { Args: { _uid: string }; Returns: Json }
@@ -1380,6 +1396,31 @@ export type Database = {
           stage_name: string
           student_id: string
           total_count: number
+        }[]
+      }
+      admin_list_wallet_transactions: {
+        Args: {
+          _limit?: number
+          _offset?: number
+          _type?: string
+          _user_search?: string
+        }
+        Returns: {
+          amount_piastres: number
+          balance_after_piastres: number
+          created_at: string
+          id: string
+          notes: string
+          performed_by: string
+          performed_by_name: string
+          reference_number: string
+          student_id_code: string
+          student_name: string
+          student_phone: string
+          total_count: number
+          type: string
+          user_id: string
+          wallet_id: string
         }[]
       }
       admin_regenerate_qr_token: { Args: { _uid: string }; Returns: string }
