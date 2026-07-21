@@ -80,6 +80,10 @@ export const CourseCard = ({ course, index = 0, progress }: Props) => {
               {course.quizzes_count} اختبار
             </span>
             <span className="inline-flex items-center gap-1.5">
+              <ClipboardCheck className="w-3.5 h-3.5" />
+              {course.assignments_count} واجب
+            </span>
+            <span className="inline-flex items-center gap-1.5">
               <HelpCircle className="w-3.5 h-3.5" />
               {course.questions_count} سؤال
             </span>
