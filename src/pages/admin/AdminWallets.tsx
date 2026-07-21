@@ -170,6 +170,9 @@ function CardsTab() {
   // Filters
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "redeemed" | "expired">("all");
   const [valueFilter, setValueFilter] = useState<Set<number>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   // Generate form
   const [gQty, setGQty] = useState("10");
