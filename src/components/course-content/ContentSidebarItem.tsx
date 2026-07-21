@@ -1,14 +1,14 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { CheckCircle2, ClipboardCheck, PlayCircle } from "lucide-react";
+import { CheckCircle2, ClipboardCheck, ClipboardList, PlayCircle } from "lucide-react";
 import type { ContentItem, ContentItemType } from "@/hooks/use-unit-content-items";
 
 /**
  * A single content item row in the curriculum sidebar.
- * Lessons and quizzes render as visual peers — same base card, size,
- * padding, typography, active/completed treatment. The only visual
- * difference between types is the leading icon and a small type label.
- * Adding a new type = extend TYPE_META below (nothing else changes).
+ * Lessons, quizzes, and assignments render as visual peers — same base
+ * card, size, padding, typography, active/completed treatment. The only
+ * visual difference between types is the leading icon and a small type
+ * label. Adding a new type = extend TYPE_META below (nothing else changes).
  */
 
 const TYPE_META: Record<
@@ -17,6 +17,7 @@ const TYPE_META: Record<
 > = {
   lesson: { icon: PlayCircle, label: "درس" },
   quiz: { icon: ClipboardCheck, label: "اختبار" },
+  assignment: { icon: ClipboardList, label: "واجب" },
 };
 
 interface Props {
