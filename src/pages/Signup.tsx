@@ -96,6 +96,7 @@ const Signup = () => {
     // Always use the deterministic synthetic auth email so phone-based login
     // works without any server lookup (prevents email enumeration).
     const authEmail = syntheticAuthEmail(canonicalPhone);
+    const password = String(values.password || "");
 
     // Split values between known columns and custom_fields
     const knownData: Record<string, any> = {};
