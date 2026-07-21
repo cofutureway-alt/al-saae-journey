@@ -16,6 +16,7 @@ import {
   Filter,
   Copy,
   Check,
+  Trash2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -169,6 +170,9 @@ function CardsTab() {
   // Filters
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "redeemed" | "expired">("all");
   const [valueFilter, setValueFilter] = useState<Set<number>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   // Generate form
   const [gQty, setGQty] = useState("10");
@@ -259,6 +263,34 @@ function CardsTab() {
     await navigator.clipboard.writeText(code);
     setCopied(code);
     setTimeout(() => setCopied(null), 1500);
+  };
+
+  const toggleAll = () =>
+    setSelectedIds((p) =>
+      p.size === filtered.length ? new Set() : new Set(filtered.map((c) => c.id))
+    );
+  const toggleOne = (id: string) =>
+    setSelectedIds((p) => {
+      const n = new Set(p);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+
+  const runBulkDelete = async () => {
+    setBulkBusy(true);
+    try {
+      const ids = Array.from(selectedIds);
+      const { error } = await supabase.from("top_up_cards").delete().in("id", ids);
+      if (error) throw error;
+      toast.success(`تم حذف ${ids.length} كارت`);
+      setCards((cs) => cs.filter((c) => !selectedIds.has(c.id)));
+      setSelectedIds(new Set());
+      setBulkDeleteOpen(false);
+    } catch (e: any) {
+      toast.error(e?.message ?? "تعذّر الحذف");
+    } finally {
+      setBulkBusy(false);
+    }
   };
 
   return (
@@ -373,12 +405,41 @@ function CardsTab() {
         </div>
       </div>
 
+      {/* Bulk actions */}
+      <AnimatePresence>
+        {selectedIds.size > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-3"
+          >
+            <div className="text-sm font-semibold">تم تحديد {selectedIds.size} كارت</div>
+            <div className="flex gap-2">
+              <Button size="sm" variant="destructive" onClick={() => setBulkDeleteOpen(true)} className="gap-1.5">
+                <Trash2 className="w-4 h-4" /> حذف المحدد
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>إلغاء</Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Table */}
       <div className="rounded-2xl border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/50">
               <tr className="text-right">
+                <th className="p-3 w-10">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 accent-primary cursor-pointer"
+                    checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                    ref={(el) => { if (el) el.indeterminate = selectedIds.size > 0 && selectedIds.size < filtered.length; }}
+                    onChange={toggleAll}
+                  />
+                </th>
                 <th className="p-3 font-semibold">الكود</th>
                 <th className="p-3 font-semibold">القيمة</th>
                 <th className="p-3 font-semibold">الحالة</th>
@@ -391,14 +452,14 @@ function CardsTab() {
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="border-t">
-                    <td colSpan={6} className="p-3">
+                    <td colSpan={7} className="p-3">
                       <Skeleton className="h-6 w-full" />
                     </td>
                   </tr>
                 ))
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-muted-foreground">
+                  <td colSpan={7} className="p-8 text-center text-muted-foreground">
                     <Ticket className="w-8 h-8 mx-auto mb-2 opacity-50" />
                     لا توجد كروت
                   </td>
@@ -414,6 +475,14 @@ function CardsTab() {
                       transition={{ delay: Math.min(idx * 0.02, 0.3) }}
                       className="border-t hover:bg-muted/30"
                     >
+                      <td className="p-3 w-10">
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 accent-primary cursor-pointer"
+                          checked={selectedIds.has(c.id)}
+                          onChange={() => toggleOne(c.id)}
+                        />
+                      </td>
                       <td className="p-3 font-mono font-bold tracking-widest">
                         <button
                           onClick={() => copyCode(c.code)}
@@ -513,6 +582,24 @@ function CardsTab() {
         cards={cards}
         distinctValues={distinctValues}
       />
+
+      <Dialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>حذف {selectedIds.size} كارت نهائيًا؟</DialogTitle>
+            <DialogDescription>
+              سيتم حذف الكروت المحددة نهائيًا من قاعدة البيانات. لا يمكن التراجع.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkDeleteOpen(false)} disabled={bulkBusy}>إلغاء</Button>
+            <Button variant="destructive" onClick={runBulkDelete} disabled={bulkBusy}>
+              {bulkBusy && <Loader2 className="w-4 h-4 animate-spin ml-2" />}
+              حذف نهائي
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

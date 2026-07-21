@@ -13,6 +13,10 @@ import {
   FileText,
   ClipboardList,
   HelpCircle,
+  LayoutGrid,
+  List,
+  EyeOff,
+  Eye,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -84,6 +88,10 @@ const AdminCourses = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [deleting, setDeleting] = useState<CourseRow | null>(null);
   const [deletePending, setDeletePending] = useState(false);
+  const [view, setView] = useState<"grid" | "table">("grid");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkAction, setBulkAction] = useState<null | "delete" | "draft" | "publish">(null);
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const load = useCallback(async () => {
     const [{ data: cRows, error }, { data: sRows }] = await Promise.all([
@@ -200,6 +208,44 @@ const AdminCourses = () => {
     }
   };
 
+  const toggleOne = (id: string) =>
+    setSelectedIds((p) => {
+      const n = new Set(p);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+  const toggleAllVisible = () => {
+    if (!filtered) return;
+    setSelectedIds((p) =>
+      p.size === filtered.length ? new Set() : new Set(filtered.map((c) => c.id))
+    );
+  };
+
+  const runBulk = async () => {
+    if (!bulkAction || selectedIds.size === 0) return;
+    setBulkBusy(true);
+    const ids = Array.from(selectedIds);
+    try {
+      if (bulkAction === "delete") {
+        const { error } = await supabase.from("courses").delete().in("id", ids);
+        if (error) throw error;
+        toast.success(`تم حذف ${ids.length} دورة`);
+      } else {
+        const status = bulkAction === "draft" ? "draft" : "published";
+        const { error } = await supabase.from("courses").update({ status }).in("id", ids);
+        if (error) throw error;
+        toast.success(`تم تحديث ${ids.length} دورة`);
+      }
+      setSelectedIds(new Set());
+      setBulkAction(null);
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message || "تعذّر التنفيذ");
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto">
       <motion.div
@@ -213,14 +259,34 @@ const AdminCourses = () => {
             إدارة الدورات وبناء المحتوى التعليمي.
           </p>
         </div>
-        <Button
-          onClick={() => navigate("/admin/courses/new")}
-          size="lg"
-          className="shadow-lg shadow-primary/20"
-        >
-          <Plus className="w-4 h-4 ml-2" />
-          دورة جديدة
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="inline-flex rounded-lg border border-border overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setView("grid")}
+              className={`px-3 py-2 text-sm inline-flex items-center gap-1.5 transition ${view === "grid" ? "bg-primary text-primary-foreground" : "bg-transparent hover:bg-muted"}`}
+              title="عرض شبكي"
+            >
+              <LayoutGrid className="w-4 h-4" /> شبكة
+            </button>
+            <button
+              type="button"
+              onClick={() => setView("table")}
+              className={`px-3 py-2 text-sm inline-flex items-center gap-1.5 transition ${view === "table" ? "bg-primary text-primary-foreground" : "bg-transparent hover:bg-muted"}`}
+              title="عرض جدول"
+            >
+              <List className="w-4 h-4" /> جدول
+            </button>
+          </div>
+          <Button
+            onClick={() => navigate("/admin/courses/new")}
+            size="lg"
+            className="shadow-lg shadow-primary/20"
+          >
+            <Plus className="w-4 h-4 ml-2" />
+            دورة جديدة
+          </Button>
+        </div>
       </motion.div>
 
       <motion.div
@@ -263,6 +329,31 @@ const AdminCourses = () => {
         </Select>
       </motion.div>
 
+      <AnimatePresence>
+        {selectedIds.size > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-3 mb-6"
+          >
+            <div className="text-sm font-semibold">تم تحديد {selectedIds.size} دورة</div>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => setBulkAction("draft")} className="gap-1.5">
+                <EyeOff className="w-4 h-4" /> تحويل إلى مسودة
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setBulkAction("publish")} className="gap-1.5 text-emerald-600">
+                <Eye className="w-4 h-4" /> نشر
+              </Button>
+              <Button size="sm" variant="destructive" onClick={() => setBulkAction("delete")} className="gap-1.5">
+                <Trash2 className="w-4 h-4" /> حذف
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>إلغاء</Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {courses === null ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -274,6 +365,72 @@ const AdminCourses = () => {
               </div>
             </div>
           ))}
+        </div>
+      ) : filtered && filtered.length > 0 && view === "table" ? (
+        <div className="rounded-2xl border border-border bg-card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-muted-foreground">
+                <tr className="text-right">
+                  <th className="p-3 w-10">
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4 accent-primary cursor-pointer"
+                      checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                      ref={(el) => { if (el) el.indeterminate = selectedIds.size > 0 && selectedIds.size < filtered.length; }}
+                      onChange={toggleAllVisible}
+                    />
+                  </th>
+                  <th className="p-3 font-semibold">العنوان</th>
+                  <th className="p-3 font-semibold hidden md:table-cell">المرحلة</th>
+                  <th className="p-3 font-semibold">الحالة</th>
+                  <th className="p-3 font-semibold hidden lg:table-cell">المحتوى</th>
+                  <th className="p-3 font-semibold text-left">إجراءات</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((c) => (
+                  <tr key={c.id} className="border-t border-border/60 hover:bg-accent/30">
+                    <td className="p-3 w-10">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 accent-primary cursor-pointer"
+                        checked={selectedIds.has(c.id)}
+                        onChange={() => toggleOne(c.id)}
+                      />
+                    </td>
+                    <td className="p-3 font-semibold">{c.title}</td>
+                    <td className="p-3 hidden md:table-cell text-muted-foreground">{c.stage_name || "—"}</td>
+                    <td className="p-3">
+                      <Badge
+                        variant={c.status === "published" ? "default" : "secondary"}
+                        className={
+                          c.status === "published"
+                            ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-0"
+                            : "bg-muted text-muted-foreground border-0"
+                        }
+                      >
+                        {c.status === "published" ? "منشورة" : "مسودة"}
+                      </Badge>
+                    </td>
+                    <td className="p-3 hidden lg:table-cell text-xs text-muted-foreground">
+                      {c.units_count} وحدة · {c.lessons_count} درس · {c.quizzes_count} اختبار · {c.assignments_count} واجب
+                    </td>
+                    <td className="p-3">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button asChild variant="ghost" size="icon" title="تعديل">
+                          <Link to={`/admin/courses/${c.id}/builder`}><Pencil className="w-4 h-4" /></Link>
+                        </Button>
+                        <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setDeleting(c)} title="حذف">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : filtered && filtered.length > 0 ? (
         <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -415,6 +572,33 @@ const AdminCourses = () => {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               حذف نهائي
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!bulkAction} onOpenChange={(o) => !o && setBulkAction(null)}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {bulkAction === "delete" && `حذف ${selectedIds.size} دورة نهائيًا؟`}
+              {bulkAction === "draft" && `تحويل ${selectedIds.size} دورة إلى مسودة؟`}
+              {bulkAction === "publish" && `نشر ${selectedIds.size} دورة؟`}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {bulkAction === "delete"
+                ? "سيتم حذف الدورات المحددة وكل محتواها نهائيًا. لا يمكن التراجع."
+                : "سيتم تحديث حالة كل الدورات المحددة."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkBusy}>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); runBulk(); }}
+              disabled={bulkBusy}
+              className={bulkAction === "delete" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
+            >
+              تأكيد
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -60,7 +60,49 @@ export default function AdminStudents() {
     kind: "ban" | "unban" | "delete";
     student: AdminStudentRow;
   }>(null);
+  const [bulkConfirm, setBulkConfirm] = useState<null | "delete" | "ban" | "unban">(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
+
+  const toggleOne = (id: string) =>
+    setSelectedIds((p) => {
+      const n = new Set(p);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+  const toggleAll = () =>
+    setSelectedIds((p) =>
+      p.size === rows.length ? new Set() : new Set(rows.map((r) => r.id)),
+    );
+
+  useEffect(() => { setSelectedIds(new Set()); }, [rows]);
+
+  const runBulk = async () => {
+    if (!bulkConfirm || selectedIds.size === 0) return;
+    setBusy(true);
+    const ids = Array.from(selectedIds);
+    let ok = 0, fail = 0;
+    try {
+      if (bulkConfirm === "delete") {
+        for (const id of ids) {
+          try { await adminDeleteStudent(id); ok++; } catch { fail++; }
+        }
+        setRows((rs) => rs.filter((r) => !selectedIds.has(r.id)));
+        setTotal((t) => Math.max(0, t - ok));
+      } else {
+        const banned = bulkConfirm === "ban";
+        for (const id of ids) {
+          try { await setStudentBanned(id, banned); ok++; } catch { fail++; }
+        }
+        setRows((rs) => rs.map((r) => (selectedIds.has(r.id) ? { ...r, is_banned: banned } : r)));
+      }
+      toast.success(`تم تنفيذ العملية على ${ok} طالب${fail ? ` (فشل ${fail})` : ""}`);
+      setSelectedIds(new Set());
+    } finally {
+      setBusy(false);
+      setBulkConfirm(null);
+    }
+  };
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
@@ -234,12 +276,47 @@ export default function AdminStudents() {
         {filtersUI}
       </motion.div>
 
+      {/* Bulk actions bar */}
+      <AnimatePresence>
+        {selectedIds.size > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-3"
+          >
+            <div className="text-sm font-semibold">تم تحديد {selectedIds.size} طالب</div>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => setBulkConfirm("ban")} className="gap-1.5 text-amber-600">
+                <Ban className="w-4 h-4" /> حظر
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setBulkConfirm("unban")} className="gap-1.5 text-emerald-600">
+                <ShieldCheck className="w-4 h-4" /> رفع الحظر
+              </Button>
+              <Button size="sm" variant="destructive" onClick={() => setBulkConfirm("delete")} className="gap-1.5">
+                <Trash2 className="w-4 h-4" /> حذف
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>إلغاء</Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Table */}
       <div className="rounded-2xl border border-border bg-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-muted-foreground">
               <tr className="text-right">
+                <th className="py-3 px-4 w-10">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 accent-primary cursor-pointer"
+                    checked={rows.length > 0 && selectedIds.size === rows.length}
+                    ref={(el) => { if (el) el.indeterminate = selectedIds.size > 0 && selectedIds.size < rows.length; }}
+                    onChange={toggleAll}
+                  />
+                </th>
                 <th className="py-3 px-4 font-semibold">الطالب</th>
                 <th className="py-3 px-4 font-semibold hidden sm:table-cell">الهاتف</th>
                 <th className="py-3 px-4 font-semibold hidden md:table-cell">رقم الطالب</th>
@@ -251,6 +328,7 @@ export default function AdminStudents() {
               {loading ? (
                 Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i} className="border-t border-border/60">
+                    <td className="p-4"><Skeleton className="h-4 w-4" /></td>
                     <td className="p-4"><Skeleton className="h-10 w-40" /></td>
                     <td className="p-4 hidden sm:table-cell"><Skeleton className="h-4 w-28" /></td>
                     <td className="p-4 hidden md:table-cell"><Skeleton className="h-4 w-16" /></td>
@@ -260,7 +338,7 @@ export default function AdminStudents() {
                 ))
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="p-10 text-center text-muted-foreground">
+                  <td colSpan={6} className="p-10 text-center text-muted-foreground">
                     لا يوجد طلاب مطابقون
                   </td>
                 </tr>
@@ -280,6 +358,14 @@ export default function AdminStudents() {
                         className="border-t border-border/60 hover:bg-accent/30 cursor-pointer"
                         onClick={() => navigate(`/admin/students/${r.id}`)}
                       >
+                        <td className="p-3 px-4 w-10" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4 accent-primary cursor-pointer"
+                            checked={selectedIds.has(r.id)}
+                            onChange={() => toggleOne(r.id)}
+                          />
+                        </td>
                         <td className="p-3 px-4">
                           <div className="flex items-center gap-3">
                             <Avatar className="w-9 h-9">
@@ -393,6 +479,33 @@ export default function AdminStudents() {
                 if (confirm.kind === "delete") doDelete(confirm.student);
                 else doBan(confirm.student, confirm.kind === "ban");
               }}
+            >
+              {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : "تأكيد"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!bulkConfirm} onOpenChange={(o) => !o && setBulkConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-right">
+              {bulkConfirm === "delete" && `حذف ${selectedIds.size} طالب نهائيًا؟`}
+              {bulkConfirm === "ban" && `حظر ${selectedIds.size} طالب؟`}
+              {bulkConfirm === "unban" && `رفع الحظر عن ${selectedIds.size} طالب؟`}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-right">
+              {bulkConfirm === "delete"
+                ? "سيتم حذف الحسابات المحددة نهائيًا مع كل بياناتها. لا يمكن التراجع."
+                : "سيتم تطبيق العملية على كل الطلاب المحددين."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={busy}
+              className={bulkConfirm === "delete" ? "bg-destructive hover:bg-destructive/90" : ""}
+              onClick={(e) => { e.preventDefault(); runBulk(); }}
             >
               {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : "تأكيد"}
             </AlertDialogAction>
