@@ -130,7 +130,8 @@ export function useMyCourses() {
           const c = e.courses;
           const totalLessons = lessonsCount[c.id] ?? 0;
           const totalQuizzes = quizzesCount[c.id] ?? 0;
-          const total = totalLessons + totalQuizzes;
+          const totalAssignments = assignmentsCount[c.id] ?? 0;
+          const total = totalLessons + totalQuizzes + totalAssignments;
           const completed =
             (doneLessons[c.id] ?? 0) + (doneQuizzes[c.id]?.size ?? 0);
           return {
