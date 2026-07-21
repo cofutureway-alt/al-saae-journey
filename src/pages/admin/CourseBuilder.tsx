@@ -21,6 +21,7 @@ import {
   Settings,
   ClipboardList,
   ClipboardCheck,
+} from "lucide-react";
 import {
   DndContext,
   PointerSensor,
