@@ -671,9 +671,40 @@ export type Database = {
           },
         ]
       }
-      payment_gateways: {
+      payment_gateway_secrets: {
         Row: {
           config: Json
+          created_at: string
+          gateway_id: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          gateway_id: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          gateway_id?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_gateway_secrets_gateway_id_fkey"
+            columns: ["gateway_id"]
+            isOneToOne: true
+            referencedRelation: "payment_gateways"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_gateways: {
+        Row: {
           created_at: string
           display_name: string
           gateway_key: string
@@ -683,7 +714,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          config?: Json
           created_at?: string
           display_name: string
           gateway_key: string
@@ -693,7 +723,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          config?: Json
           created_at?: string
           display_name?: string
           gateway_key?: string
@@ -1709,6 +1738,23 @@ export type Database = {
         Args: { _assignment_id: string }
         Returns: boolean
       }
+      create_pending_gateway_transaction: {
+        Args: {
+          p_course_id?: string
+          p_gateway_key: string
+          p_purpose: string
+          p_topup_amount_piastres?: number
+        }
+        Returns: Json
+      }
+      finalize_gateway_transaction: {
+        Args: {
+          p_failure_reason?: string
+          p_reference: string
+          p_success: boolean
+        }
+        Returns: Json
+      }
       get_assignment_platform_metrics: { Args: never; Returns: Json }
       get_attempt_details: { Args: { _attempt_id: string }; Returns: Json }
       get_attempt_questions: { Args: { _attempt_id: string }; Returns: Json }
@@ -1784,6 +1830,10 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      get_own_payment_transaction_status: {
+        Args: { p_reference: string }
+        Returns: Json
       }
       get_question_analysis: {
         Args: { _form: number; _quiz_id: string }
