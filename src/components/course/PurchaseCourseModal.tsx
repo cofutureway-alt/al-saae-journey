@@ -9,6 +9,8 @@ import {
   ShieldCheck,
   ArrowLeft,
   Sparkles,
+  HandCoins,
+  Clock,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -17,11 +19,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatPiastres } from "@/lib/money";
 import { cn } from "@/lib/utils";
+import ManualPaymentForm from "@/components/payments/ManualPaymentForm";
+import {
+  ManualPaymentMethod,
+  listEnabledManualMethods,
+  submitManualCoursePayment,
+} from "@/lib/manual-payment-api";
 
 interface Gateway {
   id: string;
   gateway_key: string;
   display_name: string;
+  type: "automatic" | "manual";
 }
 
 interface Props {
@@ -45,27 +54,29 @@ export default function PurchaseCourseModal({
   const { user } = useAuth();
 
   const [gateways, setGateways] = useState<Gateway[] | null>(null);
+  const [manualMethods, setManualMethods] = useState<ManualPaymentMethod[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
+  const [existingPending, setExistingPending] = useState<{ reference: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<
     | { type: "success"; newBalance: number; reference: string }
+    | { type: "pending"; reference: string }
     | { type: "error"; message: string; insufficient?: boolean }
     | null
   >(null);
 
-  // Load gateways + balance whenever opened
   useEffect(() => {
     if (!open) return;
     setResult(null);
     setSelected(null);
     setLoading(true);
     (async () => {
-      const [{ data: gws }, { data: wal }] = await Promise.all([
+      const [{ data: gws }, { data: wal }, methods, { data: pending }] = await Promise.all([
         (supabase as any)
           .from("payment_gateways")
-          .select("id, gateway_key, display_name")
+          .select("id, gateway_key, display_name, type")
           .eq("is_enabled", true)
           .order("created_at"),
         user
@@ -75,31 +86,40 @@ export default function PurchaseCourseModal({
               .eq("user_id", user.id)
               .maybeSingle()
           : Promise.resolve({ data: null }),
+        listEnabledManualMethods().catch(() => []),
+        user
+          ? (supabase as any)
+              .from("payment_transactions")
+              .select("reference_number")
+              .eq("user_id", user.id)
+              .eq("course_id", courseId)
+              .eq("status", "pending_review")
+              .maybeSingle()
+          : Promise.resolve({ data: null }),
       ]);
       const list = (gws ?? []) as Gateway[];
       setGateways(list);
+      setManualMethods(methods);
       setWalletBalance(wal?.balance_piastres ?? 0);
+      setExistingPending(pending ? { reference: pending.reference_number } : null);
       if (list.length === 1) setSelected(list[0].id);
       setLoading(false);
     })();
-  }, [open, user]);
+  }, [open, user, courseId]);
 
   const selectedGateway = gateways?.find((g) => g.id === selected) ?? null;
   const isWallet = selectedGateway?.gateway_key === "wallet";
+  const isManual = selectedGateway?.gateway_key === "manual";
   const insufficient = isWallet && walletBalance !== null && walletBalance < amountPiastres;
   const balanceAfter = isWallet && walletBalance !== null ? walletBalance - amountPiastres : null;
 
-  const handleConfirm = async () => {
+  const handleWalletConfirm = async () => {
     if (!selectedGateway || submitting) return;
     setSubmitting(true);
     try {
-      const { data, error } = await (supabase as any).rpc("purchase_course", {
-        p_course_id: courseId,
-      });
+      const { data, error } = await (supabase as any).rpc("purchase_course", { p_course_id: courseId });
       if (error) throw error;
       if (data?.success) {
-        // Close the modal immediately so it can never reopen from re-renders,
-        // then let the parent celebrate + navigate.
         onPurchased?.({
           newBalance: data.new_balance_piastres ?? 0,
           reference: data.reference_number ?? "",
@@ -119,14 +139,27 @@ export default function PurchaseCourseModal({
     }
   };
 
+  const handleManualSubmit = async (args: {
+    methodId: string;
+    senderNumber: string;
+    proofPath: string;
+  }) => {
+    const data = await submitManualCoursePayment({
+      courseId,
+      methodId: args.methodId,
+      senderNumber: args.senderNumber,
+      proofPath: args.proofPath,
+    });
+    setResult({ type: "pending", reference: data?.reference_number ?? "" });
+  };
+
   const goToCourse = () => {
     onOpenChange(false);
-    // Small delay so the modal closes cleanly before the redirect
     setTimeout(() => navigate(`/courses/${courseId}`), 50);
   };
 
   const gatewayIconFor = (key: string) => {
-    if (key === "wallet") return WalletIcon;
+    if (key === "manual") return HandCoins;
     return WalletIcon;
   };
 
@@ -136,53 +169,75 @@ export default function PurchaseCourseModal({
         <div className="p-6 pb-4 border-b border-border">
           <DialogHeader>
             <DialogTitle className="text-xl">
-              {result?.type === "success" ? "تم الشراء بنجاح" : "اختر طريقة الدفع"}
+              {result?.type === "success"
+                ? "تم الشراء بنجاح"
+                : result?.type === "pending"
+                  ? "تم إرسال طلب الدفع"
+                  : existingPending
+                    ? "طلبك قيد المراجعة"
+                    : "اختر طريقة الدفع"}
             </DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground mt-1 truncate">{courseTitle}</p>
         </div>
 
-        <div className="p-6 space-y-5">
+        <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
           <AnimatePresence mode="wait">
-            {result?.type === "success" ? (
+            {result?.type === "pending" ? (
               <motion.div
-                key="success"
-                initial={{ opacity: 0, scale: 0.92 }}
+                key="pending"
+                initial={{ opacity: 0, scale: 0.94 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.92 }}
-                transition={{ type: "spring", stiffness: 260, damping: 22 }}
                 className="text-center space-y-4 py-4"
               >
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", delay: 0.05, stiffness: 320, damping: 18 }}
-                  className="w-20 h-20 mx-auto rounded-full bg-emerald-500/10 flex items-center justify-center"
-                >
-                  <CheckCircle2 className="w-10 h-10 text-emerald-500" />
-                </motion.div>
+                <div className="w-20 h-20 mx-auto rounded-full bg-amber-500/10 flex items-center justify-center">
+                  <Clock className="w-10 h-10 text-amber-500" />
+                </div>
                 <div>
-                  <div className="text-lg font-bold">تم تفعيل الدورة على حسابك</div>
-                  <div className="text-sm text-muted-foreground mt-1">
-                    الرصيد الجديد: {formatPiastres(result.newBalance)}
+                  <div className="text-lg font-bold">تم استلام طلب الدفع</div>
+                  <div className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                    يرجى انتظار مراجعة الإدارة. لن تتمكن من إعادة الدفع لهذا الكورس حتى تتم مراجعة الطلب.
                   </div>
-                  <div className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-mono px-2 py-1 rounded bg-accent">
+                  <div className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-mono px-2 py-1 rounded bg-accent">
                     {result.reference}
                   </div>
                 </div>
-                <Button size="lg" className="w-full font-bold" onClick={goToCourse}>
-                  <ArrowLeft className="w-4 h-4 ml-2" />
-                  ابدأ الدورة الآن
+                <Button size="lg" className="w-full" onClick={() => onOpenChange(false)}>
+                  إغلاق
+                </Button>
+              </motion.div>
+            ) : existingPending ? (
+              <motion.div
+                key="existing-pending"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-center space-y-4 py-4"
+              >
+                <div className="w-20 h-20 mx-auto rounded-full bg-amber-500/10 flex items-center justify-center">
+                  <Clock className="w-10 h-10 text-amber-500" />
+                </div>
+                <div>
+                  <div className="text-lg font-bold">لديك طلب دفع قيد المراجعة</div>
+                  <div className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                    لا يمكنك إرسال طلب جديد لهذا الكورس حتى تتم مراجعة الطلب الحالي.
+                  </div>
+                  <div className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-mono px-2 py-1 rounded bg-accent">
+                    {existingPending.reference}
+                  </div>
+                </div>
+                <Button
+                  size="lg"
+                  className="w-full"
+                  onClick={() => {
+                    onOpenChange(false);
+                    setTimeout(() => navigate("/dashboard/wallet"), 50);
+                  }}
+                >
+                  متابعة طلباتي
                 </Button>
               </motion.div>
             ) : loading ? (
-              <motion.div
-                key="loading"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="space-y-3"
-              >
+              <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
                 <Skeleton className="h-20 w-full rounded-xl" />
                 <Skeleton className="h-24 w-full rounded-xl" />
               </motion.div>
@@ -191,38 +246,30 @@ export default function PurchaseCourseModal({
                 key="none"
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
                 className="rounded-xl border border-dashed border-border p-8 text-center"
               >
                 <AlertCircle className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
                 <div className="font-semibold">لا توجد طريقة دفع متاحة حالياً</div>
-                <p className="text-sm text-muted-foreground mt-1">
-                  يرجى المحاولة لاحقًا أو التواصل مع الإدارة.
-                </p>
               </motion.div>
             ) : (
-              <motion.div
-                key="pick"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className="space-y-4"
-              >
-                {/* Gateway options */}
+              <motion.div key="pick" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
                 <div className="space-y-2">
                   {gateways!.map((g) => {
                     const Icon = gatewayIconFor(g.gateway_key);
                     const isSel = g.id === selected;
+                    const disabled = g.gateway_key === "manual" && manualMethods.length === 0;
                     return (
                       <button
                         key={g.id}
                         type="button"
-                        onClick={() => setSelected(g.id)}
+                        onClick={() => !disabled && setSelected(g.id)}
+                        disabled={disabled}
                         className={cn(
-                          "w-full text-right p-4 rounded-xl border-2 transition-all flex items-center gap-3 hover:bg-accent/40",
+                          "w-full text-right p-4 rounded-xl border-2 transition-all flex items-center gap-3",
                           isSel
                             ? "border-primary bg-primary/5 shadow-sm shadow-primary/10"
-                            : "border-border",
+                            : "border-border hover:bg-accent/40",
+                          disabled && "opacity-50 cursor-not-allowed",
                         )}
                       >
                         <div
@@ -240,10 +287,15 @@ export default function PurchaseCourseModal({
                               الرصيد الحالي: {formatPiastres(walletBalance)}
                             </div>
                           )}
+                          {g.gateway_key === "manual" && (
+                            <div className="text-xs text-muted-foreground">
+                              فودافون كاش / إنستاباي — يتم المراجعة يدويًا
+                            </div>
+                          )}
                         </div>
                         <div
                           className={cn(
-                            "w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center transition-colors",
+                            "w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center",
                             isSel ? "border-primary bg-primary" : "border-muted-foreground/40",
                           )}
                         >
@@ -254,7 +306,6 @@ export default function PurchaseCourseModal({
                   })}
                 </div>
 
-                {/* Summary panel */}
                 {isWallet && (
                   <motion.div
                     initial={{ opacity: 0, y: 6 }}
@@ -264,10 +315,7 @@ export default function PurchaseCourseModal({
                     <div className="p-4 space-y-2 text-sm">
                       <Row label="سعر الدورة" value={formatPiastres(amountPiastres)} strong />
                       <div className="border-t border-border" />
-                      <Row
-                        label="الرصيد قبل الشراء"
-                        value={formatPiastres(walletBalance ?? 0)}
-                      />
+                      <Row label="الرصيد قبل الشراء" value={formatPiastres(walletBalance ?? 0)} />
                       <Row
                         label="الرصيد بعد الشراء"
                         value={formatPiastres(balanceAfter ?? 0)}
@@ -275,40 +323,8 @@ export default function PurchaseCourseModal({
                       />
                     </div>
                     {insufficient && (
-                      <div className="px-4 py-3 bg-rose-500/10 border-t border-rose-500/20 text-sm flex items-start gap-2">
-                        <AlertCircle className="w-4 h-4 text-rose-600 mt-0.5 shrink-0" />
-                        <div className="flex-1">
-                          <div className="font-semibold text-rose-700 dark:text-rose-300">
-                            رصيد غير كافٍ
-                          </div>
-                          <button
-                            onClick={() => {
-                              onOpenChange(false);
-                              setTimeout(() => navigate("/dashboard/wallet"), 50);
-                            }}
-                            className="text-xs underline text-rose-700 dark:text-rose-300 mt-0.5"
-                          >
-                            اذهب إلى المحفظة لشحن الرصيد
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </motion.div>
-                )}
-
-                {/* Error banner */}
-                {result?.type === "error" && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="rounded-lg bg-rose-500/10 border border-rose-500/20 p-3 text-sm flex items-start gap-2"
-                  >
-                    <AlertCircle className="w-4 h-4 text-rose-600 mt-0.5 shrink-0" />
-                    <div className="flex-1">
-                      <div className="font-semibold text-rose-700 dark:text-rose-300">
-                        {result.message}
-                      </div>
-                      {result.insufficient && (
+                      <div className="px-4 py-3 bg-rose-500/10 border-t border-rose-500/20 text-sm">
+                        <div className="font-semibold text-rose-700 dark:text-rose-300">رصيد غير كافٍ</div>
                         <button
                           onClick={() => {
                             onOpenChange(false);
@@ -318,30 +334,48 @@ export default function PurchaseCourseModal({
                         >
                           اذهب إلى المحفظة لشحن الرصيد
                         </button>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </motion.div>
                 )}
 
-                {/* Trust footer */}
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <ShieldCheck className="w-3.5 h-3.5 text-primary" />
-                  عملية آمنة — يتم الخصم لمرة واحدة وتفعيل الدورة فورًا.
-                </div>
+                {isManual && (
+                  <div className="space-y-3">
+                    <div className="rounded-xl bg-accent/40 border border-border p-3 text-sm text-center">
+                      المبلغ المطلوب: <span className="font-bold">{formatPiastres(amountPiastres)}</span>
+                    </div>
+                    <ManualPaymentForm methods={manualMethods} onSubmit={handleManualSubmit} />
+                  </div>
+                )}
 
-                <Button
-                  size="lg"
-                  className="w-full font-bold shadow-lg shadow-primary/20"
-                  disabled={!selected || submitting || (isWallet && insufficient)}
-                  onClick={handleConfirm}
-                >
-                  {submitting ? (
-                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                  ) : (
-                    <Sparkles className="w-4 h-4 ml-2" />
-                  )}
-                  تأكيد الشراء
-                </Button>
+                {result?.type === "error" && (
+                  <div className="rounded-lg bg-rose-500/10 border border-rose-500/20 p-3 text-sm flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-rose-600 mt-0.5 shrink-0" />
+                    <div className="flex-1 font-semibold text-rose-700 dark:text-rose-300">{result.message}</div>
+                  </div>
+                )}
+
+                {isWallet && (
+                  <>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <ShieldCheck className="w-3.5 h-3.5 text-primary" />
+                      عملية آمنة — يتم الخصم لمرة واحدة وتفعيل الدورة فورًا.
+                    </div>
+                    <Button
+                      size="lg"
+                      className="w-full font-bold shadow-lg shadow-primary/20"
+                      disabled={!selected || submitting || insufficient}
+                      onClick={handleWalletConfirm}
+                    >
+                      {submitting ? (
+                        <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                      ) : (
+                        <Sparkles className="w-4 h-4 ml-2" />
+                      )}
+                      تأكيد الشراء
+                    </Button>
+                  </>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
