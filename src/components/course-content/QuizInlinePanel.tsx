@@ -23,6 +23,7 @@ import {
   type QuizAttempt,
   type QuizMeta,
 } from "@/lib/quiz-api";
+import { effectiveMaxAttempts } from "@/lib/course-lock-api";
 import { useAuth } from "@/contexts/AuthContext";
 import AttemptDetailsModal from "@/components/quiz/AttemptDetailsModal";
 
