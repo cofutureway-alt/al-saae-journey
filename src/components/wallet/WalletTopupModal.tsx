@@ -274,6 +274,22 @@ export default function WalletTopupModal({ open, onOpenChange, currentBalance, o
                       <ArrowRight className="w-4 h-4 text-muted-foreground" />
                     </button>
                   )}
+                  {fawaterakEnabled && (
+                    <button
+                      type="button"
+                      onClick={() => { setGateway("fawaterak"); setStep("pay"); }}
+                      className={cn(
+                        "w-full flex items-center gap-3 rounded-xl border border-border bg-card p-4 text-right hover:border-primary hover:bg-primary/5 transition-colors",
+                      )}
+                    >
+                      <CreditCard className="w-6 h-6 text-primary" />
+                      <div className="flex-1">
+                        <div className="font-bold">الدفع الإلكتروني (فواتيرك)</div>
+                        <div className="text-xs text-muted-foreground">فيزا / فوري / ميزة — عبر Fawaterak</div>
+                      </div>
+                      <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => setStep("amount")}
@@ -419,7 +435,51 @@ export default function WalletTopupModal({ open, onOpenChange, currentBalance, o
                       <div className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-mono px-2 py-1 rounded bg-accent">
                         {reference}
                       </div>
-                    )}
+              )}
+
+              {step === "pay" && amountPiastres && gateway === "fawaterak" && (
+                <motion.div key="pay-fawaterak" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-2 text-sm">
+                    <div className="flex items-center gap-2 font-bold">
+                      <CreditCard className="w-4 h-4 text-primary" />
+                      الدفع الإلكتروني عبر فواتيرك
+                    </div>
+                    <div className="pt-2 border-t border-primary/20 flex items-center justify-between">
+                      <span className="text-muted-foreground">المبلغ</span>
+                      <span className="font-bold text-base">{formatPiastres(amountPiastres)}</span>
+                    </div>
+                  </div>
+                  {error && (
+                    <div className="text-sm flex items-center gap-2 text-destructive">
+                      <AlertCircle className="w-4 h-4" /> {error}
+                    </div>
+                  )}
+                  {inlineCode ? (
+                    <div className="rounded-xl border border-primary/30 bg-background p-4 space-y-1 text-center">
+                      <div className="text-xs text-muted-foreground">كود الدفع لدى فواتيرك</div>
+                      <div className="font-mono text-2xl font-extrabold tracking-widest">{inlineCode.code ?? "—"}</div>
+                      {inlineCode.expire_at && (
+                        <div className="text-[11px] text-muted-foreground">
+                          صالح حتى: <span dir="ltr">{String(inlineCode.expire_at)}</span>
+                        </div>
+                      )}
+                      <div className="text-[11px] text-muted-foreground pt-1 leading-relaxed">
+                        استخدم هذا الكود لإتمام الدفع في منفذ فواتيرك. سيُضاف الرصيد تلقائيًا فور استلام التأكيد.
+                      </div>
+                    </div>
+                  ) : (
+                    <FawaterakMethodPicker onPick={handleFawaterakPick} disabled={submitting} />
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setStep(externalGatewayCount > 1 ? "gateway" : "amount")}
+                    className="text-xs text-muted-foreground hover:text-foreground w-full text-center"
+                    disabled={submitting}
+                  >
+                    رجوع
+                  </button>
+                </motion.div>
+              )}
                   </div>
                   <Button size="lg" className="w-full" onClick={() => onOpenChange(false)}>
                     إغلاق
