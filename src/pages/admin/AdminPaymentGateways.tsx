@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   CreditCard,
   Loader2,
   Save,
+  Settings2,
   ShieldAlert,
   Sparkles,
   Trash2,
   Wallet as WalletIcon,
+  HandCoins,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
