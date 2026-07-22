@@ -34,7 +34,7 @@ interface Props {
   onSubmitted?: () => void;
 }
 
-type GatewayKey = "manual" | "kashier";
+type GatewayKey = "manual" | "kashier" | "paymob";
 
 export default function WalletTopupModal({ open, onOpenChange, currentBalance, onSubmitted }: Props) {
   const [step, setStep] = useState<"amount" | "gateway" | "pay" | "done">("amount");
