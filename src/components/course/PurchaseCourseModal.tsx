@@ -435,6 +435,41 @@ export default function PurchaseCourseModal({
                   </motion.div>
                 )}
 
+                {isFawaterak && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="rounded-xl border border-primary/20 bg-primary/5 overflow-hidden"
+                  >
+                    <div className="p-4 space-y-3 text-sm">
+                      <div className="flex items-center gap-2 font-bold">
+                        <CreditCard className="w-4 h-4 text-primary" />
+                        الدفع الإلكتروني عبر فواتيرك
+                      </div>
+                      <div className="pt-2 border-t border-primary/20 flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">المبلغ</span>
+                        <span className="font-bold text-base">{formatPiastres(amountPiastres)}</span>
+                      </div>
+                      {result?.type === "inline" ? (
+                        <div className="rounded-lg border border-primary/30 bg-background/60 p-3 space-y-1 text-center">
+                          <div className="text-xs text-muted-foreground">كود الدفع</div>
+                          <div className="font-mono text-lg font-bold tracking-widest">{result.code ?? "—"}</div>
+                          {result.expire_at && (
+                            <div className="text-[11px] text-muted-foreground">
+                              صالح حتى: <span dir="ltr">{String(result.expire_at)}</span>
+                            </div>
+                          )}
+                          <div className="text-[11px] text-muted-foreground pt-1 leading-relaxed">
+                            استخدم هذا الكود لإتمام الدفع في منفذ فواتيرك. سيتم تفعيل الدورة تلقائيًا فور استلام التأكيد.
+                          </div>
+                        </div>
+                      ) : (
+                        <FawaterakMethodPicker onPick={handleFawaterakPick} disabled={submitting} />
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+
                 {result?.type === "error" && (
                   <div className="rounded-lg bg-rose-500/10 border border-rose-500/20 p-3 text-sm flex items-start gap-2">
                     <AlertCircle className="w-4 h-4 text-rose-600 mt-0.5 shrink-0" />
