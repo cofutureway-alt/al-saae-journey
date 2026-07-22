@@ -127,6 +127,7 @@ const CourseInfoEditor = () => {
   const isPaid = watch("is_paid");
   const priceEgp = watch("price_egp");
   const discountEgp = watch("discount_price_egp");
+  const dripEnabled = watch("content_drip_enabled");
 
   useEffect(() => {
     supabase
