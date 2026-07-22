@@ -394,6 +394,8 @@ const MyWallet = () => {
   const [walletId, setWalletId] = useState<string | null>(null);
   const [loadingWallet, setLoadingWallet] = useState(true);
   const [transactions, setTransactions] = useState<WalletTransaction[] | null>(null);
+  const [topupOpen, setTopupOpen] = useState(false);
+  const [requestsReloadKey, setRequestsReloadKey] = useState(0);
 
   const loadWallet = async () => {
     if (!user) return;
@@ -445,7 +447,44 @@ const MyWallet = () => {
 
       <BalanceCard balance={balance} loading={loadingWallet} />
 
-      <RedeemSection onSuccess={handleRedeemSuccess} />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <RedeemSection onSuccess={handleRedeemSuccess} />
+        <motion.button
+          type="button"
+          onClick={() => setTopupOpen(true)}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="rounded-2xl border border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors p-6 md:p-8 text-right flex flex-col justify-between gap-3"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <HandCoins className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-foreground">شحن عبر بوابة دفع</h2>
+              <p className="text-xs text-muted-foreground">فودافون كاش / إنستاباي بمراجعة يدوية</p>
+            </div>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            أدخل المبلغ، ثم قم بالتحويل وارفع صورة الإيصال. سيتم إضافة الرصيد بعد المراجعة.
+          </div>
+          <span className="inline-flex items-center gap-1.5 text-sm font-bold text-primary self-start">
+            بدء طلب الشحن
+            <Sparkles className="w-4 h-4" />
+          </span>
+        </motion.button>
+      </div>
+
+      <MyPaymentRequests reloadKey={requestsReloadKey} />
+
+      <WalletTopupModal
+        open={topupOpen}
+        onOpenChange={setTopupOpen}
+        currentBalance={balance}
+        onSubmitted={() => setRequestsReloadKey((k) => k + 1)}
+      />
+
 
       <motion.div
         initial={{ opacity: 0, y: 12 }}
