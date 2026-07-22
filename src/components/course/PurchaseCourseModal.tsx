@@ -29,6 +29,8 @@ import {
 } from "@/lib/manual-payment-api";
 import { initiateKashierPayment } from "@/lib/kashier-api";
 import { initiatePaymobPayment } from "@/lib/paymob-api";
+import { initiateFawaterakPayment, FawaterakMethod } from "@/lib/fawaterak-api";
+import FawaterakMethodPicker from "@/components/payments/FawaterakMethodPicker";
 
 interface Gateway {
   id: string;
@@ -68,6 +70,7 @@ export default function PurchaseCourseModal({
     | { type: "success"; newBalance: number; reference: string }
     | { type: "pending"; reference: string }
     | { type: "redirecting"; reference: string; mode: "test" | "live" }
+    | { type: "inline"; reference: string; code: string | null; expire_at: string | null }
     | { type: "error"; message: string; insufficient?: boolean }
     | null
   >(null);
@@ -117,6 +120,7 @@ export default function PurchaseCourseModal({
   const isManual = selectedGateway?.gateway_key === "manual";
   const isKashier = selectedGateway?.gateway_key === "kashier";
   const isPaymob = selectedGateway?.gateway_key === "paymob";
+  const isFawaterak = selectedGateway?.gateway_key === "fawaterak";
   const insufficient = isWallet && walletBalance !== null && walletBalance < amountPiastres;
   const balanceAfter = isWallet && walletBalance !== null ? walletBalance - amountPiastres : null;
 
@@ -171,6 +175,34 @@ export default function PurchaseCourseModal({
   const handleKashierConfirm = () => handleGatewayRedirect("kashier");
   const handlePaymobConfirm = () => handleGatewayRedirect("paymob");
 
+  const handleFawaterakPick = async (method: FawaterakMethod) => {
+    if (submitting) return;
+    setSubmitting(true);
+    setResult(null);
+    try {
+      const res = await initiateFawaterakPayment({
+        purpose: "course_purchase",
+        courseId,
+        paymentMethodId: method.payment_id,
+      });
+      if (res.redirect_url) {
+        setResult({ type: "redirecting", reference: res.reference_number, mode: "live" });
+        setTimeout(() => window.location.assign(res.redirect_url!), 400);
+      } else {
+        setResult({
+          type: "inline",
+          reference: res.reference_number,
+          code: res.inline?.code ?? null,
+          expire_at: res.inline?.expire_at ?? null,
+        });
+        setSubmitting(false);
+      }
+    } catch (e: any) {
+      setResult({ type: "error", message: e?.message ?? "تعذّر بدء عملية الدفع" });
+      setSubmitting(false);
+    }
+  };
+
   const handleManualSubmit = async (args: {
     methodId: string;
     senderNumber: string;
@@ -192,7 +224,7 @@ export default function PurchaseCourseModal({
 
   const gatewayIconFor = (key: string) => {
     if (key === "manual") return HandCoins;
-    if (key === "kashier" || key === "paymob") return CreditCard;
+    if (key === "kashier" || key === "paymob" || key === "fawaterak") return CreditCard;
     return WalletIcon;
   };
 
