@@ -389,44 +389,8 @@ export default function AdminStudentDetail() {
           </div>
         </TabsContent>
 
-        {/* ENROLLMENTS */}
+        {/* ENROLLMENTS + CONTENT */}
         <TabsContent value="enrollments" className="mt-4">
-          <div className="rounded-2xl border border-border bg-card overflow-hidden">
-            {enrollments.length === 0 ? (
-              <div className="p-10 text-center text-muted-foreground">لا يوجد تسجيل بعد.</div>
-            ) : (
-              <table className="w-full text-sm">
-                <thead className="bg-muted/40 text-muted-foreground">
-                  <tr className="text-right">
-                    <th className="p-3 px-4">الكورس</th>
-                    <th className="p-3 px-4 hidden md:table-cell">المادة</th>
-                    <th className="p-3 px-4 hidden md:table-cell">المرحلة</th>
-                    <th className="p-3 px-4">تاريخ التسجيل</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {enrollments.map((e) => (
-                    <tr key={e.course_id} className="border-t border-border/60 hover:bg-accent/30">
-                      <td className="p-3 px-4">
-                        <Link to={`/admin/courses`} className="font-semibold hover:text-primary">
-                          {e.course_title}
-                        </Link>
-                      </td>
-                      <td className="p-3 px-4 hidden md:table-cell text-muted-foreground">{e.subject_name ?? "—"}</td>
-                      <td className="p-3 px-4 hidden md:table-cell text-muted-foreground">{e.stage_name ?? "—"}</td>
-                      <td className="p-3 px-4 text-xs text-muted-foreground" dir="ltr">
-                        {new Date(e.enrolled_at).toLocaleDateString("ar-EG")}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </TabsContent>
-
-        {/* CONTENT (drip + gates + attempt grants) */}
-        <TabsContent value="content" className="mt-4">
           <div className="space-y-4">
             {enrollments.length === 0 ? (
               <div className="rounded-2xl border border-border bg-card p-10 text-center text-muted-foreground">
@@ -438,7 +402,11 @@ export default function AdminStudentDetail() {
                   key={e.course_id}
                   courseId={e.course_id}
                   courseTitle={e.course_title}
+                  subjectName={e.subject_name}
+                  stageName={e.stage_name}
+                  enrolledAt={e.enrolled_at}
                   userId={student.id}
+                  attemptsUsed={attemptsUsedByQuiz}
                 />
               ))
             )}
