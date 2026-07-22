@@ -211,6 +211,14 @@ export default function AdminStudentDetail() {
     };
   }, [attempts]);
 
+  const attemptsUsedByQuiz = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const a of attempts) {
+      m[a.quiz_id] = Math.max(m[a.quiz_id] ?? 0, a.attempt_number ?? 0);
+    }
+    return m;
+  }, [attempts]);
+
   if (loading || !student) {
     return (
       <div className="max-w-6xl mx-auto space-y-6">
@@ -327,10 +335,9 @@ export default function AdminStudentDetail() {
       </motion.div>
 
       <Tabs defaultValue="overview" dir="rtl">
-        <TabsList className="grid grid-cols-2 sm:grid-cols-6 w-full max-w-4xl">
+        <TabsList className="grid grid-cols-2 sm:grid-cols-5 w-full max-w-3xl">
           <TabsTrigger value="overview" className="gap-2"><User className="w-4 h-4" />نظرة عامة</TabsTrigger>
           <TabsTrigger value="enrollments" className="gap-2"><BookOpen className="w-4 h-4" />الكورسات</TabsTrigger>
-          <TabsTrigger value="content" className="gap-2"><ListTree className="w-4 h-4" />المحتوى</TabsTrigger>
           <TabsTrigger value="attempts" className="gap-2"><ClipboardList className="w-4 h-4" />المحاولات</TabsTrigger>
           <TabsTrigger value="wallet" className="gap-2"><WalletIcon className="w-4 h-4" />المحفظة</TabsTrigger>
           <TabsTrigger value="registration" className="gap-2"><FileText className="w-4 h-4" />البيانات</TabsTrigger>
@@ -390,44 +397,8 @@ export default function AdminStudentDetail() {
           </div>
         </TabsContent>
 
-        {/* ENROLLMENTS */}
+        {/* ENROLLMENTS + CONTENT */}
         <TabsContent value="enrollments" className="mt-4">
-          <div className="rounded-2xl border border-border bg-card overflow-hidden">
-            {enrollments.length === 0 ? (
-              <div className="p-10 text-center text-muted-foreground">لا يوجد تسجيل بعد.</div>
-            ) : (
-              <table className="w-full text-sm">
-                <thead className="bg-muted/40 text-muted-foreground">
-                  <tr className="text-right">
-                    <th className="p-3 px-4">الكورس</th>
-                    <th className="p-3 px-4 hidden md:table-cell">المادة</th>
-                    <th className="p-3 px-4 hidden md:table-cell">المرحلة</th>
-                    <th className="p-3 px-4">تاريخ التسجيل</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {enrollments.map((e) => (
-                    <tr key={e.course_id} className="border-t border-border/60 hover:bg-accent/30">
-                      <td className="p-3 px-4">
-                        <Link to={`/admin/courses`} className="font-semibold hover:text-primary">
-                          {e.course_title}
-                        </Link>
-                      </td>
-                      <td className="p-3 px-4 hidden md:table-cell text-muted-foreground">{e.subject_name ?? "—"}</td>
-                      <td className="p-3 px-4 hidden md:table-cell text-muted-foreground">{e.stage_name ?? "—"}</td>
-                      <td className="p-3 px-4 text-xs text-muted-foreground" dir="ltr">
-                        {new Date(e.enrolled_at).toLocaleDateString("ar-EG")}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </TabsContent>
-
-        {/* CONTENT (drip + gates + attempt grants) */}
-        <TabsContent value="content" className="mt-4">
           <div className="space-y-4">
             {enrollments.length === 0 ? (
               <div className="rounded-2xl border border-border bg-card p-10 text-center text-muted-foreground">
@@ -439,7 +410,11 @@ export default function AdminStudentDetail() {
                   key={e.course_id}
                   courseId={e.course_id}
                   courseTitle={e.course_title}
+                  subjectName={e.subject_name}
+                  stageName={e.stage_name}
+                  enrolledAt={e.enrolled_at}
                   userId={student.id}
+                  attemptsUsed={attemptsUsedByQuiz}
                 />
               ))
             )}
@@ -587,11 +562,19 @@ export default function AdminStudentDetail() {
 function StudentCourseContentCard({
   courseId,
   courseTitle,
+  subjectName,
+  stageName,
+  enrolledAt,
   userId,
+  attemptsUsed,
 }: {
   courseId: string;
   courseTitle: string;
+  subjectName?: string | null;
+  stageName?: string | null;
+  enrolledAt?: string | null;
   userId: string;
+  attemptsUsed: Record<string, number>;
 }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -599,6 +582,7 @@ function StudentCourseContentCard({
   const [titles, setTitles] = useState<Record<string, string>>({});
   const [effMap, setEffMap] = useState<Record<string, number>>({});
   const [granting, setGranting] = useState<string | null>(null);
+  const [grantQty, setGrantQty] = useState<Record<string, number>>({});
 
   const load = async () => {
     setLoading(true);
@@ -644,12 +628,13 @@ function StudentCourseContentCard({
     // eslint-disable-next-line
   }, [open]);
 
-  const doGrant = async (quizId: string) => {
+  const doGrant = async (quizId: string, extra: number) => {
+    const n = Math.max(1, Math.floor(extra || 1));
     setGranting(quizId);
     try {
-      const res = await adminGrantQuizAttempt(userId, quizId, 1);
+      const res = await adminGrantQuizAttempt(userId, quizId, n);
       setEffMap((m) => ({ ...m, [quizId]: res.effective_max_attempts }));
-      toast.success("تم منح محاولة إضافية");
+      toast.success(`تم منح ${n} محاولة إضافية`);
     } catch (e: any) {
       toast.error(e?.message ?? "تعذّر منح المحاولة");
     } finally {
@@ -669,8 +654,13 @@ function StudentCourseContentCard({
           </div>
           <div className="min-w-0">
             <div className="font-bold truncate">{courseTitle}</div>
-            <div className="text-xs text-muted-foreground">
-              {open ? "إخفاء" : "عرض"} المحتوى وحالة الأقفال
+            <div className="text-xs text-muted-foreground flex flex-wrap gap-x-3 gap-y-0.5">
+              {subjectName && <span>{subjectName}</span>}
+              {stageName && <span>{stageName}</span>}
+              {enrolledAt && (
+                <span dir="ltr">{new Date(enrolledAt).toLocaleDateString("ar-EG")}</span>
+              )}
+              <span>{open ? "إخفاء" : "عرض"} المحتوى وحالة الأقفال</span>
             </div>
           </div>
         </div>
@@ -728,25 +718,47 @@ function StudentCourseContentCard({
                         )}
                         {r.is_locked && r.reason === "drip" && <> · مقفل بالتسلسل</>}
                         {isQuiz && effMap[r.item_id] != null && (
-                          <> · محاولات فعّالة: {effMap[r.item_id]}</>
+                          <>
+                            {" · "}
+                            محاولات: {attemptsUsed[r.item_id] ?? 0} / {effMap[r.item_id]}
+                            {(attemptsUsed[r.item_id] ?? 0) >= effMap[r.item_id] && (
+                              <span className="text-amber-600"> · استنفد المحاولات</span>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
                     {isQuiz && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="gap-1 shrink-0"
-                        disabled={granting === r.item_id}
-                        onClick={() => doGrant(r.item_id)}
-                      >
-                        {granting === r.item_id ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          <Plus className="w-3.5 h-3.5" />
-                        )}
-                        محاولة
-                      </Button>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <input
+                          type="number"
+                          min={1}
+                          max={20}
+                          value={grantQty[r.item_id] ?? 1}
+                          onChange={(e) =>
+                            setGrantQty((m) => ({
+                              ...m,
+                              [r.item_id]: Math.max(1, Math.min(20, Number(e.target.value) || 1)),
+                            }))
+                          }
+                          className="w-14 h-8 rounded-md border border-border bg-background px-2 text-sm text-center"
+                          dir="ltr"
+                        />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1"
+                          disabled={granting === r.item_id}
+                          onClick={() => doGrant(r.item_id, grantQty[r.item_id] ?? 1)}
+                        >
+                          {granting === r.item_id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Plus className="w-3.5 h-3.5" />
+                          )}
+                          محاولات
+                        </Button>
+                      </div>
                     )}
                   </div>
                 );
