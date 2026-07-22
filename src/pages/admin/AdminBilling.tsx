@@ -227,6 +227,16 @@ export default function AdminBilling() {
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
     setTopCardValues(arr);
+
+    // Discount savings — sum from the discount_savings_summary view (course + bundle)
+    const { data: sav } = await (supabase as any)
+      .from("discount_savings_summary")
+      .select("discount_amount_piastres");
+    const totalSav = ((sav ?? []) as { discount_amount_piastres: number }[]).reduce(
+      (s, r) => s + (r.discount_amount_piastres || 0),
+      0,
+    );
+    setTotalDiscountSavings(totalSav);
   }, []);
 
   const loadPayments = useCallback(async () => {
