@@ -24,6 +24,7 @@ import {
   adminSaveKashierConfig,
   KashierConfig,
 } from "@/lib/kashier-api";
+import GatewayMethodsPanel from "@/components/admin/GatewayMethodsPanel";
 
 const WEBHOOK_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/kashier-webhook`;
 
@@ -257,6 +258,10 @@ export default function AdminKashierSettings() {
           </div>
         </div>
       </motion.section>
+
+      <GatewayMethodsPanel gatewayKey="kashier" />
+
+
 
       <motion.section
         initial={{ opacity: 0, y: 8 }}

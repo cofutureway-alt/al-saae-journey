@@ -62,15 +62,29 @@ Deno.serve(async (req) => {
       secret_key?: string;
       public_key?: string;
       hmac_secret?: string;
-      integration_ids?: Array<string | number>;
     };
     const secretKey = String(cfg.secret_key || "").trim();
     const publicKey = String(cfg.public_key || "").trim();
-    const integrationIds = Array.isArray(cfg.integration_ids)
-      ? cfg.integration_ids.map((v) => Number(v)).filter((n) => Number.isFinite(n) && n > 0)
-      : [];
-    if (!secretKey || !publicKey || integrationIds.length === 0) {
+
+    // Phase 45: PayMob payment methods now come from payment_gateway_methods (enabled rows),
+    // whose method_key values are the merchant's PayMob Integration IDs.
+    const { data: methodRows } = await service
+      .from("payment_gateway_methods")
+      .select("method_key, is_enabled")
+      .eq("gateway_id", gw.id)
+      .eq("is_enabled", true);
+    const integrationIds = ((methodRows ?? []) as Array<{ method_key: string }>)
+      .map((r) => Number(String(r.method_key).trim()))
+      .filter((n) => Number.isFinite(n) && n > 0);
+
+    if (!secretKey || !publicKey) {
       return json({ error: "بوابة PayMob غير مكتملة الإعداد. تواصل مع الإدارة." }, 400);
+    }
+    if (integrationIds.length === 0) {
+      return json(
+        { error: "لا توجد طرق دفع مفعّلة لبوابة PayMob. تواصل مع الإدارة." },
+        400,
+      );
     }
 
     // Create pending transaction as the authenticated user (RLS + validation live inside the RPC).

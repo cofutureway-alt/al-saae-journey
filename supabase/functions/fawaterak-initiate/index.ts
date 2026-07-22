@@ -56,6 +56,27 @@ Deno.serve(async (req) => {
     if (!gw) return json({ error: "Fawaterak gateway not configured" }, 500);
     if (!gw.is_enabled) return json({ error: "بوابة فواتيرك غير مفعّلة حاليًا" }, 400);
 
+    // Phase 45: verify the requested payment_method_id is currently enabled
+    // on this platform AND was seen in the last Fawaterak sync (fresh window).
+    const cutoff = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+    const { data: methodRow } = await service
+      .from("payment_gateway_methods")
+      .select("id, is_enabled, last_seen_at")
+      .eq("gateway_id", gw.id)
+      .eq("method_key", String(body.payment_method_id))
+      .maybeSingle();
+    if (
+      !methodRow ||
+      !methodRow.is_enabled ||
+      !methodRow.last_seen_at ||
+      methodRow.last_seen_at < cutoff
+    ) {
+      return json(
+        { error: "طريقة الدفع المختارة غير متاحة حاليًا. حدّث الصفحة وحاول مرة أخرى." },
+        400,
+      );
+    }
+
     const { data: sec } = await service
       .from("payment_gateway_secrets")
       .select("config")

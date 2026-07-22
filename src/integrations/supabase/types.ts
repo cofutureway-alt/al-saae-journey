@@ -671,6 +671,50 @@ export type Database = {
           },
         ]
       }
+      payment_gateway_methods: {
+        Row: {
+          created_at: string
+          display_name: string
+          gateway_id: string
+          id: string
+          is_enabled: boolean
+          last_seen_at: string | null
+          method_key: string
+          order_index: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          gateway_id: string
+          id?: string
+          is_enabled?: boolean
+          last_seen_at?: string | null
+          method_key: string
+          order_index?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          gateway_id?: string
+          id?: string
+          is_enabled?: boolean
+          last_seen_at?: string | null
+          method_key?: string
+          order_index?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_gateway_methods_gateway_id_fkey"
+            columns: ["gateway_id"]
+            isOneToOne: false
+            referencedRelation: "payment_gateways"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_gateway_secrets: {
         Row: {
           config: Json

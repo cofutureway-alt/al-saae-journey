@@ -102,6 +102,20 @@ Deno.serve(async (req) => {
     const amountPiastres = Number(created?.amount_piastres || 0);
     if (!reference || amountPiastres <= 0) return json({ error: "Failed to create transaction" }, 500);
 
+    // Load enabled methods for this gateway (Phase 45).
+    const { data: methodRows } = await service
+      .from("payment_gateway_methods")
+      .select("method_key, is_enabled")
+      .eq("gateway_id", gwRow.id);
+    const allRows = (methodRows ?? []) as Array<{ method_key: string; is_enabled: boolean }>;
+    const enabledKeys = allRows.filter((r) => r.is_enabled).map((r) => r.method_key);
+    if (enabledKeys.length === 0) {
+      return json(
+        { error: "لا توجد طرق دفع مفعّلة لبوابة Kashier. تواصل مع الإدارة." },
+        400,
+      );
+    }
+
     // Kashier expects a plain decimal EGP string, 2 decimals.
     const amountStr = (amountPiastres / 100).toFixed(2);
     const currency = "EGP";
@@ -121,7 +135,7 @@ Deno.serve(async (req) => {
       hash,
       mode: mode === "live" ? "live" : "test",
       merchantRedirect: body.return_url,
-      allowedMethods: "card,wallet,bank_installments",
+      allowedMethods: enabledKeys.join(","),
       display: "ar",
       redirectMethod: "get",
     });

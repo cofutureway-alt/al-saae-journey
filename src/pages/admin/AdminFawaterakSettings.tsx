@@ -24,6 +24,7 @@ import {
   adminSaveFawaterakConfig,
   FawaterakConfig,
 } from "@/lib/fawaterak-api";
+import GatewayMethodsPanel from "@/components/admin/GatewayMethodsPanel";
 
 const WEBHOOK_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fawaterak-webhook`;
 
@@ -213,6 +214,10 @@ export default function AdminFawaterakSettings() {
           </div>
         </div>
       </motion.section>
+
+      <GatewayMethodsPanel gatewayKey="fawaterak" />
+
+
 
       <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="rounded-2xl border border-border bg-card overflow-hidden">
         <div className="p-5 border-b border-border flex items-center gap-3">

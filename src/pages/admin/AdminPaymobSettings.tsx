@@ -1,4 +1,4 @@
-import { useEffect, useState, KeyboardEvent } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -11,8 +11,6 @@ import {
   ShieldCheck,
   ExternalLink,
   Info,
-  X,
-  Plus,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -26,6 +24,7 @@ import {
   adminSavePaymobConfig,
   PaymobConfig,
 } from "@/lib/paymob-api";
+import GatewayMethodsPanel from "@/components/admin/GatewayMethodsPanel";
 
 const WEBHOOK_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/paymob-webhook`;
 
@@ -35,14 +34,12 @@ export default function AdminPaymobSettings() {
     secret_key: "",
     public_key: "",
     hmac_secret: "",
-    integration_ids: [],
   });
   const [gatewayEnabled, setGatewayEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
   const [showHmac, setShowHmac] = useState(false);
-  const [idInput, setIdInput] = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -68,38 +65,9 @@ export default function AdminPaymobSettings() {
     load();
   }, []);
 
-  const addIntegrationId = () => {
-    const n = Number(idInput.trim());
-    if (!Number.isFinite(n) || n <= 0) {
-      toast.error("أدخل رقم Integration ID صحيح");
-      return;
-    }
-    if (cfg.integration_ids.includes(n)) {
-      toast.error("هذا الـ Integration ID مضاف بالفعل");
-      return;
-    }
-    setCfg((c) => ({ ...c, integration_ids: [...c.integration_ids, n] }));
-    setIdInput("");
-  };
-
-  const removeIntegrationId = (id: number) => {
-    setCfg((c) => ({ ...c, integration_ids: c.integration_ids.filter((x) => x !== id) }));
-  };
-
-  const onIdKey = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" || e.key === ",") {
-      e.preventDefault();
-      addIntegrationId();
-    }
-  };
-
   const save = async () => {
     if (!cfg.secret_key.trim() || !cfg.public_key.trim() || !cfg.hmac_secret.trim()) {
       toast.error("أدخل Secret Key و Public Key و HMAC Secret");
-      return;
-    }
-    if (cfg.integration_ids.length === 0) {
-      toast.error("أضف Integration ID واحد على الأقل");
       return;
     }
     setSaving(true);
@@ -108,7 +76,6 @@ export default function AdminPaymobSettings() {
         secret_key: cfg.secret_key.trim(),
         public_key: cfg.public_key.trim(),
         hmac_secret: cfg.hmac_secret.trim(),
-        integration_ids: cfg.integration_ids,
       });
       toast.success("تم حفظ إعدادات PayMob");
     } catch (e: any) {
@@ -119,10 +86,7 @@ export default function AdminPaymobSettings() {
   };
 
   const toggleEnabled = async (next: boolean) => {
-    if (
-      next &&
-      (!cfg.secret_key || !cfg.public_key || !cfg.hmac_secret || cfg.integration_ids.length === 0)
-    ) {
+    if (next && (!cfg.secret_key || !cfg.public_key || !cfg.hmac_secret)) {
       toast.error("أكمل إعدادات PayMob قبل تفعيل البوابة");
       return;
     }
@@ -263,51 +227,6 @@ export default function AdminPaymobSettings() {
             </p>
           </div>
 
-          <div className="space-y-2">
-            <Label>Integration IDs</Label>
-            <div className="flex gap-2">
-              <Input
-                dir="ltr"
-                inputMode="numeric"
-                className="font-mono"
-                value={idInput}
-                onChange={(e) => setIdInput(e.target.value)}
-                onKeyDown={onIdKey}
-                placeholder="مثال: 123456"
-              />
-              <Button type="button" variant="outline" onClick={addIntegrationId}>
-                <Plus className="w-4 h-4 ml-1.5" />
-                إضافة
-              </Button>
-            </div>
-            {cfg.integration_ids.length > 0 ? (
-              <div className="flex flex-wrap gap-2 pt-1">
-                {cfg.integration_ids.map((id) => (
-                  <motion.span
-                    key={id}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 text-primary font-mono text-xs px-3 py-1"
-                  >
-                    {id}
-                    <button
-                      type="button"
-                      onClick={() => removeIntegrationId(id)}
-                      className="hover:text-destructive"
-                      aria-label="إزالة"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </motion.span>
-                ))}
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                من لوحة PayMob → Developers → Payment Integrations. أضف الـ IDs لكل طريقة دفع تريد إتاحتها (بطاقات، محفظة، ...).
-              </p>
-            )}
-          </div>
-
           <div className="flex justify-end">
             <Button onClick={save} disabled={saving}>
               {saving ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <Save className="w-4 h-4 ml-2" />}
@@ -316,6 +235,8 @@ export default function AdminPaymobSettings() {
           </div>
         </div>
       </motion.section>
+
+      <GatewayMethodsPanel gatewayKey="paymob" />
 
       <motion.section
         initial={{ opacity: 0, y: 8 }}

@@ -10,7 +10,6 @@ export interface PaymobConfig {
   secret_key: string;
   public_key: string;
   hmac_secret: string;
-  integration_ids: number[];
 }
 
 export function paymobReturnUrl(): string {
@@ -50,14 +49,10 @@ export async function adminGetPaymobConfig(): Promise<PaymobConfig | null> {
     .maybeSingle();
   if (error) throw error;
   const cfg = (data?.config ?? {}) as Partial<PaymobConfig>;
-  const ids = Array.isArray(cfg.integration_ids)
-    ? (cfg.integration_ids as any[]).map((v) => Number(v)).filter((n) => Number.isFinite(n) && n > 0)
-    : [];
   return {
     secret_key: cfg.secret_key ?? "",
     public_key: cfg.public_key ?? "",
     hmac_secret: cfg.hmac_secret ?? "",
-    integration_ids: ids,
   };
 }
 
@@ -69,10 +64,17 @@ export async function adminSavePaymobConfig(cfg: PaymobConfig): Promise<void> {
     .maybeSingle();
   if (gwErr) throw gwErr;
   if (!gw) throw new Error("PayMob gateway row missing");
+  // Preserve any other keys already in config (e.g. legacy integration_ids stays but is ignored).
+  const { data: existing } = await (supabase as any)
+    .from("payment_gateway_secrets")
+    .select("config")
+    .eq("gateway_id", gw.id)
+    .maybeSingle();
+  const merged = { ...(existing?.config ?? {}), ...cfg };
   const { error } = await (supabase as any)
     .from("payment_gateway_secrets")
     .upsert(
-      { gateway_id: gw.id, config: cfg, updated_at: new Date().toISOString() },
+      { gateway_id: gw.id, config: merged, updated_at: new Date().toISOString() },
       { onConflict: "gateway_id" },
     );
   if (error) throw error;
