@@ -43,6 +43,7 @@ export interface LessonRecord {
   video_url: string | null;
   unit_id: string;
   position: number;
+  unlock_quiz_id?: string | null;
 }
 
 interface FileRow {
