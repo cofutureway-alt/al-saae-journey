@@ -105,7 +105,7 @@ export default function WalletTopupModal({ open, onOpenChange, currentBalance, o
   const handleManualSubmit = async (args: { methodId: string; senderNumber: string; proofPath: string }) => {
     if (!amountPiastres) return;
     const data = await submitManualWalletTopup({
-      amountPiastres,
+      topupAmountPiastres: amountPiastres,
       methodId: args.methodId,
       senderNumber: args.senderNumber,
       proofPath: args.proofPath,
@@ -122,7 +122,7 @@ export default function WalletTopupModal({ open, onOpenChange, currentBalance, o
     try {
       const res = await initiateKashierPayment({
         purpose: "wallet_topup",
-        amountPiastres,
+        topupAmountPiastres: amountPiastres,
       });
       window.location.assign(res.redirect_url);
     } catch (e: any) {
