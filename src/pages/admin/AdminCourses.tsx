@@ -324,7 +324,9 @@ const AdminCourses = () => {
           <SelectContent>
             <SelectItem value="all">كل الحالات</SelectItem>
             <SelectItem value="published">منشورة</SelectItem>
+            <SelectItem value="coming_soon">قريبًا</SelectItem>
             <SelectItem value="draft">مسودة</SelectItem>
+
           </SelectContent>
         </Select>
       </motion.div>
