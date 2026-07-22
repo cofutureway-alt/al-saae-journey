@@ -44,6 +44,33 @@ export default function AdminPaymentGateways() {
   const [saving, setSaving] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [resetOpen, setResetOpen] = useState(false);
+  const [nameEdits, setNameEdits] = useState<Record<string, string>>({});
+  const [savingNameId, setSavingNameId] = useState<string | null>(null);
+
+  const saveDisplayName = async (g: Gateway) => {
+    const next = (nameEdits[g.id] ?? g.display_name).trim();
+    if (!next) {
+      toast.error("الاسم مطلوب");
+      return;
+    }
+    if (next === g.display_name) return;
+    setSavingNameId(g.id);
+    const { error } = await (supabase as any)
+      .from("payment_gateways")
+      .update({ display_name: next })
+      .eq("id", g.id);
+    setSavingNameId(null);
+    if (error) {
+      toast.error(error.message ?? "تعذّر حفظ الاسم");
+      return;
+    }
+    setGateways((prev) => prev.map((x) => (x.id === g.id ? { ...x, display_name: next } : x)));
+    setNameEdits((prev) => {
+      const { [g.id]: _, ...rest } = prev;
+      return rest;
+    });
+    toast.success("تم حفظ الاسم الجديد");
+  };
 
   const load = async () => {
     setLoading(true);
@@ -174,11 +201,38 @@ export default function AdminPaymentGateways() {
                 >
                   <Icon className="w-5 h-5" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold">{g.display_name}</div>
-                  <div className="text-xs text-muted-foreground font-mono mt-0.5">{g.gateway_key}</div>
+                <div className="flex-1 min-w-0 space-y-1">
+                  <Input
+                    value={nameEdits[g.id] ?? g.display_name}
+                    onChange={(e) =>
+                      setNameEdits((prev) => ({ ...prev, [g.id]: e.target.value }))
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") saveDisplayName(g);
+                    }}
+                    className="font-semibold h-9"
+                    placeholder="اسم البوابة الظاهر للطلاب"
+                  />
+                  <div className="text-xs text-muted-foreground font-mono">{g.gateway_key}</div>
                 </div>
                 <div className="flex items-center gap-3">
+                  {(nameEdits[g.id] !== undefined && nameEdits[g.id] !== g.display_name) && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => saveDisplayName(g)}
+                      disabled={savingNameId === g.id}
+                    >
+                      {savingNameId === g.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4 ml-1.5" />
+                          حفظ
+                        </>
+                      )}
+                    </Button>
+                  )}
                   <span
                     className={cn(
                       "text-xs font-semibold px-2 py-1 rounded",
