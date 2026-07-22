@@ -192,7 +192,8 @@ export default function PurchaseCourseModal({
 
   const gatewayIconFor = (key: string) => {
     if (key === "manual") return HandCoins;
-    if (key === "kashier") return CreditCard;
+    if (key === "manual") return HandCoins;
+    if (key === "kashier" || key === "paymob") return CreditCard;
     return WalletIcon;
   };
 
