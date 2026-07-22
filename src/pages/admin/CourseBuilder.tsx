@@ -77,8 +77,10 @@ import AssignmentModal, { type AssignmentRecord } from "@/components/admin/Assig
 interface Course {
   id: string;
   title: string;
-  status: "draft" | "published";
+  status: "draft" | "coming_soon" | "published";
+  scheduled_publish_at: string | null;
 }
+
 
 type ContentItem =
   | { kind: "lesson"; id: string; order: number; lesson: LessonRecord }
