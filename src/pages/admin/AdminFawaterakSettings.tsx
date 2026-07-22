@@ -24,6 +24,7 @@ import {
   adminSaveFawaterakConfig,
   FawaterakConfig,
 } from "@/lib/fawaterak-api";
+import GatewayMethodsPanel from "@/components/admin/GatewayMethodsPanel";
 
 const WEBHOOK_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fawaterak-webhook`;
 
