@@ -381,7 +381,7 @@ export default function PurchaseCourseModal({
                   </div>
                 )}
 
-                {isKashier && (
+                {(isKashier || isPaymob) && (
                   <motion.div
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -390,10 +390,10 @@ export default function PurchaseCourseModal({
                     <div className="p-4 space-y-2 text-sm">
                       <div className="flex items-center gap-2 font-bold">
                         <CreditCard className="w-4 h-4 text-primary" />
-                        الدفع الإلكتروني عبر Kashier
+                        الدفع الإلكتروني عبر {isKashier ? "Kashier" : "PayMob"}
                       </div>
                       <p className="text-xs text-muted-foreground leading-relaxed">
-                        سيتم تحويلك إلى صفحة Kashier الآمنة لإتمام الدفع بالبطاقة أو المحفظة الإلكترونية، ثم العودة تلقائيًا لتفعيل الدورة.
+                        سيتم تحويلك إلى صفحة الدفع الآمنة لإتمام العملية بالبطاقة أو المحفظة الإلكترونية، ثم العودة تلقائيًا لتفعيل الدورة.
                       </p>
                       <div className="pt-2 border-t border-primary/20 flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">المبلغ</span>
