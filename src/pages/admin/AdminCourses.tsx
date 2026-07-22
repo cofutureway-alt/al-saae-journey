@@ -100,7 +100,7 @@ const AdminCourses = () => {
       supabase
         .from("courses")
         .select(
-          "id, title, description, thumbnail_url, status, stage_id, created_at, stages(name), units(id, lessons(id))",
+          "id, title, description, thumbnail_url, status, stage_id, is_featured, created_at, stages(name), units(id, lessons(id))",
         )
         .order("created_at", { ascending: false }),
       supabase.from("stages").select("id, name").order("name"),
