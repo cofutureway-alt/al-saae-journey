@@ -49,6 +49,7 @@ export default function GatewayMethodsPanel({ gatewayKey }: Props) {
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
+  const [editingDesc, setEditingDesc] = useState("");
 
   const load = async () => {
     setLoading(true);
