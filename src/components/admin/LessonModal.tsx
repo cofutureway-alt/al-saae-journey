@@ -233,20 +233,21 @@ const LessonModal = ({ open, onOpenChange, unitId, lesson, nextPosition, onSaved
     try {
       if (isEdit || savedLessonId) {
         const idToUpdate = savedLessonId ?? lesson!.id;
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from("lessons")
           .update({
             title: values.title,
             description: values.description || null,
             video_provider: finalProvider,
             video_url: finalUrl,
+            unlock_quiz_id: unlockQuizId,
           })
           .eq("id", idToUpdate);
         if (error) throw error;
         toast.success("تم حفظ الدرس");
         onSaved();
       } else {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from("lessons")
           .insert({
             unit_id: unitId,
@@ -255,6 +256,7 @@ const LessonModal = ({ open, onOpenChange, unitId, lesson, nextPosition, onSaved
             video_provider: finalProvider,
             video_url: finalUrl,
             position: nextPosition,
+            unlock_quiz_id: unlockQuizId,
           })
           .select("id")
           .single();
