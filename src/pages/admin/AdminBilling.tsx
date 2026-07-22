@@ -456,7 +456,7 @@ export default function AdminBilling() {
       </motion.div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         <SummaryCard
           icon={<TrendingUp className="w-5 h-5" />}
           label="إجمالي الأرباح (نطاق الفلتر)"
