@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Switch } from "@/components/ui/switch";
 import { parseEgpToPiastres, piastresToEgpNumber, formatPiastres } from "@/lib/money";
 import { useSignedThumbnail } from "@/hooks/use-signed-thumbnail";
 
