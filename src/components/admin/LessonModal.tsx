@@ -155,11 +155,29 @@ const LessonModal = ({ open, onOpenChange, unitId, lesson, nextPosition, onSaved
     setVideoError(null);
     setThumbnail(null);
     setFiles([]);
+    setUnlockQuizId(lesson?.unlock_quiz_id ?? null);
     if (lesson?.video_url && lesson?.video_provider) {
       const parsed = parseVideoUrl(lesson.video_provider, lesson.video_url);
       if ("thumbnail" in parsed && parsed.thumbnail) setThumbnail(parsed.thumbnail);
     }
-  }, [open, lesson, reset]);
+
+    // Load quizzes in this lesson's course for the gate picker
+    (async () => {
+      const { data: u } = await supabase
+        .from("units")
+        .select("course_id")
+        .eq("id", unitId)
+        .maybeSingle();
+      const courseId = (u as any)?.course_id;
+      if (!courseId) return;
+      const { data: qs } = await (supabase as any)
+        .from("quizzes")
+        .select("id, title")
+        .eq("course_id", courseId)
+        .order("title");
+      setCourseQuizzes(((qs ?? []) as any[]).map((r) => ({ id: r.id, title: r.title })));
+    })();
+  }, [open, lesson, reset, unitId]);
 
   // Load lesson files when we have a lesson id
   useEffect(() => {
