@@ -169,6 +169,7 @@ const AdminCourses = () => {
         quizzes_count: quizzesByCourse[c.id] ?? 0,
         assignments_count: assignmentsByCourse[c.id] ?? 0,
         questions_count: questionsByCourse[c.id] ?? 0,
+        is_featured: !!c.is_featured,
       })),
     );
   }, []);
