@@ -223,6 +223,7 @@ const CourseInfoEditor = () => {
         price_piastres: pricePia,
         discount_price_piastres: discountPia,
         discount_expires_at: discountExp,
+        content_drip_enabled: !!values.content_drip_enabled,
       };
 
       if (isEdit) {
