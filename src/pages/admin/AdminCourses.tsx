@@ -88,6 +88,7 @@ const AdminCourses = () => {
   const [query, setQuery] = useState("");
   const [stageFilter, setStageFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [featuredFilter, setFeaturedFilter] = useState<"all" | "featured" | "not_featured">("all");
   const [deleting, setDeleting] = useState<CourseRow | null>(null);
   const [deletePending, setDeletePending] = useState(false);
   const [view, setView] = useState<"grid" | "table">("grid");
