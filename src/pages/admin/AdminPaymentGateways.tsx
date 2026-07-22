@@ -201,6 +201,12 @@ export default function AdminPaymentGateways() {
                       إعدادات
                     </Button>
                   )}
+                  {g.gateway_key === "paymob" && (
+                    <Button size="sm" variant="outline" onClick={() => navigate("/admin/payment-gateways/paymob")}>
+                      <Settings2 className="w-4 h-4 ml-1.5" />
+                      إعدادات
+                    </Button>
+                  )}
                   <Switch
                     checked={g.is_enabled}
                     disabled={togglingId === g.id}
