@@ -951,21 +951,37 @@ const CourseBuilder = () => {
     }
   };
 
-  // ---- Publish toggle ----
-  const togglePublish = async () => {
+  // ---- Lifecycle change (draft / coming_soon / published) ----
+  const [scheduleDraft, setScheduleDraft] = useState<string>("");
+  const changeLifecycle = async (
+    next: "draft" | "coming_soon" | "published",
+    scheduledAt: string | null = null,
+  ) => {
     if (!course) return;
-    const newStatus = course.status === "published" ? "draft" : "published";
     await markSaving(async () => {
+      const patch: any = { status: next };
+      if (next === "coming_soon") {
+        patch.scheduled_publish_at = scheduledAt;
+      } else {
+        patch.scheduled_publish_at = null;
+      }
       const { error } = await supabase
         .from("courses")
-        .update({ status: newStatus })
+        .update(patch)
         .eq("id", course.id);
       if (error) throw error;
     });
-    setCourse({ ...course, status: newStatus });
+    setCourse({ ...course, status: next, scheduled_publish_at: scheduledAt });
     setPublishOpen(false);
-    toast.success(newStatus === "published" ? "تم نشر الدورة" : "تم إرجاعها كمسودة");
+    toast.success(
+      next === "published"
+        ? "تم نشر الدورة"
+        : next === "coming_soon"
+          ? "تم ضبط الدورة كـ (قريبًا)"
+          : "تم إرجاعها كمسودة",
+    );
   };
+
 
   const openAddLesson = (unitId: string) => {
     setLessonUnitId(unitId);
