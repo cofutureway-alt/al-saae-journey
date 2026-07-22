@@ -718,25 +718,47 @@ function StudentCourseContentCard({
                         )}
                         {r.is_locked && r.reason === "drip" && <> · مقفل بالتسلسل</>}
                         {isQuiz && effMap[r.item_id] != null && (
-                          <> · محاولات فعّالة: {effMap[r.item_id]}</>
+                          <>
+                            {" · "}
+                            محاولات: {attemptsUsed[r.item_id] ?? 0} / {effMap[r.item_id]}
+                            {(attemptsUsed[r.item_id] ?? 0) >= effMap[r.item_id] && (
+                              <span className="text-amber-600"> · استنفد المحاولات</span>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
                     {isQuiz && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="gap-1 shrink-0"
-                        disabled={granting === r.item_id}
-                        onClick={() => doGrant(r.item_id)}
-                      >
-                        {granting === r.item_id ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          <Plus className="w-3.5 h-3.5" />
-                        )}
-                        محاولة
-                      </Button>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <input
+                          type="number"
+                          min={1}
+                          max={20}
+                          value={grantQty[r.item_id] ?? 1}
+                          onChange={(e) =>
+                            setGrantQty((m) => ({
+                              ...m,
+                              [r.item_id]: Math.max(1, Math.min(20, Number(e.target.value) || 1)),
+                            }))
+                          }
+                          className="w-14 h-8 rounded-md border border-border bg-background px-2 text-sm text-center"
+                          dir="ltr"
+                        />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1"
+                          disabled={granting === r.item_id}
+                          onClick={() => doGrant(r.item_id, grantQty[r.item_id] ?? 1)}
+                        >
+                          {granting === r.item_id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Plus className="w-3.5 h-3.5" />
+                          )}
+                          محاولات
+                        </Button>
+                      </div>
                     )}
                   </div>
                 );
