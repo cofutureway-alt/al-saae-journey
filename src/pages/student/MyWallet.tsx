@@ -13,6 +13,7 @@ import {
   Check,
   Inbox,
   Sparkles,
+  HandCoins,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,6 +23,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatPiastres } from "@/lib/money";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import WalletTopupModal from "@/components/wallet/WalletTopupModal";
+import MyPaymentRequests from "@/components/payments/MyPaymentRequests";
 
 type TxType =
   | "card_redemption"
@@ -30,7 +33,8 @@ type TxType =
   | "bulk_charge"
   | "bulk_deduct"
   | "purchase"
-  | "admin_reset";
+  | "admin_reset"
+  | "gateway_topup";
 
 interface WalletTransaction {
   id: string;
@@ -53,9 +57,10 @@ const TYPE_LABEL: Record<TxType, string> = {
   bulk_deduct: "خصم جماعي",
   purchase: "شراء كورس",
   admin_reset: "تصفير الرصيد",
+  gateway_topup: "شحن عبر بوابة دفع",
 };
 
-const CREDIT_TYPES: TxType[] = ["card_redemption", "admin_charge", "bulk_charge"];
+const CREDIT_TYPES: TxType[] = ["card_redemption", "admin_charge", "bulk_charge", "gateway_topup"];
 
 const isCredit = (t: TxType) => CREDIT_TYPES.includes(t);
 const isReset = (t: TxType) => t === "admin_reset";
