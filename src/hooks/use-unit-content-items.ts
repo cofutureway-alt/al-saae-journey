@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { listUnitQuizzes } from "@/lib/quiz-api";
+import { resolveCourseLockState, type CourseLockRow } from "@/lib/course-lock-api";
 
 /**
  * A generic content item that can be a lesson, a quiz, or an assignment.
