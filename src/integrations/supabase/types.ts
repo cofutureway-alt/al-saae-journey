@@ -422,8 +422,10 @@ export type Database = {
           id: string
           is_paid: boolean
           price_piastres: number | null
+          scheduled_publish_at: string | null
+          scheduled_publish_job_id: string | null
           stage_id: string | null
-          status: Database["public"]["Enums"]["course_status"]
+          status: string
           subject_id: string | null
           thumbnail_url: string | null
           title: string
@@ -439,8 +441,10 @@ export type Database = {
           id?: string
           is_paid?: boolean
           price_piastres?: number | null
+          scheduled_publish_at?: string | null
+          scheduled_publish_job_id?: string | null
           stage_id?: string | null
-          status?: Database["public"]["Enums"]["course_status"]
+          status?: string
           subject_id?: string | null
           thumbnail_url?: string | null
           title: string
@@ -456,8 +460,10 @@ export type Database = {
           id?: string
           is_paid?: boolean
           price_piastres?: number | null
+          scheduled_publish_at?: string | null
+          scheduled_publish_job_id?: string | null
           stage_id?: string | null
-          status?: Database["public"]["Enums"]["course_status"]
+          status?: string
           subject_id?: string | null
           thumbnail_url?: string | null
           title?: string
@@ -2044,6 +2050,7 @@ export type Database = {
         Args: { _assignment_id: string }
         Returns: boolean
       }
+      auto_publish_scheduled_courses: { Args: never; Returns: Json }
       create_pending_gateway_transaction: {
         Args: {
           p_course_id?: string
@@ -2466,7 +2473,6 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "student"
-      course_status: "draft" | "published"
       video_provider: "youtube" | "bunny" | "vimeo"
     }
     CompositeTypes: {
@@ -2596,7 +2602,6 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "student"],
-      course_status: ["draft", "published"],
       video_provider: ["youtube", "bunny", "vimeo"],
     },
   },

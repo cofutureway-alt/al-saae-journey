@@ -1,12 +1,14 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { BookOpen, Layers, ArrowLeft, ClipboardList, ClipboardCheck, HelpCircle, Tag } from "lucide-react";
+import { BookOpen, Layers, ArrowLeft, ClipboardList, ClipboardCheck, HelpCircle, Tag, Lock } from "lucide-react";
 import { useSignedThumbnail } from "@/hooks/use-signed-thumbnail";
 import { EightPointStar } from "@/components/IslamicPatterns";
 import type { PublicCourse } from "@/hooks/use-public-courses";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { formatPiastres, getEffectiveCoursePrice } from "@/lib/money";
+import { ComingSoonBadge, ComingSoonCountdown } from "@/components/ComingSoon";
+
 
 interface Props {
   course: PublicCourse;
@@ -17,6 +19,7 @@ interface Props {
 export const CourseCard = ({ course, index = 0, progress }: Props) => {
   const thumb = useSignedThumbnail(course.thumbnail_url);
   const price = getEffectiveCoursePrice(course);
+  const isComingSoon = course.status === "coming_soon";
 
   return (
     <motion.div
@@ -28,14 +31,20 @@ export const CourseCard = ({ course, index = 0, progress }: Props) => {
     >
       <Link
         to={`/courses/${course.id}`}
-        className="group block h-full rounded-2xl border border-border bg-card overflow-hidden shadow-md hover:shadow-2xl hover:border-primary/40 transition-all"
+        className={
+          "group block h-full rounded-2xl border border-border bg-card overflow-hidden shadow-md hover:shadow-2xl hover:border-primary/40 transition-all " +
+          (isComingSoon ? "ring-1 ring-amber-500/30" : "")
+        }
       >
         <div className="relative h-44 overflow-hidden bg-accent">
           {thumb ? (
             <img
               src={thumb}
               alt={course.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              className={
+                "w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 " +
+                (isComingSoon ? "grayscale-[35%]" : "")
+              }
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-muted-foreground">
@@ -43,6 +52,7 @@ export const CourseCard = ({ course, index = 0, progress }: Props) => {
             </div>
           )}
           <div className="absolute top-3 right-3 flex flex-col items-end gap-1.5">
+            {isComingSoon && <ComingSoonBadge />}
             {course.stage_name && (
               <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-background/95 backdrop-blur text-foreground border border-border shadow">
                 {course.stage_name}
@@ -91,7 +101,13 @@ export const CourseCard = ({ course, index = 0, progress }: Props) => {
             </span>
           </div>
 
-          {typeof progress === "number" && (
+          {isComingSoon && course.scheduled_publish_at && (
+            <div className="mt-4">
+              <ComingSoonCountdown target={course.scheduled_publish_at} />
+            </div>
+          )}
+
+          {typeof progress === "number" && !isComingSoon && (
             <div className="mt-4">
               <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-1.5">
                 <span>تقدّمك</span>
@@ -103,7 +119,11 @@ export const CourseCard = ({ course, index = 0, progress }: Props) => {
 
           <div className="mt-4 flex items-center justify-between gap-2">
             <div className="flex flex-col">
-              {price.isFree ? (
+              {isComingSoon ? (
+                <span className="text-sm font-bold text-amber-600 dark:text-amber-400">
+                  التسجيل لم يُفتح بعد
+                </span>
+              ) : price.isFree ? (
                 <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">مجانًا</span>
               ) : price.discountActive && price.originalAmount !== null ? (
                 <div className="flex items-baseline gap-2 flex-wrap">
@@ -119,17 +139,31 @@ export const CourseCard = ({ course, index = 0, progress }: Props) => {
               ) : (
                 <span className="text-base font-extrabold text-foreground">{formatPiastres(price.amount)}</span>
               )}
-              {typeof progress === "number" && (
+              {typeof progress === "number" && !isComingSoon && (
                 <span className="text-[10px] text-muted-foreground mt-0.5">تابع التعلم</span>
               )}
             </div>
             <Button
               variant="ghost"
               size="sm"
-              className="gap-1.5 font-bold group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
+              className={
+                "gap-1.5 font-bold transition-colors " +
+                (isComingSoon
+                  ? "text-muted-foreground"
+                  : "group-hover:bg-primary group-hover:text-primary-foreground")
+              }
             >
-              عرض الدورة
-              <ArrowLeft className="w-4 h-4" />
+              {isComingSoon ? (
+                <>
+                  <Lock className="w-4 h-4" />
+                  عرض التفاصيل
+                </>
+              ) : (
+                <>
+                  عرض الدورة
+                  <ArrowLeft className="w-4 h-4" />
+                </>
+              )}
             </Button>
           </div>
         </div>
@@ -139,3 +173,4 @@ export const CourseCard = ({ course, index = 0, progress }: Props) => {
 };
 
 export default CourseCard;
+

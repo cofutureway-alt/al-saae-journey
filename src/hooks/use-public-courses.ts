@@ -20,7 +20,10 @@ export interface PublicCourse {
   price_piastres: number | null;
   discount_price_piastres: number | null;
   discount_expires_at: string | null;
+  status: "draft" | "coming_soon" | "published";
+  scheduled_publish_at: string | null;
 }
+
 
 export function usePublicCourses(limit?: number) {
   const [courses, setCourses] = useState<PublicCourse[] | null>(null);
@@ -31,11 +34,12 @@ export function usePublicCourses(limit?: number) {
       let q = (supabase as any)
         .from("courses")
         .select(
-          "id, title, description, thumbnail_url, stage_id, subject_id, created_at, is_paid, price_piastres, discount_price_piastres, discount_expires_at, stages(name), subjects(name), units(id)",
+          "id, title, description, thumbnail_url, stage_id, subject_id, created_at, is_paid, price_piastres, discount_price_piastres, discount_expires_at, status, scheduled_publish_at, stages(name), subjects(name), units(id)",
         )
-        .eq("status", "published")
+        .in("status", ["published", "coming_soon"])
         .order("created_at", { ascending: false });
       if (limit) q = q.limit(limit);
+
       const { data, error } = await q;
       if (cancelled) return;
       if (error) {
@@ -120,7 +124,10 @@ export function usePublicCourses(limit?: number) {
           price_piastres: c.price_piastres ?? null,
           discount_price_piastres: c.discount_price_piastres ?? null,
           discount_expires_at: c.discount_expires_at ?? null,
+          status: (c.status ?? "published") as PublicCourse["status"],
+          scheduled_publish_at: c.scheduled_publish_at ?? null,
         })),
+
       );
     })();
     return () => {

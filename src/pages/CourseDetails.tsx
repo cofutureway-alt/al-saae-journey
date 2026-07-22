@@ -33,6 +33,8 @@ import { listUnitQuizzes } from "@/lib/quiz-api";
 import { getEffectiveCoursePrice, formatPiastres } from "@/lib/money";
 import PurchaseCourseModal from "@/components/course/PurchaseCourseModal";
 import DiscountCountdown from "@/components/DiscountCountdown";
+import { ComingSoonBadge, ComingSoonCountdown } from "@/components/ComingSoon";
+
 
 interface Course {
   id: string;
@@ -42,12 +44,14 @@ interface Course {
   stage_id: string | null;
   stage_name: string | null;
   subject_name: string | null;
-  status: "draft" | "published";
+  status: "draft" | "coming_soon" | "published";
   is_paid: boolean | null;
   price_piastres: number | null;
   discount_price_piastres: number | null;
   discount_expires_at: string | null;
+  scheduled_publish_at: string | null;
 }
+
 
 interface LessonLite {
   id: string;
@@ -99,7 +103,7 @@ const CourseDetails = () => {
     // Fetch course (RLS: published visible to all, admin sees all)
     const { data: cData, error: cErr } = await (supabase as any)
       .from("courses")
-      .select("id, title, description, thumbnail_url, stage_id, status, is_paid, price_piastres, discount_price_piastres, discount_expires_at, stages(name), subjects(name)")
+      .select("id, title, description, thumbnail_url, stage_id, status, is_paid, price_piastres, discount_price_piastres, discount_expires_at, scheduled_publish_at, stages(name), subjects(name)")
       .eq("id", id)
       .maybeSingle();
 
@@ -121,7 +125,9 @@ const CourseDetails = () => {
       price_piastres: cData.price_piastres ?? null,
       discount_price_piastres: cData.discount_price_piastres ?? null,
       discount_expires_at: cData.discount_expires_at ?? null,
+      scheduled_publish_at: (cData as any).scheduled_publish_at ?? null,
     });
+
 
     // Units
     const { data: uData } = await supabase
@@ -217,6 +223,10 @@ const CourseDetails = () => {
 
   const handleEnroll = async () => {
     if (!id) return;
+    if (course?.status === "coming_soon") {
+      toast.error("لا يمكن التسجيل في هذا الكورس حاليًا — سيتاح قريبًا");
+      return;
+    }
     if (!user) {
       navigate(`/login?redirect=/courses/${id}`);
       return;
@@ -247,6 +257,7 @@ const CourseDetails = () => {
       setEnrolling(false);
     }
   };
+
 
   const startCourse = () => {
     const all = units.flatMap((u) => u.lessons);
@@ -359,7 +370,10 @@ const CourseDetails = () => {
               onStart={startCourse}
               progress={progress}
               effective={effective}
+              comingSoon={course.status === "coming_soon"}
+              scheduledAt={course.scheduled_publish_at}
             />
+
             {course && (
               <PurchaseCourseModal
                 open={purchaseOpen}
@@ -457,7 +471,14 @@ const CourseHero = ({
               {course.status === "draft" && (
                 <Badge variant="secondary">مسودة (معاينة إدارية)</Badge>
               )}
+              {course.status === "coming_soon" && <ComingSoonBadge />}
             </div>
+            {course.status === "coming_soon" && course.scheduled_publish_at && (
+              <div className="mb-3">
+                <ComingSoonCountdown target={course.scheduled_publish_at} />
+              </div>
+            )}
+
             <h1 className="text-3xl md:text-5xl font-bold text-foreground mb-3">
               {course.title}
             </h1>
@@ -501,6 +522,8 @@ const EnrollCard = ({
   onStart,
   progress,
   effective,
+  comingSoon,
+  scheduledAt,
 }: {
   enrolled: boolean;
   isAdmin: boolean;
@@ -509,8 +532,16 @@ const EnrollCard = ({
   onStart: () => void;
   progress: number | null;
   effective: ReturnType<typeof getEffectiveCoursePrice>;
+  comingSoon: boolean;
+  scheduledAt: string | null;
 }) => {
   const isPaid = !effective.isFree;
+  const [shake, setShake] = useState(false);
+  const triggerLocked = () => {
+    setShake(true);
+    toast.error("لا يمكن التسجيل في هذا الكورس حاليًا — سيتاح قريبًا");
+    window.setTimeout(() => setShake(false), 500);
+  };
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -518,7 +549,18 @@ const EnrollCard = ({
       className="rounded-2xl border border-border bg-card overflow-hidden"
     >
       <div className="p-6 space-y-4">
-        {isPaid ? (
+        {comingSoon ? (
+          <div className="space-y-3">
+            <ComingSoonBadge />
+            <div className="text-2xl font-extrabold text-foreground">التسجيل لم يُفتح بعد</div>
+            {scheduledAt && (
+              <>
+                <div className="text-xs text-muted-foreground">يبدأ التسجيل بعد:</div>
+                <ComingSoonCountdown target={scheduledAt} />
+              </>
+            )}
+          </div>
+        ) : isPaid ? (
           <div className="space-y-2">
             <div className="flex items-baseline gap-3 flex-wrap">
               <span className="text-3xl font-bold text-foreground">
@@ -549,6 +591,11 @@ const EnrollCard = ({
           <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-3 text-sm flex items-start gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 mt-0.5" />
             <span>أنت مسجّل في هذه الدورة.</span>
+          </div>
+        ) : comingSoon ? (
+          <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-3 text-sm flex items-start gap-2">
+            <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5" />
+            <span>سنُعلن عن فتح التسجيل قريبًا — تابع الصفحة!</span>
           </div>
         ) : (
           <div className="rounded-lg bg-accent p-3 text-sm flex items-start gap-2">
@@ -584,6 +631,22 @@ const EnrollCard = ({
                 ? "متابعة التعلّم"
                 : "بدء الدورة"}
           </Button>
+        ) : comingSoon ? (
+          <motion.div
+            animate={shake ? { x: [0, -8, 8, -6, 6, -3, 3, 0] } : { x: 0 }}
+            transition={{ duration: 0.45 }}
+          >
+            <Button
+              type="button"
+              onClick={triggerLocked}
+              size="lg"
+              variant="secondary"
+              className="w-full font-bold cursor-not-allowed opacity-80"
+            >
+              <Lock className="w-5 h-5 ml-2" />
+              قريبًا — التسجيل مغلق
+            </Button>
+          </motion.div>
         ) : (
           <Button
             onClick={onEnroll}
@@ -597,6 +660,7 @@ const EnrollCard = ({
         )}
       </div>
     </motion.div>
+
   );
 };
 
