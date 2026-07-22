@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Clock, CheckCircle2, XCircle, Receipt, Image as ImageIcon, ExternalLink, Inbox, ChevronDown,
+  Clock, CheckCircle2, XCircle, Receipt, Image as ImageIcon, ExternalLink, Inbox, ChevronDown, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,10 +15,18 @@ import {
   getProofSignedUrl,
 } from "@/lib/manual-payment-api";
 
-const STATUS_META: Record<OwnPaymentRequest["status"], { label: string; color: string; bg: string; Icon: any }> = {
+const STATUS_META: Record<string, { label: string; color: string; bg: string; Icon: any }> = {
   pending_review: { label: "قيد المراجعة", color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-500/10 border-amber-500/30", Icon: Clock },
+  pending_gateway: { label: "بانتظار الدفع", color: "text-sky-600 dark:text-sky-400", bg: "bg-sky-500/10 border-sky-500/30", Icon: Loader2 },
   success:        { label: "تم القبول",     color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/30", Icon: CheckCircle2 },
   failed:         { label: "مرفوض",         color: "text-rose-600 dark:text-rose-400", bg: "bg-rose-500/10 border-rose-500/30", Icon: XCircle },
+};
+
+const FALLBACK_STATUS_META = {
+  label: "غير معروف",
+  color: "text-muted-foreground",
+  bg: "bg-muted border-border",
+  Icon: Receipt,
 };
 
 function formatDateAr(iso: string) {
@@ -84,7 +92,7 @@ export default function MyPaymentRequests({ reloadKey }: Props) {
       ) : (
         <div className="divide-y divide-border/50">
           {items.map((r, i) => {
-            const meta = STATUS_META[r.status];
+            const meta = STATUS_META[r.status] ?? FALLBACK_STATUS_META;
             const Icon = meta.Icon;
             const expanded = expandedId === r.transaction_id;
             const amount = r.purpose === "wallet_topup" ? r.topup_amount_piastres ?? 0 : r.amount_piastres;
@@ -137,7 +145,7 @@ export default function MyPaymentRequests({ reloadKey }: Props) {
                       <div className="px-4 pb-4 grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div className="rounded-xl bg-accent/40 p-3 text-sm space-y-1">
                           <Row label="البوابة" value={r.gateway_display_name} />
-                          {r.method_type && <Row label="الطريقة" value={METHOD_LABEL[r.method_type]} />}
+                          {r.method_type && <Row label="الطريقة" value={METHOD_LABEL[r.method_type] ?? r.method_type} />}
                           {r.method_account_number && <Row label="حساب الاستلام" value={r.method_account_number} mono />}
                           {r.sender_number && <Row label="رقم المُحوِّل" value={r.sender_number} mono />}
                         </div>
