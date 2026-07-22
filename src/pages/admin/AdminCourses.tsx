@@ -252,6 +252,20 @@ const AdminCourses = () => {
     }
   };
 
+  const toggleFeatured = async (c: CourseRow) => {
+    const next = !c.is_featured;
+    // optimistic
+    setCourses((prev) => prev ? prev.map((x) => x.id === c.id ? { ...x, is_featured: next } : x) : prev);
+    const { error } = await (supabase as any).from("courses").update({ is_featured: next }).eq("id", c.id);
+    if (error) {
+      setCourses((prev) => prev ? prev.map((x) => x.id === c.id ? { ...x, is_featured: !next } : x) : prev);
+      toast.error(error.message || "تعذّر تحديث حالة الإبراز");
+    } else {
+      toast.success(next ? "تم إبراز الدورة" : "تمّ إلغاء الإبراز");
+    }
+  };
+
+
   return (
     <div className="max-w-7xl mx-auto">
       <motion.div
