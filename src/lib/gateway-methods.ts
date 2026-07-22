@@ -7,6 +7,7 @@ export interface GatewayMethodRow {
   gateway_id: string;
   method_key: string;
   display_name: string;
+  description: string | null;
   is_enabled: boolean;
   order_index: number;
   last_seen_at: string | null;
