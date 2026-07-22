@@ -740,6 +740,7 @@ export type Database = {
           created_at: string
           failure_reason: string | null
           gateway_id: string
+          gateway_metadata: Json
           id: string
           purpose: string
           reference_number: string
@@ -758,6 +759,7 @@ export type Database = {
           created_at?: string
           failure_reason?: string | null
           gateway_id: string
+          gateway_metadata?: Json
           id?: string
           purpose?: string
           reference_number: string
@@ -776,6 +778,7 @@ export type Database = {
           created_at?: string
           failure_reason?: string | null
           gateway_id?: string
+          gateway_metadata?: Json
           id?: string
           purpose?: string
           reference_number?: string
@@ -1747,6 +1750,7 @@ export type Database = {
         }
         Returns: Json
       }
+      expire_stale_fawaterak_pending: { Args: never; Returns: number }
       finalize_gateway_transaction: {
         Args: {
           p_failure_reason?: string
