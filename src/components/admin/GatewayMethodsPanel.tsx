@@ -244,24 +244,33 @@ export default function GatewayMethodsPanel({ gatewayKey }: Props) {
                   </div>
                   <div className="flex-1 min-w-0">
                     {editing ? (
-                      <div className="flex items-center gap-2">
+                      <div className="space-y-2 w-full">
                         <Input
                           value={editingName}
                           onChange={(e) => setEditingName(e.target.value)}
                           className="h-8"
+                          placeholder="الاسم الظاهر للطالب"
                           autoFocus
                         />
-                        <Button size="sm" onClick={() => saveRename(row)} disabled={busyId === row.id}>
-                          حفظ
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setEditingId(null)}
-                          disabled={busyId === row.id}
-                        >
-                          إلغاء
-                        </Button>
+                        <Input
+                          value={editingDesc}
+                          onChange={(e) => setEditingDesc(e.target.value)}
+                          className="h-8"
+                          placeholder="وصف قصير (اختياري) — يظهر أسفل الاسم"
+                        />
+                        <div className="flex items-center gap-2">
+                          <Button size="sm" onClick={() => saveRename(row)} disabled={busyId === row.id}>
+                            حفظ
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setEditingId(null)}
+                            disabled={busyId === row.id}
+                          >
+                            إلغاء
+                          </Button>
+                        </div>
                       </div>
                     ) : (
                       <button
@@ -269,14 +278,34 @@ export default function GatewayMethodsPanel({ gatewayKey }: Props) {
                         onClick={() => {
                           setEditingId(row.id);
                           setEditingName(row.display_name);
+                          setEditingDesc(row.description ?? "");
                         }}
                         className="text-right block w-full"
                       >
                         <div className="font-semibold truncate hover:text-primary transition-colors">
                           {row.display_name}
                         </div>
-                        <div className="flex items-center gap-2 text-[11px] text-muted-foreground font-mono">
+                        {row.description && (
+                          <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                            {row.description}
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 text-[11px] text-muted-foreground font-mono mt-1 flex-wrap">
                           <span dir="ltr">{row.method_key}</span>
+                          {gatewayKey === "kashier" && (
+                            <span
+                              className={cn(
+                                "inline-flex items-center px-1.5 py-0.5 rounded not-italic font-sans text-[10px]",
+                                KASHIER_BNPL.has(row.method_key)
+                                  ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30"
+                                  : "bg-primary/10 text-primary border border-primary/20",
+                              )}
+                            >
+                              {KASHIER_BNPL.has(row.method_key)
+                                ? `BNPL — يُرسل كـ bnpl[${row.method_key}]`
+                                : "طريقة مباشرة"}
+                            </span>
+                          )}
                           {stale && (
                             <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 not-italic font-sans">
                               <Clock className="w-3 h-3" />
