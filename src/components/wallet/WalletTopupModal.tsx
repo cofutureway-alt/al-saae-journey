@@ -25,6 +25,7 @@ import {
   submitManualWalletTopup,
 } from "@/lib/manual-payment-api";
 import { initiateKashierPayment } from "@/lib/kashier-api";
+import { initiatePaymobPayment } from "@/lib/paymob-api";
 
 interface Props {
   open: boolean;
@@ -33,7 +34,7 @@ interface Props {
   onSubmitted?: () => void;
 }
 
-type GatewayKey = "manual" | "kashier";
+type GatewayKey = "manual" | "kashier" | "paymob";
 
 export default function WalletTopupModal({ open, onOpenChange, currentBalance, onSubmitted }: Props) {
   const [step, setStep] = useState<"amount" | "gateway" | "pay" | "done">("amount");
@@ -43,6 +44,7 @@ export default function WalletTopupModal({ open, onOpenChange, currentBalance, o
   const [methods, setMethods] = useState<ManualPaymentMethod[]>([]);
   const [manualEnabled, setManualEnabled] = useState(false);
   const [kashierEnabled, setKashierEnabled] = useState(false);
+  const [paymobEnabled, setPaymobEnabled] = useState(false);
   const [gateway, setGateway] = useState<GatewayKey | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -61,13 +63,14 @@ export default function WalletTopupModal({ open, onOpenChange, currentBalance, o
     (async () => {
       const [{ data: cfg }, { data: gws }, ms] = await Promise.all([
         (supabase as any).from("wallet_gateway_settings").select("max_wallet_balance_piastres").eq("id", 1).maybeSingle(),
-        (supabase as any).from("payment_gateways").select("gateway_key, is_enabled").in("gateway_key", ["manual", "kashier"]),
+        (supabase as any).from("payment_gateways").select("gateway_key, is_enabled").in("gateway_key", ["manual", "kashier", "paymob"]),
         listEnabledManualMethods().catch(() => []),
       ]);
       setMaxBalance(cfg?.max_wallet_balance_piastres ?? 200000);
       const list = (gws ?? []) as Array<{ gateway_key: string; is_enabled: boolean }>;
       setManualEnabled(!!list.find((g) => g.gateway_key === "manual")?.is_enabled);
       setKashierEnabled(!!list.find((g) => g.gateway_key === "kashier")?.is_enabled);
+      setPaymobEnabled(!!list.find((g) => g.gateway_key === "paymob")?.is_enabled);
       setMethods(ms);
       setLoading(false);
     })();
@@ -84,18 +87,19 @@ export default function WalletTopupModal({ open, onOpenChange, currentBalance, o
       return;
     }
     const manualAvailable = manualEnabled && methods.length > 0;
-    if (!manualAvailable && !kashierEnabled) {
+    const gatewaysAvailable = [
+      manualAvailable ? "manual" : null,
+      kashierEnabled ? "kashier" : null,
+      paymobEnabled ? "paymob" : null,
+    ].filter(Boolean) as GatewayKey[];
+    if (gatewaysAvailable.length === 0) {
       setError("لا توجد بوابة دفع خارجية متاحة حاليًا. جرّب استخدام كارت الشحن.");
       return;
     }
     setError(null);
     setAmountPiastres(p);
-    // If only one gateway is available, skip the picker.
-    if (manualAvailable && !kashierEnabled) {
-      setGateway("manual");
-      setStep("pay");
-    } else if (!manualAvailable && kashierEnabled) {
-      setGateway("kashier");
+    if (gatewaysAvailable.length === 1) {
+      setGateway(gatewaysAvailable[0]);
       setStep("pay");
     } else {
       setStep("gateway");
@@ -115,21 +119,23 @@ export default function WalletTopupModal({ open, onOpenChange, currentBalance, o
     onSubmitted?.();
   };
 
-  const handleKashierConfirm = async () => {
+  const handleGatewayConfirm = async (provider: "kashier" | "paymob") => {
     if (!amountPiastres || submitting) return;
     setSubmitting(true);
     setError(null);
     try {
-      const res = await initiateKashierPayment({
-        purpose: "wallet_topup",
-        topupAmountPiastres: amountPiastres,
-      });
+      const res =
+        provider === "kashier"
+          ? await initiateKashierPayment({ purpose: "wallet_topup", topupAmountPiastres: amountPiastres })
+          : await initiatePaymobPayment({ purpose: "wallet_topup", topupAmountPiastres: amountPiastres });
       window.location.assign(res.redirect_url);
     } catch (e: any) {
       setError(e?.message ?? "تعذّر بدء عملية الدفع");
       setSubmitting(false);
     }
   };
+  const handleKashierConfirm = () => handleGatewayConfirm("kashier");
+  const handlePaymobConfirm = () => handleGatewayConfirm("paymob");
 
   const manualAvailable = manualEnabled && methods.length > 0;
 
@@ -206,6 +212,22 @@ export default function WalletTopupModal({ open, onOpenChange, currentBalance, o
                       <ArrowRight className="w-4 h-4 text-muted-foreground" />
                     </button>
                   )}
+                  {paymobEnabled && (
+                    <button
+                      type="button"
+                      onClick={() => { setGateway("paymob"); setStep("pay"); }}
+                      className={cn(
+                        "w-full flex items-center gap-3 rounded-xl border border-border bg-card p-4 text-right hover:border-primary hover:bg-primary/5 transition-colors",
+                      )}
+                    >
+                      <CreditCard className="w-6 h-6 text-primary" />
+                      <div className="flex-1">
+                        <div className="font-bold">الدفع الإلكتروني (PayMob)</div>
+                        <div className="text-xs text-muted-foreground">بطاقة بنكية أو محفظة إلكترونية — تفعيل فوري</div>
+                      </div>
+                      <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                  )}
                   {manualAvailable && (
                     <button
                       type="button"
@@ -242,7 +264,7 @@ export default function WalletTopupModal({ open, onOpenChange, currentBalance, o
                   />
                   <button
                     type="button"
-                    onClick={() => setStep(kashierEnabled && manualAvailable ? "gateway" : "amount")}
+                    onClick={() => setStep((Number(kashierEnabled) + Number(paymobEnabled) + Number(manualAvailable)) > 1 ? "gateway" : "amount")}
                     className="text-xs text-muted-foreground hover:text-foreground w-full text-center"
                   >
                     رجوع
@@ -290,6 +312,54 @@ export default function WalletTopupModal({ open, onOpenChange, currentBalance, o
                   <button
                     type="button"
                     onClick={() => setStep(manualAvailable ? "gateway" : "amount")}
+                    className="text-xs text-muted-foreground hover:text-foreground w-full text-center"
+                    disabled={submitting}
+                  >
+                    رجوع
+                  </button>
+                </motion.div>
+              )}
+
+              {step === "pay" && amountPiastres && gateway === "paymob" && (
+                <motion.div key="pay-paymob" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-2 text-sm">
+                    <div className="flex items-center gap-2 font-bold">
+                      <CreditCard className="w-4 h-4 text-primary" />
+                      الدفع الإلكتروني عبر PayMob
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      سيتم تحويلك إلى صفحة PayMob الآمنة لإتمام الدفع، ثم العودة تلقائيًا وإضافة الرصيد إلى محفظتك.
+                    </p>
+                    <div className="pt-2 border-t border-primary/20 flex items-center justify-between">
+                      <span className="text-muted-foreground">المبلغ</span>
+                      <span className="font-bold text-base">{formatPiastres(amountPiastres)}</span>
+                    </div>
+                  </div>
+                  {error && (
+                    <div className="text-sm flex items-center gap-2 text-destructive">
+                      <AlertCircle className="w-4 h-4" /> {error}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <ShieldCheck className="w-3.5 h-3.5 text-primary" />
+                    تحويل آمن — سيتم إتمام الدفع على صفحة PayMob ثم العودة تلقائيًا.
+                  </div>
+                  <Button
+                    size="lg"
+                    className="w-full font-bold shadow-lg shadow-primary/20"
+                    disabled={submitting}
+                    onClick={handlePaymobConfirm}
+                  >
+                    {submitting ? (
+                      <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                    ) : (
+                      <ExternalLink className="w-4 h-4 ml-2" />
+                    )}
+                    المتابعة إلى PayMob
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={() => setStep((Number(kashierEnabled) + Number(paymobEnabled) + Number(manualAvailable)) > 1 ? "gateway" : "amount")}
                     className="text-xs text-muted-foreground hover:text-foreground w-full text-center"
                     disabled={submitting}
                   >

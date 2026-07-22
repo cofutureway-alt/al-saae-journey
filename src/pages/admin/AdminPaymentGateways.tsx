@@ -155,7 +155,7 @@ export default function AdminPaymentGateways() {
             const Icon =
               g.gateway_key === "manual"
                 ? HandCoins
-                : g.gateway_key === "kashier"
+                : g.gateway_key === "kashier" || g.gateway_key === "paymob"
                   ? CreditCard
                   : WalletIcon;
             return (
@@ -197,6 +197,12 @@ export default function AdminPaymentGateways() {
                   )}
                   {g.gateway_key === "kashier" && (
                     <Button size="sm" variant="outline" onClick={() => navigate("/admin/payment-gateways/kashier")}>
+                      <Settings2 className="w-4 h-4 ml-1.5" />
+                      إعدادات
+                    </Button>
+                  )}
+                  {g.gateway_key === "paymob" && (
+                    <Button size="sm" variant="outline" onClick={() => navigate("/admin/payment-gateways/paymob")}>
                       <Settings2 className="w-4 h-4 ml-1.5" />
                       إعدادات
                     </Button>

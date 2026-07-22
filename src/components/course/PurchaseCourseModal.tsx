@@ -28,6 +28,7 @@ import {
   submitManualCoursePayment,
 } from "@/lib/manual-payment-api";
 import { initiateKashierPayment } from "@/lib/kashier-api";
+import { initiatePaymobPayment } from "@/lib/paymob-api";
 
 interface Gateway {
   id: string;
@@ -115,6 +116,7 @@ export default function PurchaseCourseModal({
   const isWallet = selectedGateway?.gateway_key === "wallet";
   const isManual = selectedGateway?.gateway_key === "manual";
   const isKashier = selectedGateway?.gateway_key === "kashier";
+  const isPaymob = selectedGateway?.gateway_key === "paymob";
   const insufficient = isWallet && walletBalance !== null && walletBalance < amountPiastres;
   const balanceAfter = isWallet && walletBalance !== null ? walletBalance - amountPiastres : null;
 
@@ -144,17 +146,20 @@ export default function PurchaseCourseModal({
     }
   };
 
-  const handleKashierConfirm = async () => {
+  const handleGatewayRedirect = async (provider: "kashier" | "paymob") => {
     if (submitting) return;
     setSubmitting(true);
     setResult(null);
     try {
-      const res = await initiateKashierPayment({
-        purpose: "course_purchase",
-        courseId,
+      const res =
+        provider === "kashier"
+          ? await initiateKashierPayment({ purpose: "course_purchase", courseId })
+          : await initiatePaymobPayment({ purpose: "course_purchase", courseId });
+      setResult({
+        type: "redirecting",
+        reference: res.reference_number,
+        mode: (res as any).mode ?? "live",
       });
-      setResult({ type: "redirecting", reference: res.reference_number, mode: res.mode });
-      // Give the redirect UI a beat to render, then hand off to Kashier.
       setTimeout(() => {
         window.location.assign(res.redirect_url);
       }, 400);
@@ -163,6 +168,8 @@ export default function PurchaseCourseModal({
       setSubmitting(false);
     }
   };
+  const handleKashierConfirm = () => handleGatewayRedirect("kashier");
+  const handlePaymobConfirm = () => handleGatewayRedirect("paymob");
 
   const handleManualSubmit = async (args: {
     methodId: string;
@@ -185,7 +192,7 @@ export default function PurchaseCourseModal({
 
   const gatewayIconFor = (key: string) => {
     if (key === "manual") return HandCoins;
-    if (key === "kashier") return CreditCard;
+    if (key === "kashier" || key === "paymob") return CreditCard;
     return WalletIcon;
   };
 
@@ -374,7 +381,7 @@ export default function PurchaseCourseModal({
                   </div>
                 )}
 
-                {isKashier && (
+                {(isKashier || isPaymob) && (
                   <motion.div
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -383,10 +390,10 @@ export default function PurchaseCourseModal({
                     <div className="p-4 space-y-2 text-sm">
                       <div className="flex items-center gap-2 font-bold">
                         <CreditCard className="w-4 h-4 text-primary" />
-                        الدفع الإلكتروني عبر Kashier
+                        الدفع الإلكتروني عبر {isKashier ? "Kashier" : "PayMob"}
                       </div>
                       <p className="text-xs text-muted-foreground leading-relaxed">
-                        سيتم تحويلك إلى صفحة Kashier الآمنة لإتمام الدفع بالبطاقة أو المحفظة الإلكترونية، ثم العودة تلقائيًا لتفعيل الدورة.
+                        سيتم تحويلك إلى صفحة الدفع الآمنة لإتمام العملية بالبطاقة أو المحفظة الإلكترونية، ثم العودة تلقائيًا لتفعيل الدورة.
                       </p>
                       <div className="pt-2 border-t border-primary/20 flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">المبلغ</span>
@@ -425,24 +432,24 @@ export default function PurchaseCourseModal({
                   </>
                 )}
 
-                {isKashier && (
+                {(isKashier || isPaymob) && (
                   <>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <ShieldCheck className="w-3.5 h-3.5 text-primary" />
-                      تحويل آمن — سيتم إتمام الدفع على صفحة Kashier ثم العودة تلقائيًا.
+                      تحويل آمن — سيتم إتمام الدفع على صفحة {isKashier ? "Kashier" : "PayMob"} ثم العودة تلقائيًا.
                     </div>
                     <Button
                       size="lg"
                       className="w-full font-bold shadow-lg shadow-primary/20"
                       disabled={!selected || submitting}
-                      onClick={handleKashierConfirm}
+                      onClick={isKashier ? handleKashierConfirm : handlePaymobConfirm}
                     >
                       {submitting ? (
                         <Loader2 className="w-4 h-4 ml-2 animate-spin" />
                       ) : (
                         <ExternalLink className="w-4 h-4 ml-2" />
                       )}
-                      المتابعة إلى Kashier
+                      المتابعة إلى {isKashier ? "Kashier" : "PayMob"}
                     </Button>
                   </>
                 )}
