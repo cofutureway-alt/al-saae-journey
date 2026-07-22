@@ -628,12 +628,13 @@ function StudentCourseContentCard({
     // eslint-disable-next-line
   }, [open]);
 
-  const doGrant = async (quizId: string) => {
+  const doGrant = async (quizId: string, extra: number) => {
+    const n = Math.max(1, Math.floor(extra || 1));
     setGranting(quizId);
     try {
-      const res = await adminGrantQuizAttempt(userId, quizId, 1);
+      const res = await adminGrantQuizAttempt(userId, quizId, n);
       setEffMap((m) => ({ ...m, [quizId]: res.effective_max_attempts }));
-      toast.success("تم منح محاولة إضافية");
+      toast.success(`تم منح ${n} محاولة إضافية`);
     } catch (e: any) {
       toast.error(e?.message ?? "تعذّر منح المحاولة");
     } finally {
