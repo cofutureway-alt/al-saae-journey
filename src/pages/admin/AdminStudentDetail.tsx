@@ -327,9 +327,10 @@ export default function AdminStudentDetail() {
       </motion.div>
 
       <Tabs defaultValue="overview" dir="rtl">
-        <TabsList className="grid grid-cols-2 sm:grid-cols-5 w-full max-w-3xl">
+        <TabsList className="grid grid-cols-2 sm:grid-cols-6 w-full max-w-4xl">
           <TabsTrigger value="overview" className="gap-2"><User className="w-4 h-4" />نظرة عامة</TabsTrigger>
           <TabsTrigger value="enrollments" className="gap-2"><BookOpen className="w-4 h-4" />الكورسات</TabsTrigger>
+          <TabsTrigger value="content" className="gap-2"><ListTree className="w-4 h-4" />المحتوى</TabsTrigger>
           <TabsTrigger value="attempts" className="gap-2"><ClipboardList className="w-4 h-4" />المحاولات</TabsTrigger>
           <TabsTrigger value="wallet" className="gap-2"><WalletIcon className="w-4 h-4" />المحفظة</TabsTrigger>
           <TabsTrigger value="registration" className="gap-2"><FileText className="w-4 h-4" />البيانات</TabsTrigger>
