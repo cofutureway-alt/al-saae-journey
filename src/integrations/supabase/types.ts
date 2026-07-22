@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          detail: Json
+          id: string
+          target: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          detail?: Json
+          id?: string
+          target?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          detail?: Json
+          id?: string
+          target?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_audit_log_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard_eligible_students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_audit_log_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assignment_files: {
         Row: {
           assignment_id: string
@@ -145,7 +187,21 @@ export type Database = {
             foreignKeyName: "assignment_submissions_graded_by_fkey"
             columns: ["graded_by"]
             isOneToOne: false
+            referencedRelation: "leaderboard_eligible_students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignment_submissions_graded_by_fkey"
+            columns: ["graded_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignment_submissions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard_eligible_students"
             referencedColumns: ["id"]
           },
           {
@@ -306,6 +362,13 @@ export type Database = {
             foreignKeyName: "bundle_purchases_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "leaderboard_eligible_students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bundle_purchases_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -370,6 +433,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "bundles_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "leaderboard_eligible_students"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "bundles_created_by_fkey"
             columns: ["created_by"]
@@ -492,6 +562,13 @@ export type Database = {
             foreignKeyName: "courses_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "leaderboard_eligible_students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "courses_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -542,6 +619,13 @@ export type Database = {
             foreignKeyName: "enrollments_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "leaderboard_eligible_students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "enrollments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -578,6 +662,13 @@ export type Database = {
             columns: ["lesson_file_id"]
             isOneToOne: false
             referencedRelation: "lesson_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_file_downloads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard_eligible_students"
             referencedColumns: ["id"]
           },
           {
@@ -674,6 +765,13 @@ export type Database = {
             foreignKeyName: "lesson_progress_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "leaderboard_eligible_students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -738,6 +836,13 @@ export type Database = {
             foreignKeyName: "lesson_watch_progress_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "leaderboard_eligible_students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_watch_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -793,6 +898,54 @@ export type Database = {
             columns: ["unlock_quiz_id"]
             isOneToOne: false
             referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      levels: {
+        Row: {
+          created_at: string
+          icon_url: string | null
+          id: string
+          min_points: number
+          name: string
+          order_index: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          icon_url?: string | null
+          id?: string
+          min_points: number
+          name: string
+          order_index?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          icon_url?: string | null
+          id?: string
+          min_points?: number
+          name?: string
+          order_index?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "levels_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "leaderboard_eligible_students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "levels_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1074,7 +1227,21 @@ export type Database = {
             foreignKeyName: "payment_transactions_reviewed_by_fkey"
             columns: ["reviewed_by"]
             isOneToOne: false
+            referencedRelation: "leaderboard_eligible_students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_transactions_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard_eligible_students"
             referencedColumns: ["id"]
           },
           {
@@ -1089,6 +1256,138 @@ export type Database = {
             columns: ["wallet_transaction_id"]
             isOneToOne: false
             referencedRelation: "wallet_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      points_config: {
+        Row: {
+          event_key: string
+          id: string
+          points_value: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          event_key: string
+          id?: string
+          points_value?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          event_key?: string
+          id?: string
+          points_value?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "points_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "leaderboard_eligible_students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "points_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      points_ledger: {
+        Row: {
+          created_at: string
+          event_key: string
+          id: string
+          notes: string | null
+          points_delta: number
+          source_id: string | null
+          source_kind: string | null
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_key: string
+          id?: string
+          notes?: string | null
+          points_delta: number
+          source_id?: string | null
+          source_kind?: string | null
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          event_key?: string
+          id?: string
+          notes?: string | null
+          points_delta?: number
+          source_id?: string | null
+          source_kind?: string | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "points_ledger_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard_eligible_students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "points_ledger_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      points_purchase_thresholds: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          points_value: number
+          threshold_count: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          points_value?: number
+          threshold_count: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          points_value?: number
+          threshold_count?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "points_purchase_thresholds_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "leaderboard_eligible_students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "points_purchase_thresholds_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1339,6 +1638,13 @@ export type Database = {
             columns: ["quiz_id"]
             isOneToOne: false
             referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_attempts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard_eligible_students"
             referencedColumns: ["id"]
           },
           {
@@ -1677,6 +1983,13 @@ export type Database = {
             foreignKeyName: "top_up_cards_redeemed_by_fkey"
             columns: ["redeemed_by"]
             isOneToOne: false
+            referencedRelation: "leaderboard_eligible_students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "top_up_cards_redeemed_by_fkey"
+            columns: ["redeemed_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1831,6 +2144,13 @@ export type Database = {
             foreignKeyName: "wallet_transactions_performed_by_fkey"
             columns: ["performed_by"]
             isOneToOne: false
+            referencedRelation: "leaderboard_eligible_students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_transactions_performed_by_fkey"
+            columns: ["performed_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1877,6 +2197,13 @@ export type Database = {
             foreignKeyName: "wallets_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
+            referencedRelation: "leaderboard_eligible_students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1892,6 +2219,17 @@ export type Database = {
         }
         Relationships: []
       }
+      leaderboard_eligible_students: {
+        Row: {
+          avatar_url: string | null
+          first_earn_at: string | null
+          full_name: string | null
+          id: string | null
+          student_id: string | null
+          total_points: number | null
+        }
+        Relationships: []
+      }
       lessons_public: {
         Row: {
           id: string | null
@@ -1903,6 +2241,16 @@ export type Database = {
       }
     }
     Functions: {
+      _award_points: {
+        Args: {
+          p_delta_override?: number
+          p_event_key: string
+          p_source_id: string
+          p_source_kind: string
+          p_student: string
+        }
+        Returns: undefined
+      }
       _enroll_user_in_bundle: {
         Args: { _bundle_id: string; _user_id: string }
         Returns: number
@@ -1911,6 +2259,7 @@ export type Database = {
       _gen_payment_reference: { Args: never; Returns: string }
       _gen_txn_reference: { Args: never; Returns: string }
       _grade_answer: { Args: { _answer_id: string }; Returns: undefined }
+      _stable_uuid: { Args: { p: string }; Returns: string }
       add_answer_time: {
         Args: { _attempt_id: string; _delta: number; _question_id: string }
         Returns: undefined
@@ -2083,6 +2432,10 @@ export type Database = {
         Returns: boolean
       }
       auto_publish_scheduled_courses: { Args: never; Returns: Json }
+      award_admin_adjustment: {
+        Args: { p_delta: number; p_notes: string; p_student: string }
+        Returns: string
+      }
       create_pending_gateway_transaction: {
         Args: {
           p_course_id?: string
@@ -2231,6 +2584,18 @@ export type Database = {
       is_enrolled_in_lesson_course: {
         Args: { _lesson_id: string; _user_id: string }
         Returns: boolean
+      }
+      leaderboard_eligible_count: { Args: never; Returns: number }
+      leaderboard_top: {
+        Args: { p_limit: number; p_offset: number }
+        Returns: {
+          avatar_url: string
+          first_earn_at: string
+          full_name: string
+          rank: number
+          student_id: string
+          total_points: number
+        }[]
       }
       list_assignment_submissions:
         | {
@@ -2421,6 +2786,7 @@ export type Database = {
       purchase_bundle: { Args: { p_bundle_id: string }; Returns: Json }
       purchase_course: { Args: { p_course_id: string }; Returns: Json }
       redeem_top_up_card: { Args: { p_code: string }; Returns: Json }
+      reset_leaderboard: { Args: never; Returns: number }
       resolve_course_lock_state: {
         Args: { _course_id: string; _user_id: string }
         Returns: {
@@ -2436,6 +2802,11 @@ export type Database = {
         }[]
       }
       resolve_login_email: { Args: { _identifier: string }; Returns: string }
+      save_points_config: { Args: { p_updates: Json }; Returns: undefined }
+      save_purchase_thresholds: {
+        Args: { p_kind: string; p_rows: Json }
+        Returns: undefined
+      }
       save_quiz_answer: {
         Args: {
           _attempt_id: string
@@ -2447,6 +2818,25 @@ export type Database = {
         Returns: undefined
       }
       start_quiz_attempt: { Args: { _quiz_id: string }; Returns: string }
+      student_current_level: {
+        Args: { p_student: string }
+        Returns: {
+          created_at: string
+          icon_url: string | null
+          id: string
+          min_points: number
+          name: string
+          order_index: number
+          updated_at: string
+          updated_by: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "levels"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       student_effective_quiz_max_attempts: {
         Args: { _quiz_id: string; _user_id: string }
         Returns: number
@@ -2474,6 +2864,26 @@ export type Database = {
           transaction_id: string
         }[]
       }
+      student_next_level: {
+        Args: { p_student: string }
+        Returns: {
+          created_at: string
+          icon_url: string | null
+          id: string
+          min_points: number
+          name: string
+          order_index: number
+          updated_at: string
+          updated_by: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "levels"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      student_points_total: { Args: { p_student: string }; Returns: number }
       submit_manual_bundle_payment: {
         Args: {
           p_bundle_id: string
