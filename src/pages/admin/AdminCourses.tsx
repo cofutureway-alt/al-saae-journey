@@ -448,6 +448,21 @@ const AdminCourses = () => {
                       </Badge>
                     </td>
 
+                    <td className="p-3 text-center">
+                      <button
+                        type="button"
+                        onClick={() => toggleFeatured(c)}
+                        title={c.is_featured ? "إلغاء الإبراز" : "إبراز في الصفحة الرئيسية"}
+                        className={`inline-flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
+                          c.is_featured
+                            ? "text-amber-500 hover:bg-amber-500/10"
+                            : "text-muted-foreground/40 hover:text-amber-500 hover:bg-amber-500/10"
+                        }`}
+                      >
+                        <Star className={`w-4 h-4 ${c.is_featured ? "fill-current" : ""}`} />
+                      </button>
+                    </td>
+
                     <td className="p-3 hidden lg:table-cell text-xs text-muted-foreground">
                       {c.units_count} وحدة · {c.lessons_count} درس · {c.quizzes_count} اختبار · {c.assignments_count} واجب
                     </td>
