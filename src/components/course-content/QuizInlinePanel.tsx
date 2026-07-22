@@ -102,10 +102,11 @@ const QuizInlinePanel = ({ quizId, onAttemptCreated }: Props) => {
       };
     if (quiz.end_at && now > new Date(quiz.end_at).getTime())
       return { disabled: true, message: "انتهت الفترة المتاحة لبدء هذا الاختبار." };
-    if (finishedCount >= quiz.max_attempts)
+    const maxAllowed = effectiveMax ?? quiz.max_attempts;
+    if (finishedCount >= maxAllowed)
       return { disabled: true, message: "لقد استخدمت جميع المحاولات المتاحة لهذا الاختبار." };
     return { disabled: false, message: "" };
-  }, [quiz, user, now, finishedCount, inProgress]);
+  }, [quiz, user, now, finishedCount, inProgress, effectiveMax]);
 
   const handleStart = async () => {
     if (!quiz) return;
