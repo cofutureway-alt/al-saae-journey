@@ -26,6 +26,8 @@ import {
 } from "@/lib/manual-payment-api";
 import { initiateKashierPayment } from "@/lib/kashier-api";
 import { initiatePaymobPayment } from "@/lib/paymob-api";
+import { initiateFawaterakPayment, FawaterakMethod } from "@/lib/fawaterak-api";
+import FawaterakMethodPicker from "@/components/payments/FawaterakMethodPicker";
 
 interface Props {
   open: boolean;
@@ -34,7 +36,7 @@ interface Props {
   onSubmitted?: () => void;
 }
 
-type GatewayKey = "manual" | "kashier" | "paymob";
+type GatewayKey = "manual" | "kashier" | "paymob" | "fawaterak";
 
 export default function WalletTopupModal({ open, onOpenChange, currentBalance, onSubmitted }: Props) {
   const [step, setStep] = useState<"amount" | "gateway" | "pay" | "done">("amount");
@@ -45,11 +47,13 @@ export default function WalletTopupModal({ open, onOpenChange, currentBalance, o
   const [manualEnabled, setManualEnabled] = useState(false);
   const [kashierEnabled, setKashierEnabled] = useState(false);
   const [paymobEnabled, setPaymobEnabled] = useState(false);
+  const [fawaterakEnabled, setFawaterakEnabled] = useState(false);
   const [gateway, setGateway] = useState<GatewayKey | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reference, setReference] = useState<string | null>(null);
+  const [inlineCode, setInlineCode] = useState<{ code: string | null; expire_at: string | null } | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -59,11 +63,12 @@ export default function WalletTopupModal({ open, onOpenChange, currentBalance, o
     setGateway(null);
     setError(null);
     setReference(null);
+    setInlineCode(null);
     setLoading(true);
     (async () => {
       const [{ data: cfg }, { data: gws }, ms] = await Promise.all([
         (supabase as any).from("wallet_gateway_settings").select("max_wallet_balance_piastres").eq("id", 1).maybeSingle(),
-        (supabase as any).from("payment_gateways").select("gateway_key, is_enabled").in("gateway_key", ["manual", "kashier", "paymob"]),
+        (supabase as any).from("payment_gateways").select("gateway_key, is_enabled").in("gateway_key", ["manual", "kashier", "paymob", "fawaterak"]),
         listEnabledManualMethods().catch(() => []),
       ]);
       setMaxBalance(cfg?.max_wallet_balance_piastres ?? 200000);
@@ -71,6 +76,7 @@ export default function WalletTopupModal({ open, onOpenChange, currentBalance, o
       setManualEnabled(!!list.find((g) => g.gateway_key === "manual")?.is_enabled);
       setKashierEnabled(!!list.find((g) => g.gateway_key === "kashier")?.is_enabled);
       setPaymobEnabled(!!list.find((g) => g.gateway_key === "paymob")?.is_enabled);
+      setFawaterakEnabled(!!list.find((g) => g.gateway_key === "fawaterak")?.is_enabled);
       setMethods(ms);
       setLoading(false);
     })();
