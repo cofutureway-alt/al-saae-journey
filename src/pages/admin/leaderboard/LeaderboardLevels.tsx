@@ -20,7 +20,7 @@ type Level = {
   order_index: number;
 };
 
-const BUCKET = "public-assets";
+const BUCKET = "card-assets";
 
 export default function LeaderboardLevels() {
   const { data: levels, refetch, isLoading } = useLevels();
