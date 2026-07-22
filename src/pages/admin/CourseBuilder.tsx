@@ -622,9 +622,10 @@ const CourseBuilder = () => {
     if (!id) return;
     const { data: c, error: cErr } = await supabase
       .from("courses")
-      .select("id, title, status")
+      .select("id, title, status, scheduled_publish_at")
       .eq("id", id)
       .maybeSingle();
+
     if (cErr || !c) {
       toast.error("لم يتم العثور على الدورة");
       navigate("/admin/courses");
