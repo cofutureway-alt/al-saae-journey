@@ -169,6 +169,25 @@ export function useCourseContent(courseId: string | undefined) {
       );
     }
 
+    // Fetch server-side lock resolution for this student (if logged in)
+    let lockMap = new Map<string, CourseLockRow>();
+    if (user) {
+      try {
+        const rows = await resolveCourseLockState(courseId, user.id);
+        rows.forEach((r) => lockMap.set(`${r.item_type}-${r.item_id}`, r));
+      } catch {
+        // If RPC fails, treat everything as unlocked
+      }
+    }
+    const lockOf = (type: ContentItemType, id: string) => {
+      const r = lockMap.get(`${type}-${id}`);
+      return {
+        isLocked: r?.is_locked ?? false,
+        lockReason: (r?.reason ?? "ok") as ContentItem["lockReason"],
+        gateQuizTitle: r?.gate_quiz_title ?? null,
+      };
+    };
+
     const units: ContentUnit[] = uList.map((u) => {
       const uLessons: ContentItem[] = lessons
         .filter((l) => l.unit_id === u.id)
@@ -179,6 +198,7 @@ export function useCourseContent(courseId: string | undefined) {
           title: l.title,
           orderIndex: l.position,
           isCompleted: completedLessonIds.has(l.id),
+          ...lockOf("lesson", l.id),
           routePath: contentRoute(courseId, "lesson", l.id),
         }));
       const uQuizzes: ContentItem[] = (quizzesByUnit.get(u.id) ?? []).map((q: any) => ({
@@ -188,6 +208,7 @@ export function useCourseContent(courseId: string | undefined) {
         title: q.title,
         orderIndex: q.order_index,
         isCompleted: attemptedQuizIds.has(q.id),
+        ...lockOf("quiz", q.id),
         routePath: contentRoute(courseId, "quiz", q.id),
         extra: { durationMinutes: q.duration_minutes },
       }));
@@ -199,8 +220,8 @@ export function useCourseContent(courseId: string | undefined) {
           unitId: u.id,
           title: a.title,
           orderIndex: a.order_index,
-          // Phase 32: evaluated (passed OR failed) => complete.
           isCompleted: evaluatedAssignmentIds.has(a.id),
+          ...lockOf("assignment", a.id),
           routePath: contentRoute(courseId, "assignment", a.id),
           extra: { endAt: a.end_at },
         }));
