@@ -44,6 +44,33 @@ export default function AdminPaymentGateways() {
   const [saving, setSaving] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [resetOpen, setResetOpen] = useState(false);
+  const [nameEdits, setNameEdits] = useState<Record<string, string>>({});
+  const [savingNameId, setSavingNameId] = useState<string | null>(null);
+
+  const saveDisplayName = async (g: Gateway) => {
+    const next = (nameEdits[g.id] ?? g.display_name).trim();
+    if (!next) {
+      toast.error("الاسم مطلوب");
+      return;
+    }
+    if (next === g.display_name) return;
+    setSavingNameId(g.id);
+    const { error } = await (supabase as any)
+      .from("payment_gateways")
+      .update({ display_name: next })
+      .eq("id", g.id);
+    setSavingNameId(null);
+    if (error) {
+      toast.error(error.message ?? "تعذّر حفظ الاسم");
+      return;
+    }
+    setGateways((prev) => prev.map((x) => (x.id === g.id ? { ...x, display_name: next } : x)));
+    setNameEdits((prev) => {
+      const { [g.id]: _, ...rest } = prev;
+      return rest;
+    });
+    toast.success("تم حفظ الاسم الجديد");
+  };
 
   const load = async () => {
     setLoading(true);
