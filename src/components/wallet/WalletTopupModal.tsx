@@ -44,6 +44,7 @@ export default function WalletTopupModal({ open, onOpenChange, currentBalance, o
   const [methods, setMethods] = useState<ManualPaymentMethod[]>([]);
   const [manualEnabled, setManualEnabled] = useState(false);
   const [kashierEnabled, setKashierEnabled] = useState(false);
+  const [paymobEnabled, setPaymobEnabled] = useState(false);
   const [gateway, setGateway] = useState<GatewayKey | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
