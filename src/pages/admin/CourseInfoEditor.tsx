@@ -42,6 +42,7 @@ const schema = z
     price_egp: z.string().optional(),
     discount_price_egp: z.string().optional(),
     discount_expires_at: z.string().optional(),
+    content_drip_enabled: z.boolean().default(false),
   })
   .superRefine((val, ctx) => {
     if (val.is_paid) {
