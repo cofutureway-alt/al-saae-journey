@@ -119,27 +119,42 @@ Deno.serve(async (req) => {
     // Kashier expects a plain decimal EGP string, 2 decimals.
     const amountStr = (amountPiastres / 100).toFixed(2);
     const currency = "EGP";
-    const path = `/?payment=${merchantId}.${reference}.${amountStr}.${currency}`;
-    const hash = await hmacSha256Hex(secretKey, path);
+    // Kashier hosted-page order IDs must be unique per attempt; append a timestamp
+    // (matches the WooCommerce plugin behaviour: "<orderId>-<timestamp>").
+    const hostedOrderId = `${reference}-${Date.now()}`;
+    const path = `/?payment=${merchantId}.${hostedOrderId}.${amountStr}.${currency}`;
+    // IMPORTANT: Kashier's iframe/hosted-page hash uses the API KEY (not the secret key).
+    // The secret key is only used for server-to-server API calls and webhook verification.
+    const hash = await hmacSha256Hex(apiKey, path);
 
-    const host = mode === "live" ? "https://checkout.kashier.io" : "https://checkout.kashier.io";
-    // Kashier's Hosted Payment Page URL. Mode is signaled to Kashier by the merchant account itself;
-    // test-mode merchants receive test-processing on the same host per current Kashier docs.
-    // Historically Kashier also documented `test-iframe`/`iframe` subdomains; keep that for compatibility.
-    const legacyHost = mode === "live" ? "https://iframe.kashier.io" : "https://test-iframe.kashier.io";
+    // Map internal method keys → Kashier `allowedMethods` tokens.
+    // BNPL methods (valu, souhoola, aman, contact) must be wrapped as `bnpl[xxx]`.
+    const BNPL = new Set(["valu", "souhoola", "aman", "contact"]);
+    const toToken = (k: string) => (BNPL.has(k) ? `bnpl[${k}]` : k);
+    const allowedTokens = enabledKeys.map(toToken);
+
+    const supabaseFunctionsBase = supabaseUrl.replace(".supabase.co", ".functions.supabase.co");
+    const serverWebhook = `${supabaseFunctionsBase}/kashier-webhook`;
+
     const params = new URLSearchParams({
-      mid: merchantId,
-      orderId: reference,
+      merchantId,
+      orderId: hostedOrderId,
       amount: amountStr,
       currency,
       hash,
       mode: mode === "live" ? "live" : "test",
       merchantRedirect: body.return_url,
-      allowedMethods: enabledKeys.join(","),
-      display: "ar",
+      failureRedirect: "true",
       redirectMethod: "get",
+      display: "ar",
+      allowedMethods: allowedTokens.join(","),
+      serverWebhook,
     });
-    const redirectUrl = `${legacyHost}/?${params.toString()}`;
+    // When only one method is enabled, pre-select it for the shopper.
+    if (allowedTokens.length === 1) params.set("defaultMethod", allowedTokens[0]);
+
+    // Official Kashier Hosted Payment Page (same host for test and live; mode is a param).
+    const redirectUrl = `https://payments.kashier.io/?${params.toString()}`;
 
     return json({
       redirect_url: redirectUrl,
