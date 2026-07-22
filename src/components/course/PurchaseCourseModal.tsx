@@ -432,24 +432,24 @@ export default function PurchaseCourseModal({
                   </>
                 )}
 
-                {isKashier && (
+                {(isKashier || isPaymob) && (
                   <>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <ShieldCheck className="w-3.5 h-3.5 text-primary" />
-                      تحويل آمن — سيتم إتمام الدفع على صفحة Kashier ثم العودة تلقائيًا.
+                      تحويل آمن — سيتم إتمام الدفع على صفحة {isKashier ? "Kashier" : "PayMob"} ثم العودة تلقائيًا.
                     </div>
                     <Button
                       size="lg"
                       className="w-full font-bold shadow-lg shadow-primary/20"
                       disabled={!selected || submitting}
-                      onClick={handleKashierConfirm}
+                      onClick={isKashier ? handleKashierConfirm : handlePaymobConfirm}
                     >
                       {submitting ? (
                         <Loader2 className="w-4 h-4 ml-2 animate-spin" />
                       ) : (
                         <ExternalLink className="w-4 h-4 ml-2" />
                       )}
-                      المتابعة إلى Kashier
+                      المتابعة إلى {isKashier ? "Kashier" : "PayMob"}
                     </Button>
                   </>
                 )}
