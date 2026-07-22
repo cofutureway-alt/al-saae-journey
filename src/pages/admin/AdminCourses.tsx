@@ -58,6 +58,7 @@ interface CourseRow {
   quizzes_count: number;
   assignments_count: number;
   questions_count: number;
+  is_featured: boolean;
 }
 
 interface StageOpt {
