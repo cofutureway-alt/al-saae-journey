@@ -146,17 +146,20 @@ export default function PurchaseCourseModal({
     }
   };
 
-  const handleKashierConfirm = async () => {
+  const handleGatewayRedirect = async (provider: "kashier" | "paymob") => {
     if (submitting) return;
     setSubmitting(true);
     setResult(null);
     try {
-      const res = await initiateKashierPayment({
-        purpose: "course_purchase",
-        courseId,
+      const res =
+        provider === "kashier"
+          ? await initiateKashierPayment({ purpose: "course_purchase", courseId })
+          : await initiatePaymobPayment({ purpose: "course_purchase", courseId });
+      setResult({
+        type: "redirecting",
+        reference: res.reference_number,
+        mode: (res as any).mode ?? "live",
       });
-      setResult({ type: "redirecting", reference: res.reference_number, mode: res.mode });
-      // Give the redirect UI a beat to render, then hand off to Kashier.
       setTimeout(() => {
         window.location.assign(res.redirect_url);
       }, 400);
@@ -165,6 +168,8 @@ export default function PurchaseCourseModal({
       setSubmitting(false);
     }
   };
+  const handleKashierConfirm = () => handleGatewayRedirect("kashier");
+  const handlePaymobConfirm = () => handleGatewayRedirect("paymob");
 
   const handleManualSubmit = async (args: {
     methodId: string;
