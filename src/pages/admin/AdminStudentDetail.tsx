@@ -426,6 +426,26 @@ export default function AdminStudentDetail() {
           </div>
         </TabsContent>
 
+        {/* CONTENT (drip + gates + attempt grants) */}
+        <TabsContent value="content" className="mt-4">
+          <div className="space-y-4">
+            {enrollments.length === 0 ? (
+              <div className="rounded-2xl border border-border bg-card p-10 text-center text-muted-foreground">
+                لا يوجد كورسات مسجّلة.
+              </div>
+            ) : (
+              enrollments.map((e) => (
+                <StudentCourseContentCard
+                  key={e.course_id}
+                  courseId={e.course_id}
+                  courseTitle={e.course_title}
+                  userId={student.id}
+                />
+              ))
+            )}
+          </div>
+        </TabsContent>
+
         {/* ATTEMPTS */}
         <TabsContent value="attempts" className="mt-4">
           <div className="rounded-2xl border border-border bg-card overflow-hidden">
