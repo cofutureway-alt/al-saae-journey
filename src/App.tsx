@@ -70,6 +70,7 @@ const App = () => (
             <Route path="/courses" element={<Courses />} />
             <Route path="/courses/:id" element={<CourseDetails />} />
             <Route path="/s/:qrToken" element={<PublicStudentSnapshot />} />
+            <Route path="/payment/kashier/return" element={<PaymentKashierReturn />} />
             <Route
               path="/courses/:courseId/learn/:contentType/:contentId"
               element={
