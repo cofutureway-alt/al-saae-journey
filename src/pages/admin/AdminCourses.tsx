@@ -416,6 +416,7 @@ const AdminCourses = () => {
                   <th className="p-3 font-semibold">العنوان</th>
                   <th className="p-3 font-semibold hidden md:table-cell">المرحلة</th>
                   <th className="p-3 font-semibold">الحالة</th>
+                  <th className="p-3 font-semibold text-center w-16" title="مميّز على الصفحة الرئيسية">مميّز</th>
                   <th className="p-3 font-semibold hidden lg:table-cell">المحتوى</th>
                   <th className="p-3 font-semibold text-left">إجراءات</th>
                 </tr>
