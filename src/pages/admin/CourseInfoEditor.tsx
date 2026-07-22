@@ -589,6 +589,23 @@ const CourseInfoEditor = () => {
           />
         </div>
 
+        {/* Featured toggle */}
+        <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-4 md:p-5 flex items-start gap-4">
+          <div className="flex-1 min-w-0">
+            <Label className="text-base font-bold flex items-center gap-2">
+              <span className="text-amber-500">★</span> إبراز في الصفحة الرئيسية
+            </Label>
+            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+              عند التفعيل: تظهر الدورة في قسم "الدورات المميزة" على الصفحة الرئيسية (بحدّ أقصى 6 دورات، مرتبة بالأحدث تمييزًا).
+            </p>
+          </div>
+          <Switch
+            checked={!!isFeatured}
+            onCheckedChange={(v) => setValue("is_featured", v, { shouldDirty: true })}
+          />
+        </div>
+
+
         <div className="space-y-2">
           <Label>الصورة المصغّرة</Label>
           <div
