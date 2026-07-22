@@ -217,6 +217,170 @@ export type Database = {
           },
         ]
       }
+      bundle_courses: {
+        Row: {
+          bundle_id: string
+          course_id: string
+          created_at: string
+          position: number
+        }
+        Insert: {
+          bundle_id: string
+          course_id: string
+          created_at?: string
+          position?: number
+        }
+        Update: {
+          bundle_id?: string
+          course_id?: string
+          created_at?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bundle_courses_bundle_id_fkey"
+            columns: ["bundle_id"]
+            isOneToOne: false
+            referencedRelation: "bundles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bundle_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bundle_purchases: {
+        Row: {
+          amount_piastres: number
+          bundle_id: string
+          courses_included: number
+          created_at: string
+          id: string
+          payment_transaction_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount_piastres: number
+          bundle_id: string
+          courses_included: number
+          created_at?: string
+          id?: string
+          payment_transaction_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount_piastres?: number
+          bundle_id?: string
+          courses_included?: number
+          created_at?: string
+          id?: string
+          payment_transaction_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bundle_purchases_bundle_id_fkey"
+            columns: ["bundle_id"]
+            isOneToOne: false
+            referencedRelation: "bundles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bundle_purchases_payment_transaction_id_fkey"
+            columns: ["payment_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "payment_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bundle_purchases_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bundles: {
+        Row: {
+          cover_image_url: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          discount_expires_at: string | null
+          discount_price_piastres: number | null
+          id: string
+          is_paid: boolean
+          price_piastres: number | null
+          slug: string | null
+          stage_id: string | null
+          status: string
+          subject_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          cover_image_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          discount_expires_at?: string | null
+          discount_price_piastres?: number | null
+          id?: string
+          is_paid?: boolean
+          price_piastres?: number | null
+          slug?: string | null
+          stage_id?: string | null
+          status?: string
+          subject_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          cover_image_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          discount_expires_at?: string | null
+          discount_price_piastres?: number | null
+          id?: string
+          is_paid?: boolean
+          price_piastres?: number | null
+          slug?: string | null
+          stage_id?: string | null
+          status?: string
+          subject_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bundles_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bundles_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "stages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bundles_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       card_templates: {
         Row: {
           back_design: Json
@@ -796,6 +960,7 @@ export type Database = {
       payment_transactions: {
         Row: {
           amount_piastres: number
+          bundle_id: string | null
           course_id: string | null
           created_at: string
           failure_reason: string | null
@@ -815,6 +980,7 @@ export type Database = {
         }
         Insert: {
           amount_piastres: number
+          bundle_id?: string | null
           course_id?: string | null
           created_at?: string
           failure_reason?: string | null
@@ -834,6 +1000,7 @@ export type Database = {
         }
         Update: {
           amount_piastres?: number
+          bundle_id?: string | null
           course_id?: string | null
           created_at?: string
           failure_reason?: string | null
@@ -852,6 +1019,13 @@ export type Database = {
           wallet_transaction_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "payment_transactions_bundle_id_fkey"
+            columns: ["bundle_id"]
+            isOneToOne: false
+            referencedRelation: "bundles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "payment_transactions_course_id_fkey"
             columns: ["course_id"]
@@ -1691,6 +1865,10 @@ export type Database = {
       }
     }
     Functions: {
+      _enroll_user_in_bundle: {
+        Args: { _bundle_id: string; _user_id: string }
+        Returns: number
+      }
       _finalize_attempt: { Args: { _attempt_id: string }; Returns: undefined }
       _gen_payment_reference: { Args: never; Returns: string }
       _gen_txn_reference: { Args: never; Returns: string }
@@ -1732,6 +1910,24 @@ export type Database = {
           _user_id: string
         }
         Returns: Json
+      }
+      admin_list_bundles: {
+        Args: never
+        Returns: {
+          courses_count: number
+          cover_image_url: string
+          created_at: string
+          discount_expires_at: string
+          discount_price_piastres: number
+          id: string
+          is_paid: boolean
+          price_piastres: number
+          purchases_count: number
+          revenue_piastres: number
+          slug: string
+          status: string
+          title: string
+        }[]
       }
       admin_list_payment_requests: {
         Args: {
@@ -1857,6 +2053,7 @@ export type Database = {
         }
         Returns: Json
       }
+      effective_bundle_price: { Args: { _bundle_id: string }; Returns: number }
       expire_stale_fawaterak_pending: { Args: never; Returns: number }
       finalize_gateway_transaction: {
         Args: {
@@ -2182,6 +2379,7 @@ export type Database = {
             }[]
           }
       next_unit_order_index: { Args: { _unit_id: string }; Returns: number }
+      purchase_bundle: { Args: { p_bundle_id: string }; Returns: Json }
       purchase_course: { Args: { p_course_id: string }; Returns: Json }
       redeem_top_up_card: { Args: { p_code: string }; Returns: Json }
       resolve_course_lock_state: {
@@ -2236,6 +2434,15 @@ export type Database = {
           topup_amount_piastres: number
           transaction_id: string
         }[]
+      }
+      submit_manual_bundle_payment: {
+        Args: {
+          p_bundle_id: string
+          p_method_id: string
+          p_proof_image_url: string
+          p_sender_number: string
+        }
+        Returns: Json
       }
       submit_manual_course_payment: {
         Args: {
