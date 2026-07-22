@@ -374,6 +374,28 @@ export default function PurchaseCourseModal({
                   </div>
                 )}
 
+                {isKashier && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="rounded-xl border border-primary/20 bg-primary/5 overflow-hidden"
+                  >
+                    <div className="p-4 space-y-2 text-sm">
+                      <div className="flex items-center gap-2 font-bold">
+                        <CreditCard className="w-4 h-4 text-primary" />
+                        الدفع الإلكتروني عبر Kashier
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        سيتم تحويلك إلى صفحة Kashier الآمنة لإتمام الدفع بالبطاقة أو المحفظة الإلكترونية، ثم العودة تلقائيًا لتفعيل الدورة.
+                      </p>
+                      <div className="pt-2 border-t border-primary/20 flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">المبلغ</span>
+                        <span className="font-bold text-base">{formatPiastres(amountPiastres)}</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
                 {result?.type === "error" && (
                   <div className="rounded-lg bg-rose-500/10 border border-rose-500/20 p-3 text-sm flex items-start gap-2">
                     <AlertCircle className="w-4 h-4 text-rose-600 mt-0.5 shrink-0" />
@@ -402,6 +424,32 @@ export default function PurchaseCourseModal({
                     </Button>
                   </>
                 )}
+
+                {isKashier && (
+                  <>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <ShieldCheck className="w-3.5 h-3.5 text-primary" />
+                      تحويل آمن — سيتم إتمام الدفع على صفحة Kashier ثم العودة تلقائيًا.
+                    </div>
+                    <Button
+                      size="lg"
+                      className="w-full font-bold shadow-lg shadow-primary/20"
+                      disabled={!selected || submitting}
+                      onClick={handleKashierConfirm}
+                    >
+                      {submitting ? (
+                        <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                      ) : (
+                        <ExternalLink className="w-4 h-4 ml-2" />
+                      )}
+                      المتابعة إلى Kashier
+                    </Button>
+                  </>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
               </motion.div>
             )}
           </AnimatePresence>
