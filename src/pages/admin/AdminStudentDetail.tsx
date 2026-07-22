@@ -654,8 +654,13 @@ function StudentCourseContentCard({
           </div>
           <div className="min-w-0">
             <div className="font-bold truncate">{courseTitle}</div>
-            <div className="text-xs text-muted-foreground">
-              {open ? "إخفاء" : "عرض"} المحتوى وحالة الأقفال
+            <div className="text-xs text-muted-foreground flex flex-wrap gap-x-3 gap-y-0.5">
+              {subjectName && <span>{subjectName}</span>}
+              {stageName && <span>{stageName}</span>}
+              {enrolledAt && (
+                <span dir="ltr">{new Date(enrolledAt).toLocaleDateString("ar-EG")}</span>
+              )}
+              <span>{open ? "إخفاء" : "عرض"} المحتوى وحالة الأقفال</span>
             </div>
           </div>
         </div>
