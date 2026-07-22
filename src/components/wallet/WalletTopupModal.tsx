@@ -105,7 +105,7 @@ export default function WalletTopupModal({ open, onOpenChange, currentBalance, o
   const handleManualSubmit = async (args: { methodId: string; senderNumber: string; proofPath: string }) => {
     if (!amountPiastres) return;
     const data = await submitManualWalletTopup({
-      topupAmountPiastres: amountPiastres,
+      amountPiastres,
       methodId: args.methodId,
       senderNumber: args.senderNumber,
       proofPath: args.proofPath,
