@@ -211,6 +211,14 @@ export default function AdminStudentDetail() {
     };
   }, [attempts]);
 
+  const attemptsUsedByQuiz = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const a of attempts) {
+      m[a.quiz_id] = Math.max(m[a.quiz_id] ?? 0, a.attempt_number ?? 0);
+    }
+    return m;
+  }, [attempts]);
+
   if (loading || !student) {
     return (
       <div className="max-w-6xl mx-auto space-y-6">
