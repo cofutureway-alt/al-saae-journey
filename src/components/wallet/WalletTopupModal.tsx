@@ -119,21 +119,23 @@ export default function WalletTopupModal({ open, onOpenChange, currentBalance, o
     onSubmitted?.();
   };
 
-  const handleKashierConfirm = async () => {
+  const handleGatewayConfirm = async (provider: "kashier" | "paymob") => {
     if (!amountPiastres || submitting) return;
     setSubmitting(true);
     setError(null);
     try {
-      const res = await initiateKashierPayment({
-        purpose: "wallet_topup",
-        topupAmountPiastres: amountPiastres,
-      });
+      const res =
+        provider === "kashier"
+          ? await initiateKashierPayment({ purpose: "wallet_topup", topupAmountPiastres: amountPiastres })
+          : await initiatePaymobPayment({ purpose: "wallet_topup", topupAmountPiastres: amountPiastres });
       window.location.assign(res.redirect_url);
     } catch (e: any) {
       setError(e?.message ?? "تعذّر بدء عملية الدفع");
       setSubmitting(false);
     }
   };
+  const handleKashierConfirm = () => handleGatewayConfirm("kashier");
+  const handlePaymobConfirm = () => handleGatewayConfirm("paymob");
 
   const manualAvailable = manualEnabled && methods.length > 0;
 
