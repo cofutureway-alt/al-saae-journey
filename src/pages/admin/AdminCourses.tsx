@@ -48,7 +48,7 @@ interface CourseRow {
   title: string;
   description: string | null;
   thumbnail_url: string | null;
-  status: "draft" | "published";
+  status: "draft" | "coming_soon" | "published";
   stage_id: string | null;
   created_at: string;
   stage_name: string | null;
