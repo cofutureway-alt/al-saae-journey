@@ -249,6 +249,7 @@ export type Database = {
       }
       courses: {
         Row: {
+          content_drip_enabled: boolean
           created_at: string
           created_by: string | null
           description: string | null
@@ -265,6 +266,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          content_drip_enabled?: boolean
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -281,6 +283,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          content_drip_enabled?: boolean
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -560,6 +563,7 @@ export type Database = {
           position: number
           title: string
           unit_id: string
+          unlock_quiz_id: string | null
           updated_at: string
           video_provider: Database["public"]["Enums"]["video_provider"] | null
           video_url: string | null
@@ -571,6 +575,7 @@ export type Database = {
           position?: number
           title: string
           unit_id: string
+          unlock_quiz_id?: string | null
           updated_at?: string
           video_provider?: Database["public"]["Enums"]["video_provider"] | null
           video_url?: string | null
@@ -582,6 +587,7 @@ export type Database = {
           position?: number
           title?: string
           unit_id?: string
+          unlock_quiz_id?: string | null
           updated_at?: string
           video_provider?: Database["public"]["Enums"]["video_provider"] | null
           video_url?: string | null
@@ -592,6 +598,13 @@ export type Database = {
             columns: ["unit_id"]
             isOneToOne: false
             referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lessons_unlock_quiz_id_fkey"
+            columns: ["unlock_quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
             referencedColumns: ["id"]
           },
         ]
@@ -1356,6 +1369,44 @@ export type Database = {
         }
         Relationships: []
       }
+      student_quiz_attempt_grants: {
+        Row: {
+          created_at: string
+          extra_attempts: number
+          granted_by: string | null
+          id: string
+          note: string | null
+          quiz_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          extra_attempts?: number
+          granted_by?: string | null
+          id?: string
+          note?: string | null
+          quiz_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          extra_attempts?: number
+          granted_by?: string | null
+          id?: string
+          note?: string | null
+          quiz_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_quiz_attempt_grants_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subjects: {
         Row: {
           created_at: string
@@ -1673,6 +1724,15 @@ export type Database = {
         Returns: Json
       }
       admin_get_student: { Args: { _uid: string }; Returns: Json }
+      admin_grant_quiz_attempt: {
+        Args: {
+          _extra?: number
+          _note?: string
+          _quiz_id: string
+          _user_id: string
+        }
+        Returns: Json
+      }
       admin_list_payment_requests: {
         Args: {
           _limit?: number
@@ -2124,6 +2184,20 @@ export type Database = {
       next_unit_order_index: { Args: { _unit_id: string }; Returns: number }
       purchase_course: { Args: { p_course_id: string }; Returns: Json }
       redeem_top_up_card: { Args: { p_code: string }; Returns: Json }
+      resolve_course_lock_state: {
+        Args: { _course_id: string; _user_id: string }
+        Returns: {
+          gate_quiz_id: string
+          gate_quiz_title: string
+          is_completed: boolean
+          is_locked: boolean
+          item_id: string
+          item_type: string
+          ord: number
+          reason: string
+          unit_id: string
+        }[]
+      }
       resolve_login_email: { Args: { _identifier: string }; Returns: string }
       save_quiz_answer: {
         Args: {
@@ -2136,6 +2210,10 @@ export type Database = {
         Returns: undefined
       }
       start_quiz_attempt: { Args: { _quiz_id: string }; Returns: string }
+      student_effective_quiz_max_attempts: {
+        Args: { _quiz_id: string; _user_id: string }
+        Returns: number
+      }
       student_list_own_payment_requests: {
         Args: never
         Returns: {

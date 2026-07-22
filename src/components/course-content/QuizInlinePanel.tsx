@@ -23,6 +23,7 @@ import {
   type QuizAttempt,
   type QuizMeta,
 } from "@/lib/quiz-api";
+import { effectiveMaxAttempts } from "@/lib/course-lock-api";
 import { useAuth } from "@/contexts/AuthContext";
 import AttemptDetailsModal from "@/components/quiz/AttemptDetailsModal";
 
@@ -51,6 +52,7 @@ const QuizInlinePanel = ({ quizId, onAttemptCreated }: Props) => {
   const [starting, setStarting] = useState(false);
   const [detailsAttemptId, setDetailsAttemptId] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const [effectiveMax, setEffectiveMax] = useState<number | null>(null);
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 30_000);
@@ -64,12 +66,20 @@ const QuizInlinePanel = ({ quizId, onAttemptCreated }: Props) => {
       const [q, a] = await Promise.all([fetchQuizMeta(quizId), listMyAttempts(quizId)]);
       setQuiz(q);
       setAttempts(a);
+      if (user) {
+        try {
+          const eff = await effectiveMaxAttempts(user.id, quizId);
+          setEffectiveMax(eff);
+        } catch {
+          setEffectiveMax(null);
+        }
+      }
     } catch (e: any) {
       toast.error(e?.message || "تعذّر تحميل الاختبار");
     } finally {
       setLoading(false);
     }
-  }, [quizId]);
+  }, [quizId, user?.id]);
 
   useEffect(() => {
     if (!authLoading) load();
@@ -92,10 +102,11 @@ const QuizInlinePanel = ({ quizId, onAttemptCreated }: Props) => {
       };
     if (quiz.end_at && now > new Date(quiz.end_at).getTime())
       return { disabled: true, message: "انتهت الفترة المتاحة لبدء هذا الاختبار." };
-    if (finishedCount >= quiz.max_attempts)
+    const maxAllowed = effectiveMax ?? quiz.max_attempts;
+    if (finishedCount >= maxAllowed)
       return { disabled: true, message: "لقد استخدمت جميع المحاولات المتاحة لهذا الاختبار." };
     return { disabled: false, message: "" };
-  }, [quiz, user, now, finishedCount, inProgress]);
+  }, [quiz, user, now, finishedCount, inProgress, effectiveMax]);
 
   const handleStart = async () => {
     if (!quiz) return;
@@ -149,7 +160,11 @@ const QuizInlinePanel = ({ quizId, onAttemptCreated }: Props) => {
             <MetaCard
               icon={<Repeat className="w-4 h-4" />}
               label="المحاولات"
-              value={`${finishedCount} / ${quiz.max_attempts}`}
+              value={
+                effectiveMax != null && effectiveMax > quiz.max_attempts
+                  ? `${finishedCount} / ${effectiveMax} (+${effectiveMax - quiz.max_attempts})`
+                  : `${finishedCount} / ${quiz.max_attempts}`
+              }
             />
             {(quiz.start_at || quiz.end_at) ? (
               <MetaCard

@@ -634,7 +634,7 @@ const CourseBuilder = () => {
       supabase
         .from("units")
         .select(
-          "id, title, description, position, lessons(id, title, description, video_provider, video_url, unit_id, position)",
+          "id, title, description, position, lessons(id, title, description, video_provider, video_url, unit_id, position, unlock_quiz_id)",
         )
         .eq("course_id", id)
         .order("position"),

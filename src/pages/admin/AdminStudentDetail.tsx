@@ -22,7 +22,12 @@ import {
   Focus,
   Trophy,
   Wallet as WalletIcon,
+  Lock,
+  Unlock,
+  Plus,
+  ListTree,
 } from "lucide-react";
+import { resolveCourseLockState, adminGrantQuizAttempt, effectiveMaxAttempts, type CourseLockRow } from "@/lib/course-lock-api";
 import AdminWalletAdjustPanel from "@/components/admin/AdminWalletAdjustPanel";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -322,9 +327,10 @@ export default function AdminStudentDetail() {
       </motion.div>
 
       <Tabs defaultValue="overview" dir="rtl">
-        <TabsList className="grid grid-cols-2 sm:grid-cols-5 w-full max-w-3xl">
+        <TabsList className="grid grid-cols-2 sm:grid-cols-6 w-full max-w-4xl">
           <TabsTrigger value="overview" className="gap-2"><User className="w-4 h-4" />نظرة عامة</TabsTrigger>
           <TabsTrigger value="enrollments" className="gap-2"><BookOpen className="w-4 h-4" />الكورسات</TabsTrigger>
+          <TabsTrigger value="content" className="gap-2"><ListTree className="w-4 h-4" />المحتوى</TabsTrigger>
           <TabsTrigger value="attempts" className="gap-2"><ClipboardList className="w-4 h-4" />المحاولات</TabsTrigger>
           <TabsTrigger value="wallet" className="gap-2"><WalletIcon className="w-4 h-4" />المحفظة</TabsTrigger>
           <TabsTrigger value="registration" className="gap-2"><FileText className="w-4 h-4" />البيانات</TabsTrigger>
@@ -416,6 +422,26 @@ export default function AdminStudentDetail() {
                   ))}
                 </tbody>
               </table>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* CONTENT (drip + gates + attempt grants) */}
+        <TabsContent value="content" className="mt-4">
+          <div className="space-y-4">
+            {enrollments.length === 0 ? (
+              <div className="rounded-2xl border border-border bg-card p-10 text-center text-muted-foreground">
+                لا يوجد كورسات مسجّلة.
+              </div>
+            ) : (
+              enrollments.map((e) => (
+                <StudentCourseContentCard
+                  key={e.course_id}
+                  courseId={e.course_id}
+                  courseTitle={e.course_title}
+                  userId={student.id}
+                />
+              ))
             )}
           </div>
         </TabsContent>
@@ -557,3 +583,198 @@ export default function AdminStudentDetail() {
     </div>
   );
 }
+
+function StudentCourseContentCard({
+  courseId,
+  courseTitle,
+  userId,
+}: {
+  courseId: string;
+  courseTitle: string;
+  userId: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [rows, setRows] = useState<CourseLockRow[]>([]);
+  const [titles, setTitles] = useState<Record<string, string>>({});
+  const [effMap, setEffMap] = useState<Record<string, number>>({});
+  const [granting, setGranting] = useState<string | null>(null);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const list = await resolveCourseLockState(courseId, userId);
+      setRows(list);
+      // Fetch titles for lessons/quizzes/assignments in one shot
+      const lessonIds = list.filter((r) => r.item_type === "lesson").map((r) => r.item_id);
+      const quizIds = list.filter((r) => r.item_type === "quiz").map((r) => r.item_id);
+      const asgIds = list.filter((r) => r.item_type === "assignment").map((r) => r.item_id);
+      const [le, qz, ag] = await Promise.all([
+        lessonIds.length
+          ? (supabase as any).from("lessons").select("id,title").in("id", lessonIds)
+          : Promise.resolve({ data: [] }),
+        quizIds.length
+          ? (supabase as any).from("quizzes").select("id,title").in("id", quizIds)
+          : Promise.resolve({ data: [] }),
+        asgIds.length
+          ? (supabase as any).from("assignments").select("id,title").in("id", asgIds)
+          : Promise.resolve({ data: [] }),
+      ]);
+      const map: Record<string, string> = {};
+      [...(le.data ?? []), ...(qz.data ?? []), ...(ag.data ?? [])].forEach(
+        (r: any) => (map[r.id] = r.title),
+      );
+      setTitles(map);
+      // Effective max attempts for each quiz
+      const effs = await Promise.all(
+        quizIds.map(async (qid) => [qid, await effectiveMaxAttempts(userId, qid)] as const),
+      );
+      const emap: Record<string, number> = {};
+      effs.forEach(([qid, v]) => (emap[qid] = v));
+      setEffMap(emap);
+    } catch (e: any) {
+      toast.error(e?.message ?? "تعذّر تحميل المحتوى");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (open && rows.length === 0) load();
+    // eslint-disable-next-line
+  }, [open]);
+
+  const doGrant = async (quizId: string) => {
+    setGranting(quizId);
+    try {
+      const res = await adminGrantQuizAttempt(userId, quizId, 1);
+      setEffMap((m) => ({ ...m, [quizId]: res.effective_max_attempts }));
+      toast.success("تم منح محاولة إضافية");
+    } catch (e: any) {
+      toast.error(e?.message ?? "تعذّر منح المحاولة");
+    } finally {
+      setGranting(null);
+    }
+  };
+
+  return (
+    <div className="rounded-2xl border border-border bg-card overflow-hidden">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between gap-3 p-4 hover:bg-accent/30 transition-colors text-right"
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <BookOpen className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <div className="font-bold truncate">{courseTitle}</div>
+            <div className="text-xs text-muted-foreground">
+              {open ? "إخفاء" : "عرض"} المحتوى وحالة الأقفال
+            </div>
+          </div>
+        </div>
+        <ChevronDownIcon open={open} />
+      </button>
+
+      {open && (
+        <div className="border-t border-border p-4">
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+            </div>
+          ) : rows.length === 0 ? (
+            <div className="text-sm text-muted-foreground text-center py-6">
+              لا يوجد محتوى في هذا الكورس بعد.
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {rows.map((r) => {
+                const isQuiz = r.item_type === "quiz";
+                const typeLabel =
+                  r.item_type === "lesson"
+                    ? "درس"
+                    : r.item_type === "quiz"
+                      ? "اختبار"
+                      : "واجب";
+                return (
+                  <div
+                    key={`${r.item_type}-${r.item_id}`}
+                    className="flex items-center gap-3 rounded-lg border border-border/60 p-2.5"
+                  >
+                    <div
+                      className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 ${
+                        r.is_locked
+                          ? "bg-amber-500/15 text-amber-600"
+                          : r.is_completed
+                            ? "bg-emerald-500/15 text-emerald-600"
+                            : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {r.is_locked ? (
+                        <Lock className="w-4 h-4" />
+                      ) : (
+                        <Unlock className="w-4 h-4" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm truncate">
+                        {titles[r.item_id] ?? "—"}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground truncate">
+                        {typeLabel}
+                        {r.is_locked && r.reason === "quiz_gate" && (
+                          <> · مقفل حتى اجتياز: {r.gate_quiz_title ?? "اختبار"}</>
+                        )}
+                        {r.is_locked && r.reason === "drip" && <> · مقفل بالتسلسل</>}
+                        {isQuiz && effMap[r.item_id] != null && (
+                          <> · محاولات فعّالة: {effMap[r.item_id]}</>
+                        )}
+                      </div>
+                    </div>
+                    {isQuiz && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1 shrink-0"
+                        disabled={granting === r.item_id}
+                        onClick={() => doGrant(r.item_id)}
+                      >
+                        {granting === r.item_id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Plus className="w-3.5 h-3.5" />
+                        )}
+                        محاولة
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ChevronDownIcon({ open }: { open: boolean }) {
+  return (
+    <motion.svg
+      animate={{ rotate: open ? 180 : 0 }}
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="text-muted-foreground shrink-0"
+    >
+      <polyline points="6 9 12 15 18 9" />
+    </motion.svg>
+  );
+}
+

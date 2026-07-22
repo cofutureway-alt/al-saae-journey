@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Switch } from "@/components/ui/switch";
 import { parseEgpToPiastres, piastresToEgpNumber, formatPiastres } from "@/lib/money";
 import { useSignedThumbnail } from "@/hooks/use-signed-thumbnail";
 
@@ -42,6 +43,7 @@ const schema = z
     price_egp: z.string().optional(),
     discount_price_egp: z.string().optional(),
     discount_expires_at: z.string().optional(),
+    content_drip_enabled: z.boolean().default(false),
   })
   .superRefine((val, ctx) => {
     if (val.is_paid) {
@@ -117,6 +119,7 @@ const CourseInfoEditor = () => {
       price_egp: "",
       discount_price_egp: "",
       discount_expires_at: "",
+      content_drip_enabled: false,
     },
   });
   const stageVal = watch("stage_id");
@@ -124,6 +127,7 @@ const CourseInfoEditor = () => {
   const isPaid = watch("is_paid");
   const priceEgp = watch("price_egp");
   const discountEgp = watch("discount_price_egp");
+  const dripEnabled = watch("content_drip_enabled");
 
   useEffect(() => {
     supabase
@@ -161,6 +165,7 @@ const CourseInfoEditor = () => {
             discount_expires_at: (data as any).discount_expires_at
               ? new Date((data as any).discount_expires_at).toISOString().slice(0, 16)
               : "",
+            content_drip_enabled: !!(data as any).content_drip_enabled,
           });
           setExistingThumb(data.thumbnail_url);
           setLoading(false);
@@ -220,6 +225,7 @@ const CourseInfoEditor = () => {
         price_piastres: pricePia,
         discount_price_piastres: discountPia,
         discount_expires_at: discountExp,
+        content_drip_enabled: !!values.content_drip_enabled,
       };
 
       if (isEdit) {
@@ -561,6 +567,22 @@ const CourseInfoEditor = () => {
           </AnimatePresence>
         </div>
 
+
+        {/* Content drip toggle */}
+        <div className="rounded-xl border border-border/70 bg-accent/20 p-4 md:p-5 flex items-start gap-4">
+          <div className="flex-1 min-w-0">
+            <Label className="text-base font-bold">التسلسل الإجباري (Content Drip)</Label>
+            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+              عند التفعيل: لن يستطيع الطالب فتح أي درس أو اختبار أو واجب قبل إتمام العنصر الذي يسبقه مباشرةً في المنهج.
+            </p>
+          </div>
+          <Switch
+            checked={!!dripEnabled}
+            onCheckedChange={(v) =>
+              setValue("content_drip_enabled", v, { shouldDirty: true })
+            }
+          />
+        </div>
 
         <div className="space-y-2">
           <Label>الصورة المصغّرة</Label>

@@ -33,6 +33,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { parseVideoUrl, type VideoProvider } from "@/lib/video";
 
 export interface LessonRecord {
@@ -43,6 +50,7 @@ export interface LessonRecord {
   video_url: string | null;
   unit_id: string;
   position: number;
+  unlock_quiz_id?: string | null;
 }
 
 interface FileRow {
@@ -118,6 +126,8 @@ const LessonModal = ({ open, onOpenChange, unitId, lesson, nextPosition, onSaved
   const [savedLessonId, setSavedLessonId] = useState<string | null>(null);
   const [files, setFiles] = useState<FileRow[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [unlockQuizId, setUnlockQuizId] = useState<string | null>(null);
+  const [courseQuizzes, setCourseQuizzes] = useState<{ id: string; title: string }[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -145,11 +155,29 @@ const LessonModal = ({ open, onOpenChange, unitId, lesson, nextPosition, onSaved
     setVideoError(null);
     setThumbnail(null);
     setFiles([]);
+    setUnlockQuizId(lesson?.unlock_quiz_id ?? null);
     if (lesson?.video_url && lesson?.video_provider) {
       const parsed = parseVideoUrl(lesson.video_provider, lesson.video_url);
       if ("thumbnail" in parsed && parsed.thumbnail) setThumbnail(parsed.thumbnail);
     }
-  }, [open, lesson, reset]);
+
+    // Load quizzes in this lesson's course for the gate picker
+    (async () => {
+      const { data: u } = await supabase
+        .from("units")
+        .select("course_id")
+        .eq("id", unitId)
+        .maybeSingle();
+      const courseId = (u as any)?.course_id;
+      if (!courseId) return;
+      const { data: qs } = await (supabase as any)
+        .from("quizzes")
+        .select("id, title")
+        .eq("course_id", courseId)
+        .order("title");
+      setCourseQuizzes(((qs ?? []) as any[]).map((r) => ({ id: r.id, title: r.title })));
+    })();
+  }, [open, lesson, reset, unitId]);
 
   // Load lesson files when we have a lesson id
   useEffect(() => {
@@ -205,20 +233,21 @@ const LessonModal = ({ open, onOpenChange, unitId, lesson, nextPosition, onSaved
     try {
       if (isEdit || savedLessonId) {
         const idToUpdate = savedLessonId ?? lesson!.id;
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from("lessons")
           .update({
             title: values.title,
             description: values.description || null,
             video_provider: finalProvider,
             video_url: finalUrl,
+            unlock_quiz_id: unlockQuizId,
           })
           .eq("id", idToUpdate);
         if (error) throw error;
         toast.success("تم حفظ الدرس");
         onSaved();
       } else {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from("lessons")
           .insert({
             unit_id: unitId,
@@ -227,6 +256,7 @@ const LessonModal = ({ open, onOpenChange, unitId, lesson, nextPosition, onSaved
             video_provider: finalProvider,
             video_url: finalUrl,
             position: nextPosition,
+            unlock_quiz_id: unlockQuizId,
           })
           .select("id")
           .single();
@@ -436,6 +466,36 @@ const LessonModal = ({ open, onOpenChange, unitId, lesson, nextPosition, onSaved
                   )}
                 </AnimatePresence>
               </div>
+
+              {/* Quiz gate picker — lock this lesson until a specific quiz is passed */}
+              <div className="space-y-2 rounded-lg border border-border/60 bg-muted/30 p-3">
+                <Label className="flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-amber-500" />
+                  قفل هذا الدرس حتى اجتياز اختبار (اختياري)
+                </Label>
+                <Select
+                  value={unlockQuizId ?? "__none__"}
+                  onValueChange={(v) => setUnlockQuizId(v === "__none__" ? null : v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="بدون قفل — الدرس متاح دائمًا" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">بدون قفل</SelectItem>
+                    {courseQuizzes
+                      .filter((q) => q.id !== lesson?.id)
+                      .map((q) => (
+                        <SelectItem key={q.id} value={q.id}>
+                          {q.title}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground">
+                  عند الاختيار: لن يفتح هذا الدرس للطالب إلا بعد اجتياز الاختبار المحدد.
+                </p>
+              </div>
+
 
               <div className="flex items-center justify-end gap-2 pt-2">
                 <Button
