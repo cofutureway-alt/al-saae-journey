@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   ChevronDown,
   ChevronRight,
+  Lock,
   Menu,
   PanelRightClose,
   PanelRightOpen,
