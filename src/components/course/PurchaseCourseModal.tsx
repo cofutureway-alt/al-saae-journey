@@ -116,6 +116,7 @@ export default function PurchaseCourseModal({
   const isWallet = selectedGateway?.gateway_key === "wallet";
   const isManual = selectedGateway?.gateway_key === "manual";
   const isKashier = selectedGateway?.gateway_key === "kashier";
+  const isPaymob = selectedGateway?.gateway_key === "paymob";
   const insufficient = isWallet && walletBalance !== null && walletBalance < amountPiastres;
   const balanceAfter = isWallet && walletBalance !== null ? walletBalance - amountPiastres : null;
 
