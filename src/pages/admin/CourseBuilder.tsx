@@ -1459,25 +1459,34 @@ const CourseBuilder = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Publish confirm */}
+      {/* Coming Soon schedule dialog */}
       <AlertDialog open={publishOpen} onOpenChange={setPublishOpen}>
         <AlertDialogContent dir="rtl">
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {course.status === "published" ? "إرجاع الدورة كمسودة" : "نشر الدورة"}
-            </AlertDialogTitle>
+            <AlertDialogTitle>ضبط الدورة كـ "قريبًا"</AlertDialogTitle>
             <AlertDialogDescription>
-              {course.status === "published"
-                ? "لن تظهر الدورة للطلاب حتى يتم نشرها مرة أخرى."
-                : "ستصبح الدورة مرئية للطلاب على المنصة."}
+              ستظهر الدورة للزوار مع شارة "قريبًا" ولن يتمكّن أحد من التسجيل حتى يتم النشر يدويًا
+              أو يحين الموعد المجدول (اختياري).
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="py-2">
+            <label className="text-xs text-muted-foreground mb-1 block">
+              موعد النشر التلقائي (اختياري)
+            </label>
+            <input
+              type="datetime-local"
+              value={scheduleDraft ? scheduleDraft.slice(0, 16) : ""}
+              onChange={(e) => setScheduleDraft(e.target.value)}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+            />
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel>إلغاء</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();
-                togglePublish();
+                const iso = scheduleDraft ? new Date(scheduleDraft).toISOString() : null;
+                changeLifecycle("coming_soon", iso);
               }}
             >
               تأكيد
@@ -1485,6 +1494,7 @@ const CourseBuilder = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
     </div>
   );
 };
