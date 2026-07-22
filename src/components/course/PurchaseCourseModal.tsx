@@ -11,6 +11,8 @@ import {
   Sparkles,
   HandCoins,
   Clock,
+  CreditCard,
+  ExternalLink,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -25,6 +27,7 @@ import {
   listEnabledManualMethods,
   submitManualCoursePayment,
 } from "@/lib/manual-payment-api";
+import { initiateKashierPayment } from "@/lib/kashier-api";
 
 interface Gateway {
   id: string;
