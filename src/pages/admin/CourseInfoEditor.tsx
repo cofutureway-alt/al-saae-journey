@@ -121,6 +121,7 @@ const CourseInfoEditor = () => {
       discount_price_egp: "",
       discount_expires_at: "",
       content_drip_enabled: false,
+      is_featured: false,
     },
   });
   const stageVal = watch("stage_id");
