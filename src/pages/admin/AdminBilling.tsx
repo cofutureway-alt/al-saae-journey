@@ -171,6 +171,7 @@ export default function AdminBilling() {
   const [loading, setLoading] = useState(true);
   const [courses, setCourses] = useState<CourseOpt[]>([]);
   const [totalStudentBalance, setTotalStudentBalance] = useState(0);
+  const [totalDiscountSavings, setTotalDiscountSavings] = useState(0);
   const [fundingBreakdown, setFundingBreakdown] = useState({
     admin: 0,
     cards: 0,
