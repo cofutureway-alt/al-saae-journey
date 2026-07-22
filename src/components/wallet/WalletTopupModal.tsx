@@ -264,7 +264,7 @@ export default function WalletTopupModal({ open, onOpenChange, currentBalance, o
                   />
                   <button
                     type="button"
-                    onClick={() => setStep(kashierEnabled && manualAvailable ? "gateway" : "amount")}
+                    onClick={() => setStep((Number(kashierEnabled) + Number(paymobEnabled) + Number(manualAvailable)) > 1 ? "gateway" : "amount")}
                     className="text-xs text-muted-foreground hover:text-foreground w-full text-center"
                   >
                     رجوع
