@@ -119,9 +119,9 @@ Deno.serve(async (req) => {
     // Kashier expects a plain decimal EGP string, 2 decimals.
     const amountStr = (amountPiastres / 100).toFixed(2);
     const currency = "EGP";
-    // Kashier hosted-page order IDs must be unique per attempt; append a timestamp
-    // (matches the WooCommerce plugin behaviour: "<orderId>-<timestamp>").
-    const hostedOrderId = `${reference}-${Date.now()}`;
+    // Our reference is already unique per attempt; use it directly as the hosted-page orderId
+    // so the webhook can look the transaction up by merchantOrderId.
+    const hostedOrderId = reference;
     const path = `/?payment=${merchantId}.${hostedOrderId}.${amountStr}.${currency}`;
     // IMPORTANT: Kashier's iframe/hosted-page hash uses the API KEY (not the secret key).
     // The secret key is only used for server-to-server API calls and webhook verification.
