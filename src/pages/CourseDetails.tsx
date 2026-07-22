@@ -260,13 +260,23 @@ const CourseDetails = () => {
 
 
   const startCourse = () => {
-    const all = units.flatMap((u) => u.lessons);
-    if (!all.length) {
-      toast.info("لم يتم إضافة دروس بعد");
+    const allItems = units.flatMap((u) => u.items);
+    if (!allItems.length) {
+      toast.info("لم يتم إضافة محتوى بعد");
       return;
     }
-    const next = all.find((l) => !completedIds.has(l.id)) ?? all[0];
-    navigate(`/courses/${id}/learn/lesson/${next.id}`);
+    const firstLesson = allItems.find(
+      (it) => it.kind === "lesson" && !completedIds.has((it as any).lesson.id),
+    );
+    const target =
+      firstLesson ??
+      allItems.find((it) => it.kind === "lesson") ??
+      allItems[0];
+    if (target.kind === "lesson") {
+      navigate(`/courses/${id}/learn/lesson/${(target as any).lesson.id}`);
+    } else {
+      navigate(`/courses/${id}/learn/quiz/${(target as any).quiz.id}`);
+    }
   };
 
   if (loading || authLoading) {
