@@ -25,6 +25,7 @@ import {
   Users,
   Wallet as WalletIcon,
   BadgeDollarSign,
+  Trophy,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -78,6 +79,17 @@ const nav: NavEntry[] = [
       { to: "/admin/payment-gateways", label: "بوابات الدفع", icon: Landmark },
       { to: "/admin/payment-requests", label: "طلبات الدفع", icon: Inbox },
       { to: "/admin/billing", label: "الفوترة والمدفوعات", icon: Receipt },
+    ],
+  },
+  {
+    id: "leaderboard",
+    label: "لوحة المتصدرين",
+    icon: Trophy,
+    children: [
+      { to: "/admin/leaderboard", label: "الأوائل", icon: Trophy, end: true },
+      { to: "/admin/leaderboard/badges", label: "الشارات", icon: BookMarked },
+      { to: "/admin/leaderboard/levels", label: "المستويات", icon: Layers },
+      { to: "/admin/leaderboard/settings", label: "الإعدادات", icon: Settings2 },
     ],
   },
   { to: "/admin/settings", label: "الإعدادات", icon: Settings2 },
