@@ -25,6 +25,7 @@ import {
   submitManualWalletTopup,
 } from "@/lib/manual-payment-api";
 import { initiateKashierPayment } from "@/lib/kashier-api";
+import { initiatePaymobPayment } from "@/lib/paymob-api";
 
 interface Props {
   open: boolean;
