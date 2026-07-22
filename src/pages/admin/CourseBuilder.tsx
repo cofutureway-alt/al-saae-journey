@@ -1079,21 +1079,26 @@ const CourseBuilder = () => {
           العودة إلى الدورات
         </Link>
 
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-2xl md:text-3xl font-bold text-foreground truncate">
                 {course.title}
               </h1>
               <Badge
-                variant={course.status === "published" ? "default" : "secondary"}
                 className={
                   course.status === "published"
                     ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-0"
-                    : "bg-muted text-muted-foreground border-0"
+                    : course.status === "coming_soon"
+                      ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-0"
+                      : "bg-muted text-muted-foreground border-0"
                 }
               >
-                {course.status === "published" ? "منشورة" : "مسودة"}
+                {course.status === "published"
+                  ? "منشورة"
+                  : course.status === "coming_soon"
+                    ? "قريبًا"
+                    : "مسودة"}
               </Badge>
               <SaveIndicator state={saveState} />
             </div>
@@ -1101,27 +1106,85 @@ const CourseBuilder = () => {
               نظّم وحدات ودروس الدورة، والسحب لإعادة الترتيب.
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => navigate(`/admin/courses/${course.id}/edit`)}
-            >
-              <Settings className="w-4 h-4 ml-2" />
-              بيانات الدورة
-            </Button>
-            <Button
-              onClick={() => setPublishOpen(true)}
-              className={
-                course.status === "published"
-                  ? "bg-muted text-foreground hover:bg-muted/80"
-                  : ""
-              }
-              variant={course.status === "published" ? "outline" : "default"}
-            >
-              {course.status === "published" ? "إرجاع كمسودة" : "نشر الدورة"}
-            </Button>
+          <div className="flex flex-col items-stretch md:items-end gap-2">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => navigate(`/admin/courses/${course.id}/edit`)}
+              >
+                <Settings className="w-4 h-4 ml-2" />
+                بيانات الدورة
+              </Button>
+              <div className="inline-flex rounded-lg border border-border overflow-hidden">
+                {(
+                  [
+                    { k: "draft", label: "مسودة" },
+                    { k: "coming_soon", label: "قريبًا" },
+                    { k: "published", label: "منشورة" },
+                  ] as const
+                ).map((opt) => (
+                  <button
+                    key={opt.k}
+                    type="button"
+                    onClick={() => {
+                      if (opt.k === course.status) return;
+                      if (opt.k === "coming_soon") {
+                        setScheduleDraft(course.scheduled_publish_at ?? "");
+                        setPublishOpen(true);
+                      } else {
+                        changeLifecycle(opt.k);
+                      }
+                    }}
+                    className={
+                      "px-3 py-2 text-xs font-bold transition " +
+                      (opt.k === course.status
+                        ? opt.k === "published"
+                          ? "bg-emerald-600 text-white"
+                          : opt.k === "coming_soon"
+                            ? "bg-amber-500 text-white"
+                            : "bg-muted text-foreground"
+                        : "bg-transparent hover:bg-accent")
+                    }
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {course.status === "coming_soon" && (
+              <div className="flex items-center gap-2 text-xs bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2">
+                <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                <input
+                  type="datetime-local"
+                  className="bg-transparent border-0 focus:outline-none text-foreground text-xs"
+                  value={
+                    course.scheduled_publish_at
+                      ? new Date(course.scheduled_publish_at)
+                          .toISOString()
+                          .slice(0, 16)
+                      : ""
+                  }
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    const iso = v ? new Date(v).toISOString() : null;
+                    changeLifecycle("coming_soon", iso);
+                  }}
+                />
+                {course.scheduled_publish_at && (
+                  <button
+                    type="button"
+                    onClick={() => changeLifecycle("coming_soon", null)}
+                    className="text-muted-foreground hover:text-destructive"
+                    title="إلغاء الجدولة"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
+
       </motion.div>
 
       {/* Add unit */}
