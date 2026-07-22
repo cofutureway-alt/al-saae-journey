@@ -102,10 +102,15 @@ Deno.serve(async (req) => {
     const phone = String(profile?.phone || "").trim() || "+201000000000";
     const email = String(profile?.email || "").trim() || `${userId}@example.com`;
 
-    const itemName =
-      body.purpose === "wallet_topup"
-        ? "شحن محفظة"
-        : (created?.course_title as string | undefined) || "Course purchase";
+    let itemName = "شحن محفظة";
+    if (body.purpose === "course_purchase" && body.course_id) {
+      const { data: c } = await service
+        .from("courses")
+        .select("title")
+        .eq("id", body.course_id)
+        .maybeSingle();
+      itemName = String(c?.title || "Course purchase");
+    }
 
     const webhookUrl = `${supabaseUrl}/functions/v1/paymob-webhook`;
 
