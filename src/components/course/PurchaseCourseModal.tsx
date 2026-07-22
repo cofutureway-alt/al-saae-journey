@@ -453,9 +453,6 @@ export default function PurchaseCourseModal({
       </DialogContent>
     </Dialog>
   );
-      </DialogContent>
-    </Dialog>
-  );
 }
 
 function Row({
