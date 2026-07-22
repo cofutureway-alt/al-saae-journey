@@ -73,6 +73,7 @@ const App = () => (
             <Route path="/courses/:id" element={<CourseDetails />} />
             <Route path="/s/:qrToken" element={<PublicStudentSnapshot />} />
             <Route path="/payment/kashier/return" element={<PaymentKashierReturn />} />
+            <Route path="/payment/paymob/return" element={<PaymentPaymobReturn />} />
             <Route
               path="/courses/:courseId/learn/:contentType/:contentId"
               element={
