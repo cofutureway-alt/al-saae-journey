@@ -186,9 +186,11 @@ const AdminCourses = () => {
         return false;
       if (stageFilter !== "all" && c.stage_id !== stageFilter) return false;
       if (statusFilter !== "all" && c.status !== statusFilter) return false;
+      if (featuredFilter === "featured" && !c.is_featured) return false;
+      if (featuredFilter === "not_featured" && c.is_featured) return false;
       return true;
     });
-  }, [courses, query, stageFilter, statusFilter]);
+  }, [courses, query, stageFilter, statusFilter, featuredFilter]);
 
   const confirmDelete = async () => {
     if (!deleting) return;
