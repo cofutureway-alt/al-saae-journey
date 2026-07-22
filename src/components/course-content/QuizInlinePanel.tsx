@@ -160,7 +160,11 @@ const QuizInlinePanel = ({ quizId, onAttemptCreated }: Props) => {
             <MetaCard
               icon={<Repeat className="w-4 h-4" />}
               label="المحاولات"
-              value={`${finishedCount} / ${quiz.max_attempts}`}
+              value={
+                effectiveMax != null && effectiveMax > quiz.max_attempts
+                  ? `${finishedCount} / ${effectiveMax} (+${effectiveMax - quiz.max_attempts})`
+                  : `${finishedCount} / ${quiz.max_attempts}`
+              }
             />
             {(quiz.start_at || quiz.end_at) ? (
               <MetaCard
