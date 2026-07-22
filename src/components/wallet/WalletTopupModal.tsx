@@ -320,6 +320,54 @@ export default function WalletTopupModal({ open, onOpenChange, currentBalance, o
                 </motion.div>
               )}
 
+              {step === "pay" && amountPiastres && gateway === "paymob" && (
+                <motion.div key="pay-paymob" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-2 text-sm">
+                    <div className="flex items-center gap-2 font-bold">
+                      <CreditCard className="w-4 h-4 text-primary" />
+                      الدفع الإلكتروني عبر PayMob
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      سيتم تحويلك إلى صفحة PayMob الآمنة لإتمام الدفع، ثم العودة تلقائيًا وإضافة الرصيد إلى محفظتك.
+                    </p>
+                    <div className="pt-2 border-t border-primary/20 flex items-center justify-between">
+                      <span className="text-muted-foreground">المبلغ</span>
+                      <span className="font-bold text-base">{formatPiastres(amountPiastres)}</span>
+                    </div>
+                  </div>
+                  {error && (
+                    <div className="text-sm flex items-center gap-2 text-destructive">
+                      <AlertCircle className="w-4 h-4" /> {error}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <ShieldCheck className="w-3.5 h-3.5 text-primary" />
+                    تحويل آمن — سيتم إتمام الدفع على صفحة PayMob ثم العودة تلقائيًا.
+                  </div>
+                  <Button
+                    size="lg"
+                    className="w-full font-bold shadow-lg shadow-primary/20"
+                    disabled={submitting}
+                    onClick={handlePaymobConfirm}
+                  >
+                    {submitting ? (
+                      <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                    ) : (
+                      <ExternalLink className="w-4 h-4 ml-2" />
+                    )}
+                    المتابعة إلى PayMob
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={() => setStep((Number(kashierEnabled) + Number(paymobEnabled) + Number(manualAvailable)) > 1 ? "gateway" : "amount")}
+                    className="text-xs text-muted-foreground hover:text-foreground w-full text-center"
+                    disabled={submitting}
+                  >
+                    رجوع
+                  </button>
+                </motion.div>
+              )}
+
               {step === "done" && (
                 <motion.div
                   key="done"
