@@ -66,6 +66,7 @@ export default function PurchaseCourseModal({
   const [result, setResult] = useState<
     | { type: "success"; newBalance: number; reference: string }
     | { type: "pending"; reference: string }
+    | { type: "redirecting"; reference: string; mode: "test" | "live" }
     | { type: "error"; message: string; insufficient?: boolean }
     | null
   >(null);
@@ -113,6 +114,7 @@ export default function PurchaseCourseModal({
   const selectedGateway = gateways?.find((g) => g.id === selected) ?? null;
   const isWallet = selectedGateway?.gateway_key === "wallet";
   const isManual = selectedGateway?.gateway_key === "manual";
+  const isKashier = selectedGateway?.gateway_key === "kashier";
   const insufficient = isWallet && walletBalance !== null && walletBalance < amountPiastres;
   const balanceAfter = isWallet && walletBalance !== null ? walletBalance - amountPiastres : null;
 
@@ -142,6 +144,26 @@ export default function PurchaseCourseModal({
     }
   };
 
+  const handleKashierConfirm = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    setResult(null);
+    try {
+      const res = await initiateKashierPayment({
+        purpose: "course_purchase",
+        courseId,
+      });
+      setResult({ type: "redirecting", reference: res.reference_number, mode: res.mode });
+      // Give the redirect UI a beat to render, then hand off to Kashier.
+      setTimeout(() => {
+        window.location.assign(res.redirect_url);
+      }, 400);
+    } catch (e: any) {
+      setResult({ type: "error", message: e?.message ?? "تعذّر بدء عملية الدفع" });
+      setSubmitting(false);
+    }
+  };
+
   const handleManualSubmit = async (args: {
     methodId: string;
     senderNumber: string;
@@ -163,6 +185,7 @@ export default function PurchaseCourseModal({
 
   const gatewayIconFor = (key: string) => {
     if (key === "manual") return HandCoins;
+    if (key === "kashier") return CreditCard;
     return WalletIcon;
   };
 
