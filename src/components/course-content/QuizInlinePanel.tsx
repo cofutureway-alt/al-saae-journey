@@ -66,12 +66,20 @@ const QuizInlinePanel = ({ quizId, onAttemptCreated }: Props) => {
       const [q, a] = await Promise.all([fetchQuizMeta(quizId), listMyAttempts(quizId)]);
       setQuiz(q);
       setAttempts(a);
+      if (user) {
+        try {
+          const eff = await effectiveMaxAttempts(user.id, quizId);
+          setEffectiveMax(eff);
+        } catch {
+          setEffectiveMax(null);
+        }
+      }
     } catch (e: any) {
       toast.error(e?.message || "تعذّر تحميل الاختبار");
     } finally {
       setLoading(false);
     }
-  }, [quizId]);
+  }, [quizId, user?.id]);
 
   useEffect(() => {
     if (!authLoading) load();
