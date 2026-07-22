@@ -100,14 +100,17 @@ export default function GatewayMethodsPanel({ gatewayKey }: Props) {
 
   const saveRename = async (row: GatewayMethodRow) => {
     const name = editingName.trim();
+    const desc = editingDesc.trim();
     if (!name) {
       toast.error("الاسم مطلوب");
       return;
     }
     setBusyId(row.id);
     try {
-      await updateGatewayMethod(row.id, { display_name: name });
-      setRows((r) => r.map((x) => (x.id === row.id ? { ...x, display_name: name } : x)));
+      await updateGatewayMethod(row.id, { display_name: name, description: desc || null });
+      setRows((r) =>
+        r.map((x) => (x.id === row.id ? { ...x, display_name: name, description: desc || null } : x)),
+      );
       setEditingId(null);
     } catch (e: any) {
       toast.error(e?.message ?? "تعذّر الحفظ");
