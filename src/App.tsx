@@ -148,6 +148,7 @@ const App = () => (
               <Route path="wallets" element={<AdminWallets />} />
               <Route path="payment-gateways" element={<AdminPaymentGateways />} />
               <Route path="payment-gateways/manual" element={<AdminManualPaymentSettings />} />
+              <Route path="payment-gateways/kashier" element={<AdminKashierSettings />} />
               <Route path="payment-requests" element={<AdminPaymentRequests />} />
               <Route path="billing" element={<AdminBilling />} />
               <Route path="cards/:templateId/edit" element={<CardBuilder />} />
