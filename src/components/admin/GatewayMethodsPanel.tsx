@@ -31,6 +31,7 @@ interface Props {
 }
 
 const FAWATERAK_STALE_HOURS = 24;
+const KASHIER_BNPL = new Set(["valu", "souhoola", "aman", "contact"]);
 
 function isStale(row: GatewayMethodRow): boolean {
   if (!row.last_seen_at) return true;
