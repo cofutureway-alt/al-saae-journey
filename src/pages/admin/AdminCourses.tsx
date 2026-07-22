@@ -349,6 +349,16 @@ const AdminCourses = () => {
 
           </SelectContent>
         </Select>
+        <Select value={featuredFilter} onValueChange={(v) => setFeaturedFilter(v as any)}>
+          <SelectTrigger>
+            <SelectValue placeholder="الإبراز" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">الكل (مميز وغير مميز)</SelectItem>
+            <SelectItem value="featured">المميزة فقط</SelectItem>
+            <SelectItem value="not_featured">غير المميزة</SelectItem>
+          </SelectContent>
+        </Select>
       </motion.div>
 
       <AnimatePresence>
