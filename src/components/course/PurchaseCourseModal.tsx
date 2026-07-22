@@ -11,6 +11,8 @@ import {
   Sparkles,
   HandCoins,
   Clock,
+  CreditCard,
+  ExternalLink,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -25,6 +27,7 @@ import {
   listEnabledManualMethods,
   submitManualCoursePayment,
 } from "@/lib/manual-payment-api";
+import { initiateKashierPayment } from "@/lib/kashier-api";
 
 interface Gateway {
   id: string;
@@ -63,6 +66,7 @@ export default function PurchaseCourseModal({
   const [result, setResult] = useState<
     | { type: "success"; newBalance: number; reference: string }
     | { type: "pending"; reference: string }
+    | { type: "redirecting"; reference: string; mode: "test" | "live" }
     | { type: "error"; message: string; insufficient?: boolean }
     | null
   >(null);
@@ -110,6 +114,7 @@ export default function PurchaseCourseModal({
   const selectedGateway = gateways?.find((g) => g.id === selected) ?? null;
   const isWallet = selectedGateway?.gateway_key === "wallet";
   const isManual = selectedGateway?.gateway_key === "manual";
+  const isKashier = selectedGateway?.gateway_key === "kashier";
   const insufficient = isWallet && walletBalance !== null && walletBalance < amountPiastres;
   const balanceAfter = isWallet && walletBalance !== null ? walletBalance - amountPiastres : null;
 
@@ -139,6 +144,26 @@ export default function PurchaseCourseModal({
     }
   };
 
+  const handleKashierConfirm = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    setResult(null);
+    try {
+      const res = await initiateKashierPayment({
+        purpose: "course_purchase",
+        courseId,
+      });
+      setResult({ type: "redirecting", reference: res.reference_number, mode: res.mode });
+      // Give the redirect UI a beat to render, then hand off to Kashier.
+      setTimeout(() => {
+        window.location.assign(res.redirect_url);
+      }, 400);
+    } catch (e: any) {
+      setResult({ type: "error", message: e?.message ?? "تعذّر بدء عملية الدفع" });
+      setSubmitting(false);
+    }
+  };
+
   const handleManualSubmit = async (args: {
     methodId: string;
     senderNumber: string;
@@ -160,6 +185,7 @@ export default function PurchaseCourseModal({
 
   const gatewayIconFor = (key: string) => {
     if (key === "manual") return HandCoins;
+    if (key === "kashier") return CreditCard;
     return WalletIcon;
   };
 
@@ -348,6 +374,28 @@ export default function PurchaseCourseModal({
                   </div>
                 )}
 
+                {isKashier && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="rounded-xl border border-primary/20 bg-primary/5 overflow-hidden"
+                  >
+                    <div className="p-4 space-y-2 text-sm">
+                      <div className="flex items-center gap-2 font-bold">
+                        <CreditCard className="w-4 h-4 text-primary" />
+                        الدفع الإلكتروني عبر Kashier
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        سيتم تحويلك إلى صفحة Kashier الآمنة لإتمام الدفع بالبطاقة أو المحفظة الإلكترونية، ثم العودة تلقائيًا لتفعيل الدورة.
+                      </p>
+                      <div className="pt-2 border-t border-primary/20 flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">المبلغ</span>
+                        <span className="font-bold text-base">{formatPiastres(amountPiastres)}</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
                 {result?.type === "error" && (
                   <div className="rounded-lg bg-rose-500/10 border border-rose-500/20 p-3 text-sm flex items-start gap-2">
                     <AlertCircle className="w-4 h-4 text-rose-600 mt-0.5 shrink-0" />
@@ -373,6 +421,28 @@ export default function PurchaseCourseModal({
                         <Sparkles className="w-4 h-4 ml-2" />
                       )}
                       تأكيد الشراء
+                    </Button>
+                  </>
+                )}
+
+                {isKashier && (
+                  <>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <ShieldCheck className="w-3.5 h-3.5 text-primary" />
+                      تحويل آمن — سيتم إتمام الدفع على صفحة Kashier ثم العودة تلقائيًا.
+                    </div>
+                    <Button
+                      size="lg"
+                      className="w-full font-bold shadow-lg shadow-primary/20"
+                      disabled={!selected || submitting}
+                      onClick={handleKashierConfirm}
+                    >
+                      {submitting ? (
+                        <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                      ) : (
+                        <ExternalLink className="w-4 h-4 ml-2" />
+                      )}
+                      المتابعة إلى Kashier
                     </Button>
                   </>
                 )}
