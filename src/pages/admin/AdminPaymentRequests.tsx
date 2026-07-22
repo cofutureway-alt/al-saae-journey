@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Clock, CheckCircle2, XCircle, Loader2, Inbox, Wallet as WalletIcon,
-  BookOpen, Filter, ExternalLink, ImageIcon,
+  BookOpen, Filter, ExternalLink, ImageIcon, Receipt,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -27,9 +27,17 @@ import {
 
 const STATUS_META = {
   pending_review: { label: "قيد المراجعة", color: "text-amber-600", bg: "bg-amber-500/10 border-amber-500/30", Icon: Clock },
+  pending_gateway: { label: "بانتظار الدفع", color: "text-sky-600", bg: "bg-sky-500/10 border-sky-500/30", Icon: Loader2 },
   success:        { label: "مقبول",         color: "text-emerald-600", bg: "bg-emerald-500/10 border-emerald-500/30", Icon: CheckCircle2 },
   failed:         { label: "مرفوض",         color: "text-rose-600", bg: "bg-rose-500/10 border-rose-500/30", Icon: XCircle },
 } as const;
+
+const FALLBACK_STATUS_META = {
+  label: "غير معروف",
+  color: "text-muted-foreground",
+  bg: "bg-muted border-border",
+  Icon: Receipt,
+};
 
 function dateAr(iso: string) {
   return new Date(iso).toLocaleString("ar-EG", {
@@ -165,7 +173,7 @@ export default function AdminPaymentRequests() {
               </thead>
               <tbody>
                 {filtered.map((r, i) => {
-                  const meta = STATUS_META[r.status];
+                  const meta = STATUS_META[r.status as keyof typeof STATUS_META] ?? FALLBACK_STATUS_META;
                   const Icon = meta.Icon;
                   const amount = r.purpose === "wallet_topup" ? r.topup_amount_piastres ?? 0 : r.amount_piastres;
                   return (
@@ -188,7 +196,7 @@ export default function AdminPaymentRequests() {
                         {r.course_title && <div className="text-xs text-muted-foreground mt-0.5 truncate max-w-[200px]">{r.course_title}</div>}
                       </td>
                       <td className="p-3 font-bold tabular-nums whitespace-nowrap">{formatPiastres(amount)}</td>
-                      <td className="p-3 text-xs">{r.method_type ? METHOD_LABEL[r.method_type] : r.gateway_display_name}</td>
+                      <td className="p-3 text-xs">{r.method_type ? METHOD_LABEL[r.method_type] ?? r.method_type : r.gateway_display_name}</td>
                       <td className="p-3 text-xs text-muted-foreground whitespace-nowrap">{dateAr(r.created_at)}</td>
                       <td className="p-3">
                         <span className={cn("inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-1 rounded-full border", meta.bg, meta.color)}>
@@ -237,7 +245,7 @@ function ReviewModal({
   }, [request]);
 
   if (!request) return null;
-  const meta = STATUS_META[request.status];
+  const meta = STATUS_META[request.status as keyof typeof STATUS_META] ?? FALLBACK_STATUS_META;
   const amount = request.purpose === "wallet_topup" ? request.topup_amount_piastres ?? 0 : request.amount_piastres;
   const wa = request.method_whatsapp ? `https://wa.me/${normalizeEgPhone(request.method_whatsapp)}` : null;
   const isPending = request.status === "pending_review";
@@ -300,7 +308,7 @@ function ReviewModal({
               <div className="text-[11px] font-mono text-muted-foreground mt-0.5">{request.reference_number}</div>
             </Panel>
             <Panel title="طريقة الدفع">
-              <div className="font-semibold">{request.method_type ? METHOD_LABEL[request.method_type] : request.gateway_display_name}</div>
+              <div className="font-semibold">{request.method_type ? METHOD_LABEL[request.method_type] ?? request.method_type : request.gateway_display_name}</div>
               {request.method_account_holder && (<div className="text-xs text-muted-foreground">{request.method_account_holder}</div>)}
               {request.method_account_number && (
                 <div className="text-xs font-mono mt-1" dir="ltr">{request.method_account_number}</div>

@@ -97,7 +97,7 @@ export interface OwnPaymentRequest {
   transaction_id: string;
   reference_number: string;
   purpose: "course_purchase" | "wallet_topup";
-  status: "pending_review" | "success" | "failed";
+  status: "pending_review" | "pending_gateway" | "success" | "failed" | string;
   course_id: string | null;
   course_title: string | null;
   amount_piastres: number;
