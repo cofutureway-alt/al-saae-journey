@@ -493,6 +493,13 @@ export default function AdminBilling() {
           hint="على المعاملات الناجحة داخل الفلتر"
           tone="violet"
         />
+        <SummaryCard
+          icon={<TrendingUp className="w-5 h-5" />}
+          label="إجمالي وفورات الخصومات"
+          value={formatPiastres(totalDiscountSavings)}
+          hint="مجموع الفرق بين السعر الأصلي والمدفوع (دورات + باقات)"
+          tone="amber"
+        />
       </div>
 
       {/* Filters */}
