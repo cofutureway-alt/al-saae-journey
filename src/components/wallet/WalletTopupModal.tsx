@@ -1,18 +1,30 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, AlertCircle, Clock, ArrowRight, Wallet as WalletIcon } from "lucide-react";
+import {
+  Loader2,
+  AlertCircle,
+  Clock,
+  ArrowRight,
+  Wallet as WalletIcon,
+  HandCoins,
+  CreditCard,
+  ExternalLink,
+  ShieldCheck,
+} from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { formatPiastres, parseEgpToPiastres } from "@/lib/money";
+import { cn } from "@/lib/utils";
 import ManualPaymentForm from "@/components/payments/ManualPaymentForm";
 import {
   ManualPaymentMethod,
   listEnabledManualMethods,
   submitManualWalletTopup,
 } from "@/lib/manual-payment-api";
+import { initiateKashierPayment } from "@/lib/kashier-api";
 
 interface Props {
   open: boolean;
@@ -21,14 +33,19 @@ interface Props {
   onSubmitted?: () => void;
 }
 
+type GatewayKey = "manual" | "kashier";
+
 export default function WalletTopupModal({ open, onOpenChange, currentBalance, onSubmitted }: Props) {
-  const [step, setStep] = useState<"amount" | "pay" | "done">("amount");
+  const [step, setStep] = useState<"amount" | "gateway" | "pay" | "done">("amount");
   const [amountInput, setAmountInput] = useState("");
   const [amountPiastres, setAmountPiastres] = useState<number | null>(null);
   const [maxBalance, setMaxBalance] = useState<number>(200000);
   const [methods, setMethods] = useState<ManualPaymentMethod[]>([]);
-  const [manualGatewayEnabled, setManualGatewayEnabled] = useState(false);
+  const [manualEnabled, setManualEnabled] = useState(false);
+  const [kashierEnabled, setKashierEnabled] = useState(false);
+  const [gateway, setGateway] = useState<GatewayKey | null>(null);
   const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reference, setReference] = useState<string | null>(null);
 
@@ -37,17 +54,20 @@ export default function WalletTopupModal({ open, onOpenChange, currentBalance, o
     setStep("amount");
     setAmountInput("");
     setAmountPiastres(null);
+    setGateway(null);
     setError(null);
     setReference(null);
     setLoading(true);
     (async () => {
-      const [{ data: cfg }, { data: gw }, ms] = await Promise.all([
+      const [{ data: cfg }, { data: gws }, ms] = await Promise.all([
         (supabase as any).from("wallet_gateway_settings").select("max_wallet_balance_piastres").eq("id", 1).maybeSingle(),
-        (supabase as any).from("payment_gateways").select("is_enabled").eq("gateway_key", "manual").maybeSingle(),
+        (supabase as any).from("payment_gateways").select("gateway_key, is_enabled").in("gateway_key", ["manual", "kashier"]),
         listEnabledManualMethods().catch(() => []),
       ]);
       setMaxBalance(cfg?.max_wallet_balance_piastres ?? 200000);
-      setManualGatewayEnabled(!!gw?.is_enabled);
+      const list = (gws ?? []) as Array<{ gateway_key: string; is_enabled: boolean }>;
+      setManualEnabled(!!list.find((g) => g.gateway_key === "manual")?.is_enabled);
+      setKashierEnabled(!!list.find((g) => g.gateway_key === "kashier")?.is_enabled);
       setMethods(ms);
       setLoading(false);
     })();
@@ -63,16 +83,26 @@ export default function WalletTopupModal({ open, onOpenChange, currentBalance, o
       setError(`المبلغ سيتجاوز الحد الأقصى للرصيد (${(maxBalance / 100).toFixed(0)} ج.م)`);
       return;
     }
-    if (!manualGatewayEnabled || methods.length === 0) {
+    const manualAvailable = manualEnabled && methods.length > 0;
+    if (!manualAvailable && !kashierEnabled) {
       setError("لا توجد بوابة دفع خارجية متاحة حاليًا. جرّب استخدام كارت الشحن.");
       return;
     }
     setError(null);
     setAmountPiastres(p);
-    setStep("pay");
+    // If only one gateway is available, skip the picker.
+    if (manualAvailable && !kashierEnabled) {
+      setGateway("manual");
+      setStep("pay");
+    } else if (!manualAvailable && kashierEnabled) {
+      setGateway("kashier");
+      setStep("pay");
+    } else {
+      setStep("gateway");
+    }
   };
 
-  const handleSubmit = async (args: { methodId: string; senderNumber: string; proofPath: string }) => {
+  const handleManualSubmit = async (args: { methodId: string; senderNumber: string; proofPath: string }) => {
     if (!amountPiastres) return;
     const data = await submitManualWalletTopup({
       amountPiastres,
@@ -85,8 +115,26 @@ export default function WalletTopupModal({ open, onOpenChange, currentBalance, o
     onSubmitted?.();
   };
 
+  const handleKashierConfirm = async () => {
+    if (!amountPiastres || submitting) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await initiateKashierPayment({
+        purpose: "wallet_topup",
+        amountPiastres,
+      });
+      window.location.assign(res.redirect_url);
+    } catch (e: any) {
+      setError(e?.message ?? "تعذّر بدء عملية الدفع");
+      setSubmitting(false);
+    }
+  };
+
+  const manualAvailable = manualEnabled && methods.length > 0;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(o) => !submitting && onOpenChange(o)}>
       <DialogContent className="max-w-lg overflow-hidden p-0">
         <div className="p-6 pb-4 border-b border-border">
           <DialogHeader>
@@ -136,22 +184,116 @@ export default function WalletTopupModal({ open, onOpenChange, currentBalance, o
                 </motion.div>
               )}
 
-              {step === "pay" && amountPiastres && (
-                <motion.div key="pay" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+              {step === "gateway" && amountPiastres && (
+                <motion.div key="gateway" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
                   <div className="rounded-xl bg-primary/5 border border-primary/20 p-3 text-sm text-center">
                     المبلغ المطلوب شحنه: <span className="font-bold">{formatPiastres(amountPiastres)}</span>
                   </div>
-                  <ManualPaymentForm
-                    methods={methods}
-                    onSubmit={handleSubmit}
-                    submitLabel="إرسال طلب الشحن"
-                  />
+                  <div className="text-sm font-bold">اختر طريقة الدفع</div>
+                  {kashierEnabled && (
+                    <button
+                      type="button"
+                      onClick={() => { setGateway("kashier"); setStep("pay"); }}
+                      className={cn(
+                        "w-full flex items-center gap-3 rounded-xl border border-border bg-card p-4 text-right hover:border-primary hover:bg-primary/5 transition-colors",
+                      )}
+                    >
+                      <CreditCard className="w-6 h-6 text-primary" />
+                      <div className="flex-1">
+                        <div className="font-bold">الدفع الإلكتروني (Kashier)</div>
+                        <div className="text-xs text-muted-foreground">بطاقة بنكية أو محفظة إلكترونية — تفعيل فوري</div>
+                      </div>
+                      <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                  )}
+                  {manualAvailable && (
+                    <button
+                      type="button"
+                      onClick={() => { setGateway("manual"); setStep("pay"); }}
+                      className="w-full flex items-center gap-3 rounded-xl border border-border bg-card p-4 text-right hover:border-primary hover:bg-primary/5 transition-colors"
+                    >
+                      <HandCoins className="w-6 h-6 text-primary" />
+                      <div className="flex-1">
+                        <div className="font-bold">تحويل يدوي (Vodafone Cash / InstaPay)</div>
+                        <div className="text-xs text-muted-foreground">تحويل + رفع إثبات، ثم مراجعة إدارية</div>
+                      </div>
+                      <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => setStep("amount")}
                     className="text-xs text-muted-foreground hover:text-foreground w-full text-center"
                   >
                     تعديل المبلغ
+                  </button>
+                </motion.div>
+              )}
+
+              {step === "pay" && amountPiastres && gateway === "manual" && (
+                <motion.div key="pay-manual" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+                  <div className="rounded-xl bg-primary/5 border border-primary/20 p-3 text-sm text-center">
+                    المبلغ المطلوب شحنه: <span className="font-bold">{formatPiastres(amountPiastres)}</span>
+                  </div>
+                  <ManualPaymentForm
+                    methods={methods}
+                    onSubmit={handleManualSubmit}
+                    submitLabel="إرسال طلب الشحن"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setStep(kashierEnabled && manualAvailable ? "gateway" : "amount")}
+                    className="text-xs text-muted-foreground hover:text-foreground w-full text-center"
+                  >
+                    رجوع
+                  </button>
+                </motion.div>
+              )}
+
+              {step === "pay" && amountPiastres && gateway === "kashier" && (
+                <motion.div key="pay-kashier" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-2 text-sm">
+                    <div className="flex items-center gap-2 font-bold">
+                      <CreditCard className="w-4 h-4 text-primary" />
+                      الدفع الإلكتروني عبر Kashier
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      سيتم تحويلك إلى صفحة Kashier الآمنة لإتمام الدفع، ثم العودة تلقائيًا وإضافة الرصيد إلى محفظتك.
+                    </p>
+                    <div className="pt-2 border-t border-primary/20 flex items-center justify-between">
+                      <span className="text-muted-foreground">المبلغ</span>
+                      <span className="font-bold text-base">{formatPiastres(amountPiastres)}</span>
+                    </div>
+                  </div>
+                  {error && (
+                    <div className="text-sm flex items-center gap-2 text-destructive">
+                      <AlertCircle className="w-4 h-4" /> {error}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <ShieldCheck className="w-3.5 h-3.5 text-primary" />
+                    تحويل آمن — سيتم إتمام الدفع على صفحة Kashier ثم العودة تلقائيًا.
+                  </div>
+                  <Button
+                    size="lg"
+                    className="w-full font-bold shadow-lg shadow-primary/20"
+                    disabled={submitting}
+                    onClick={handleKashierConfirm}
+                  >
+                    {submitting ? (
+                      <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                    ) : (
+                      <ExternalLink className="w-4 h-4 ml-2" />
+                    )}
+                    المتابعة إلى Kashier
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={() => setStep(manualAvailable ? "gateway" : "amount")}
+                    className="text-xs text-muted-foreground hover:text-foreground w-full text-center"
+                    disabled={submitting}
+                  >
+                    رجوع
                   </button>
                 </motion.div>
               )}
