@@ -155,7 +155,7 @@ export default function AdminPaymentGateways() {
             const Icon =
               g.gateway_key === "manual"
                 ? HandCoins
-                : g.gateway_key === "kashier"
+                : g.gateway_key === "kashier" || g.gateway_key === "paymob"
                   ? CreditCard
                   : WalletIcon;
             return (
