@@ -562,11 +562,19 @@ export default function AdminStudentDetail() {
 function StudentCourseContentCard({
   courseId,
   courseTitle,
+  subjectName,
+  stageName,
+  enrolledAt,
   userId,
+  attemptsUsed,
 }: {
   courseId: string;
   courseTitle: string;
+  subjectName?: string | null;
+  stageName?: string | null;
+  enrolledAt?: string | null;
   userId: string;
+  attemptsUsed: Record<string, number>;
 }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -574,6 +582,7 @@ function StudentCourseContentCard({
   const [titles, setTitles] = useState<Record<string, string>>({});
   const [effMap, setEffMap] = useState<Record<string, number>>({});
   const [granting, setGranting] = useState<string | null>(null);
+  const [grantQty, setGrantQty] = useState<Record<string, number>>({});
 
   const load = async () => {
     setLoading(true);
