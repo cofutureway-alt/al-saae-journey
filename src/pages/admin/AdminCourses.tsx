@@ -313,7 +313,7 @@ const AdminCourses = () => {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05 }}
-        className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6"
+        className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6"
       >
         <div className="relative md:col-span-1">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
