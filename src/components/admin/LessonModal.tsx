@@ -126,6 +126,8 @@ const LessonModal = ({ open, onOpenChange, unitId, lesson, nextPosition, onSaved
   const [savedLessonId, setSavedLessonId] = useState<string | null>(null);
   const [files, setFiles] = useState<FileRow[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [unlockQuizId, setUnlockQuizId] = useState<string | null>(null);
+  const [courseQuizzes, setCourseQuizzes] = useState<{ id: string; title: string }[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const {
