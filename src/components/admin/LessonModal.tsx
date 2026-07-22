@@ -467,6 +467,36 @@ const LessonModal = ({ open, onOpenChange, unitId, lesson, nextPosition, onSaved
                 </AnimatePresence>
               </div>
 
+              {/* Quiz gate picker — lock this lesson until a specific quiz is passed */}
+              <div className="space-y-2 rounded-lg border border-border/60 bg-muted/30 p-3">
+                <Label className="flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-amber-500" />
+                  قفل هذا الدرس حتى اجتياز اختبار (اختياري)
+                </Label>
+                <Select
+                  value={unlockQuizId ?? "__none__"}
+                  onValueChange={(v) => setUnlockQuizId(v === "__none__" ? null : v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="بدون قفل — الدرس متاح دائمًا" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">بدون قفل</SelectItem>
+                    {courseQuizzes
+                      .filter((q) => q.id !== lesson?.id)
+                      .map((q) => (
+                        <SelectItem key={q.id} value={q.id}>
+                          {q.title}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground">
+                  عند الاختيار: لن يفتح هذا الدرس للطالب إلا بعد اجتياز الاختبار المحدد.
+                </p>
+              </div>
+
+
               <div className="flex items-center justify-end gap-2 pt-2">
                 <Button
                   type="button"
