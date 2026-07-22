@@ -63,13 +63,14 @@ export default function WalletTopupModal({ open, onOpenChange, currentBalance, o
     (async () => {
       const [{ data: cfg }, { data: gws }, ms] = await Promise.all([
         (supabase as any).from("wallet_gateway_settings").select("max_wallet_balance_piastres").eq("id", 1).maybeSingle(),
-        (supabase as any).from("payment_gateways").select("gateway_key, is_enabled").in("gateway_key", ["manual", "kashier"]),
+        (supabase as any).from("payment_gateways").select("gateway_key, is_enabled").in("gateway_key", ["manual", "kashier", "paymob"]),
         listEnabledManualMethods().catch(() => []),
       ]);
       setMaxBalance(cfg?.max_wallet_balance_piastres ?? 200000);
       const list = (gws ?? []) as Array<{ gateway_key: string; is_enabled: boolean }>;
       setManualEnabled(!!list.find((g) => g.gateway_key === "manual")?.is_enabled);
       setKashierEnabled(!!list.find((g) => g.gateway_key === "kashier")?.is_enabled);
+      setPaymobEnabled(!!list.find((g) => g.gateway_key === "paymob")?.is_enabled);
       setMethods(ms);
       setLoading(false);
     })();
