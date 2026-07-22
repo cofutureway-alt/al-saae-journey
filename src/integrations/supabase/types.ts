@@ -596,29 +596,110 @@ export type Database = {
           },
         ]
       }
+      manual_payment_methods: {
+        Row: {
+          account_holder_name: string
+          account_number: string
+          created_at: string
+          id: string
+          is_enabled: boolean
+          method_type: string
+          support_whatsapp_number: string
+          updated_at: string
+        }
+        Insert: {
+          account_holder_name: string
+          account_number: string
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          method_type: string
+          support_whatsapp_number: string
+          updated_at?: string
+        }
+        Update: {
+          account_holder_name?: string
+          account_number?: string
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          method_type?: string
+          support_whatsapp_number?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      manual_payment_proofs: {
+        Row: {
+          created_at: string
+          id: string
+          manual_payment_method_id: string
+          payment_transaction_id: string
+          proof_image_url: string
+          sender_number: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          manual_payment_method_id: string
+          payment_transaction_id: string
+          proof_image_url: string
+          sender_number: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          manual_payment_method_id?: string
+          payment_transaction_id?: string
+          proof_image_url?: string
+          sender_number?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manual_payment_proofs_manual_payment_method_id_fkey"
+            columns: ["manual_payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "manual_payment_methods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manual_payment_proofs_payment_transaction_id_fkey"
+            columns: ["payment_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "payment_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_gateways: {
         Row: {
+          config: Json
           created_at: string
           display_name: string
           gateway_key: string
           id: string
           is_enabled: boolean
+          type: string
           updated_at: string
         }
         Insert: {
+          config?: Json
           created_at?: string
           display_name: string
           gateway_key: string
           id?: string
           is_enabled?: boolean
+          type?: string
           updated_at?: string
         }
         Update: {
+          config?: Json
           created_at?: string
           display_name?: string
           gateway_key?: string
           id?: string
           is_enabled?: boolean
+          type?: string
           updated_at?: string
         }
         Relationships: []
@@ -626,37 +707,55 @@ export type Database = {
       payment_transactions: {
         Row: {
           amount_piastres: number
-          course_id: string
+          course_id: string | null
           created_at: string
           failure_reason: string | null
           gateway_id: string
           id: string
+          purpose: string
           reference_number: string
+          requires_manual_review: boolean
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
           status: string
+          topup_amount_piastres: number | null
           user_id: string
           wallet_transaction_id: string | null
         }
         Insert: {
           amount_piastres: number
-          course_id: string
+          course_id?: string | null
           created_at?: string
           failure_reason?: string | null
           gateway_id: string
           id?: string
+          purpose?: string
           reference_number: string
+          requires_manual_review?: boolean
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           status: string
+          topup_amount_piastres?: number | null
           user_id: string
           wallet_transaction_id?: string | null
         }
         Update: {
           amount_piastres?: number
-          course_id?: string
+          course_id?: string | null
           created_at?: string
           failure_reason?: string | null
           gateway_id?: string
           id?: string
+          purpose?: string
           reference_number?: string
+          requires_manual_review?: boolean
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           status?: string
+          topup_amount_piastres?: number | null
           user_id?: string
           wallet_transaction_id?: string | null
         }
@@ -673,6 +772,13 @@ export type Database = {
             columns: ["gateway_id"]
             isOneToOne: false
             referencedRelation: "payment_gateways"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_transactions_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -1467,6 +1573,10 @@ export type Database = {
         Args: { p_amount_piastres: number; p_type: string; p_user_id: string }
         Returns: Json
       }
+      admin_approve_payment_request: {
+        Args: { p_transaction_id: string }
+        Returns: Json
+      }
       admin_bulk_adjust_wallets: {
         Args: { p_amount_piastres: number; p_type: string }
         Returns: Json
@@ -1484,6 +1594,40 @@ export type Database = {
         Returns: Json
       }
       admin_get_student: { Args: { _uid: string }; Returns: Json }
+      admin_list_payment_requests: {
+        Args: {
+          _limit?: number
+          _offset?: number
+          _purpose?: string
+          _status?: string
+        }
+        Returns: {
+          amount_piastres: number
+          course_id: string
+          course_title: string
+          created_at: string
+          failure_reason: string
+          gateway_display_name: string
+          method_account_holder: string
+          method_account_number: string
+          method_type: string
+          method_whatsapp: string
+          proof_image_url: string
+          purpose: string
+          reference_number: string
+          review_notes: string
+          reviewed_at: string
+          sender_number: string
+          status: string
+          student_name: string
+          student_phone: string
+          student_student_id: string
+          topup_amount_piastres: number
+          total_count: number
+          transaction_id: string
+          user_id: string
+        }[]
+      }
       admin_list_students: {
         Args: {
           _custom_filters?: Json
@@ -1538,6 +1682,10 @@ export type Database = {
         }[]
       }
       admin_regenerate_qr_token: { Args: { _uid: string }; Returns: string }
+      admin_reject_payment_request: {
+        Args: { p_reason: string; p_transaction_id: string }
+        Returns: Json
+      }
       admin_reset_all_wallets: { Args: never; Returns: Json }
       admin_save_feedback: {
         Args: { _attempt_id: string; _feedback: string }
@@ -1887,6 +2035,47 @@ export type Database = {
         Returns: undefined
       }
       start_quiz_attempt: { Args: { _quiz_id: string }; Returns: string }
+      student_list_own_payment_requests: {
+        Args: never
+        Returns: {
+          amount_piastres: number
+          course_id: string
+          course_title: string
+          created_at: string
+          failure_reason: string
+          gateway_display_name: string
+          method_account_number: string
+          method_type: string
+          method_whatsapp: string
+          proof_image_url: string
+          purpose: string
+          reference_number: string
+          review_notes: string
+          reviewed_at: string
+          sender_number: string
+          status: string
+          topup_amount_piastres: number
+          transaction_id: string
+        }[]
+      }
+      submit_manual_course_payment: {
+        Args: {
+          p_course_id: string
+          p_method_id: string
+          p_proof_image_url: string
+          p_sender_number: string
+        }
+        Returns: Json
+      }
+      submit_manual_wallet_topup: {
+        Args: {
+          p_amount_piastres: number
+          p_method_id: string
+          p_proof_image_url: string
+          p_sender_number: string
+        }
+        Returns: Json
+      }
       submit_quiz_attempt: { Args: { _attempt_id: string }; Returns: undefined }
     }
     Enums: {
