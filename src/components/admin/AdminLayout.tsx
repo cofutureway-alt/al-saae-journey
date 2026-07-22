@@ -12,6 +12,7 @@ import {
   GraduationCap,
   Landmark,
   Receipt,
+  Inbox,
   Layers,
   LogOut,
   Menu,
@@ -75,6 +76,7 @@ const nav: NavEntry[] = [
     children: [
       { to: "/admin/wallets", label: "المحافظ والكروت", icon: WalletIcon },
       { to: "/admin/payment-gateways", label: "بوابات الدفع", icon: Landmark },
+      { to: "/admin/payment-requests", label: "طلبات الدفع", icon: Inbox },
       { to: "/admin/billing", label: "الفوترة والمدفوعات", icon: Receipt },
     ],
   },
