@@ -446,6 +446,10 @@ export default function PurchaseCourseModal({
                     </Button>
                   </>
                 )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </DialogContent>
     </Dialog>
   );
