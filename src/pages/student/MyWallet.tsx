@@ -13,6 +13,7 @@ import {
   Check,
   Inbox,
   Sparkles,
+  HandCoins,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,6 +23,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatPiastres } from "@/lib/money";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import WalletTopupModal from "@/components/wallet/WalletTopupModal";
+import MyPaymentRequests from "@/components/payments/MyPaymentRequests";
 
 type TxType =
   | "card_redemption"
@@ -30,7 +33,8 @@ type TxType =
   | "bulk_charge"
   | "bulk_deduct"
   | "purchase"
-  | "admin_reset";
+  | "admin_reset"
+  | "gateway_topup";
 
 interface WalletTransaction {
   id: string;
@@ -53,9 +57,10 @@ const TYPE_LABEL: Record<TxType, string> = {
   bulk_deduct: "خصم جماعي",
   purchase: "شراء كورس",
   admin_reset: "تصفير الرصيد",
+  gateway_topup: "شحن عبر بوابة دفع",
 };
 
-const CREDIT_TYPES: TxType[] = ["card_redemption", "admin_charge", "bulk_charge"];
+const CREDIT_TYPES: TxType[] = ["card_redemption", "admin_charge", "bulk_charge", "gateway_topup"];
 
 const isCredit = (t: TxType) => CREDIT_TYPES.includes(t);
 const isReset = (t: TxType) => t === "admin_reset";
@@ -389,6 +394,8 @@ const MyWallet = () => {
   const [walletId, setWalletId] = useState<string | null>(null);
   const [loadingWallet, setLoadingWallet] = useState(true);
   const [transactions, setTransactions] = useState<WalletTransaction[] | null>(null);
+  const [topupOpen, setTopupOpen] = useState(false);
+  const [requestsReloadKey, setRequestsReloadKey] = useState(0);
 
   const loadWallet = async () => {
     if (!user) return;
@@ -440,7 +447,44 @@ const MyWallet = () => {
 
       <BalanceCard balance={balance} loading={loadingWallet} />
 
-      <RedeemSection onSuccess={handleRedeemSuccess} />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <RedeemSection onSuccess={handleRedeemSuccess} />
+        <motion.button
+          type="button"
+          onClick={() => setTopupOpen(true)}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="rounded-2xl border border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors p-6 md:p-8 text-right flex flex-col justify-between gap-3"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <HandCoins className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-foreground">شحن عبر بوابة دفع</h2>
+              <p className="text-xs text-muted-foreground">فودافون كاش / إنستاباي بمراجعة يدوية</p>
+            </div>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            أدخل المبلغ، ثم قم بالتحويل وارفع صورة الإيصال. سيتم إضافة الرصيد بعد المراجعة.
+          </div>
+          <span className="inline-flex items-center gap-1.5 text-sm font-bold text-primary self-start">
+            بدء طلب الشحن
+            <Sparkles className="w-4 h-4" />
+          </span>
+        </motion.button>
+      </div>
+
+      <MyPaymentRequests reloadKey={requestsReloadKey} />
+
+      <WalletTopupModal
+        open={topupOpen}
+        onOpenChange={setTopupOpen}
+        currentBalance={balance}
+        onSubmitted={() => setRequestsReloadKey((k) => k + 1)}
+      />
+
 
       <motion.div
         initial={{ opacity: 0, y: 12 }}

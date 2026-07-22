@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   CreditCard,
   Loader2,
   Save,
+  Settings2,
   ShieldAlert,
   Sparkles,
   Trash2,
   Wallet as WalletIcon,
+  HandCoins,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,6 +27,7 @@ interface Gateway {
   gateway_key: string;
   display_name: string;
   is_enabled: boolean;
+  type: "automatic" | "manual";
 }
 
 interface Settings {
@@ -32,6 +36,7 @@ interface Settings {
 }
 
 export default function AdminPaymentGateways() {
+  const navigate = useNavigate();
   const [gateways, setGateways] = useState<Gateway[]>([]);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -45,7 +50,7 @@ export default function AdminPaymentGateways() {
     const [{ data: gws }, { data: cfg }] = await Promise.all([
       (supabase as any)
         .from("payment_gateways")
-        .select("id, gateway_key, display_name, is_enabled")
+        .select("id, gateway_key, display_name, is_enabled, type")
         .order("created_at"),
       (supabase as any)
         .from("wallet_gateway_settings")
@@ -146,45 +151,54 @@ export default function AdminPaymentGateways() {
           </p>
         </div>
         <div className="divide-y divide-border">
-          {gateways.map((g, i) => (
-            <motion.div
-              key={g.id}
-              initial={{ opacity: 0, x: 8 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.04 }}
-              className="p-5 flex items-center gap-4"
-            >
-              <div
-                className={cn(
-                  "w-12 h-12 rounded-xl flex items-center justify-center shrink-0",
-                  g.is_enabled ? "bg-primary/10 text-primary" : "bg-accent text-muted-foreground",
-                )}
+          {gateways.map((g, i) => {
+            const Icon = g.gateway_key === "manual" ? HandCoins : WalletIcon;
+            return (
+              <motion.div
+                key={g.id}
+                initial={{ opacity: 0, x: 8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.04 }}
+                className="p-5 flex items-center gap-4 flex-wrap"
               >
-                <WalletIcon className="w-5 h-5" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold">{g.display_name}</div>
-                <div className="text-xs text-muted-foreground font-mono mt-0.5">{g.gateway_key}</div>
-              </div>
-              <div className="flex items-center gap-3">
-                <span
+                <div
                   className={cn(
-                    "text-xs font-semibold px-2 py-1 rounded",
-                    g.is_enabled
-                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                      : "bg-rose-500/10 text-rose-600 dark:text-rose-400",
+                    "w-12 h-12 rounded-xl flex items-center justify-center shrink-0",
+                    g.is_enabled ? "bg-primary/10 text-primary" : "bg-accent text-muted-foreground",
                   )}
                 >
-                  {g.is_enabled ? "مفعّلة" : "موقوفة"}
-                </span>
-                <Switch
-                  checked={g.is_enabled}
-                  disabled={togglingId === g.id}
-                  onCheckedChange={(v) => toggleGateway(g, v)}
-                />
-              </div>
-            </motion.div>
-          ))}
+                  <Icon className="w-5 h-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold">{g.display_name}</div>
+                  <div className="text-xs text-muted-foreground font-mono mt-0.5">{g.gateway_key}</div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span
+                    className={cn(
+                      "text-xs font-semibold px-2 py-1 rounded",
+                      g.is_enabled
+                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                        : "bg-rose-500/10 text-rose-600 dark:text-rose-400",
+                    )}
+                  >
+                    {g.is_enabled ? "مفعّلة" : "موقوفة"}
+                  </span>
+                  {g.gateway_key === "manual" && (
+                    <Button size="sm" variant="outline" onClick={() => navigate("/admin/payment-gateways/manual")}>
+                      <Settings2 className="w-4 h-4 ml-1.5" />
+                      إعدادات
+                    </Button>
+                  )}
+                  <Switch
+                    checked={g.is_enabled}
+                    disabled={togglingId === g.id}
+                    onCheckedChange={(v) => toggleGateway(g, v)}
+                  />
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
       </section>
 

@@ -44,6 +44,8 @@ import AdminQrSettings from "./pages/admin/AdminQrSettings";
 import AdminCards from "./pages/admin/AdminCards";
 import AdminWallets from "./pages/admin/AdminWallets";
 import AdminPaymentGateways from "./pages/admin/AdminPaymentGateways";
+import AdminManualPaymentSettings from "./pages/admin/AdminManualPaymentSettings";
+import AdminPaymentRequests from "./pages/admin/AdminPaymentRequests";
 import AdminBilling from "./pages/admin/AdminBilling";
 import CardBuilder from "./pages/admin/CardBuilder";
 import PublicStudentSnapshot from "./pages/PublicStudentSnapshot";
@@ -142,6 +144,8 @@ const App = () => (
               <Route path="cards" element={<AdminCards />} />
               <Route path="wallets" element={<AdminWallets />} />
               <Route path="payment-gateways" element={<AdminPaymentGateways />} />
+              <Route path="payment-gateways/manual" element={<AdminManualPaymentSettings />} />
+              <Route path="payment-requests" element={<AdminPaymentRequests />} />
               <Route path="billing" element={<AdminBilling />} />
               <Route path="cards/:templateId/edit" element={<CardBuilder />} />
               <Route path="account" element={<MyAccount />} />
