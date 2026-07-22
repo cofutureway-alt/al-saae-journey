@@ -68,7 +68,7 @@ export async function addGatewayMethod(args: {
 
 export async function updateGatewayMethod(
   id: string,
-  patch: Partial<Pick<GatewayMethodRow, "display_name" | "is_enabled" | "order_index">>,
+  patch: Partial<Pick<GatewayMethodRow, "display_name" | "description" | "is_enabled" | "order_index">>,
 ): Promise<void> {
   const { error } = await (supabase as any)
     .from("payment_gateway_methods")
