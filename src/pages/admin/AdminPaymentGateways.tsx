@@ -152,7 +152,12 @@ export default function AdminPaymentGateways() {
         </div>
         <div className="divide-y divide-border">
           {gateways.map((g, i) => {
-            const Icon = g.gateway_key === "manual" ? HandCoins : WalletIcon;
+            const Icon =
+              g.gateway_key === "manual"
+                ? HandCoins
+                : g.gateway_key === "kashier"
+                  ? CreditCard
+                  : WalletIcon;
             return (
               <motion.div
                 key={g.id}
@@ -186,6 +191,12 @@ export default function AdminPaymentGateways() {
                   </span>
                   {g.gateway_key === "manual" && (
                     <Button size="sm" variant="outline" onClick={() => navigate("/admin/payment-gateways/manual")}>
+                      <Settings2 className="w-4 h-4 ml-1.5" />
+                      إعدادات
+                    </Button>
+                  )}
+                  {g.gateway_key === "kashier" && (
+                    <Button size="sm" variant="outline" onClick={() => navigate("/admin/payment-gateways/kashier")}>
                       <Settings2 className="w-4 h-4 ml-1.5" />
                       إعدادات
                     </Button>
