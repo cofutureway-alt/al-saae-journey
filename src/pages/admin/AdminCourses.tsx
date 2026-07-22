@@ -405,16 +405,18 @@ const AdminCourses = () => {
                     <td className="p-3 hidden md:table-cell text-muted-foreground">{c.stage_name || "—"}</td>
                     <td className="p-3">
                       <Badge
-                        variant={c.status === "published" ? "default" : "secondary"}
                         className={
                           c.status === "published"
                             ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-0"
-                            : "bg-muted text-muted-foreground border-0"
+                            : c.status === "coming_soon"
+                              ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-0"
+                              : "bg-muted text-muted-foreground border-0"
                         }
                       >
-                        {c.status === "published" ? "منشورة" : "مسودة"}
+                        {c.status === "published" ? "منشورة" : c.status === "coming_soon" ? "قريبًا" : "مسودة"}
                       </Badge>
                     </td>
+
                     <td className="p-3 hidden lg:table-cell text-xs text-muted-foreground">
                       {c.units_count} وحدة · {c.lessons_count} درس · {c.quizzes_count} اختبار · {c.assignments_count} واجب
                     </td>
