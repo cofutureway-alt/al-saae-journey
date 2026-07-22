@@ -55,6 +55,7 @@ import PublicStudentSnapshot from "./pages/PublicStudentSnapshot";
 import PaymentKashierReturn from "./pages/PaymentKashierReturn";
 import PaymentPaymobReturn from "./pages/PaymentPaymobReturn";
 import PaymentFawaterakReturn from "./pages/PaymentFawaterakReturn";
+import Bundles from "./pages/Bundles";
 
 
 const queryClient = new QueryClient();
@@ -72,6 +73,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/courses" element={<Courses />} />
+            <Route path="/bundles" element={<Bundles />} />
             <Route path="/courses/:id" element={<CourseDetails />} />
             <Route path="/s/:qrToken" element={<PublicStudentSnapshot />} />
             <Route path="/payment/kashier/return" element={<PaymentKashierReturn />} />
