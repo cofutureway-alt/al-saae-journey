@@ -97,6 +97,7 @@ export default function WalletTopupModal({ open, onOpenChange, currentBalance, o
       manualAvailable ? "manual" : null,
       kashierEnabled ? "kashier" : null,
       paymobEnabled ? "paymob" : null,
+      fawaterakEnabled ? "fawaterak" : null,
     ].filter(Boolean) as GatewayKey[];
     if (gatewaysAvailable.length === 0) {
       setError("لا توجد بوابة دفع خارجية متاحة حاليًا. جرّب استخدام كارت الشحن.");
@@ -143,7 +144,32 @@ export default function WalletTopupModal({ open, onOpenChange, currentBalance, o
   const handleKashierConfirm = () => handleGatewayConfirm("kashier");
   const handlePaymobConfirm = () => handleGatewayConfirm("paymob");
 
+  const handleFawaterakPick = async (method: FawaterakMethod) => {
+    if (!amountPiastres || submitting) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await initiateFawaterakPayment({
+        purpose: "wallet_topup",
+        topupAmountPiastres: amountPiastres,
+        paymentMethodId: method.payment_id,
+      });
+      if (res.redirect_url) {
+        window.location.assign(res.redirect_url);
+        return;
+      }
+      setReference(res.reference_number);
+      setInlineCode({ code: res.inline?.code ?? null, expire_at: res.inline?.expire_at ?? null });
+      setSubmitting(false);
+    } catch (e: any) {
+      setError(e?.message ?? "تعذّر بدء عملية الدفع");
+      setSubmitting(false);
+    }
+  };
+
   const manualAvailable = manualEnabled && methods.length > 0;
+  const externalGatewayCount =
+    Number(kashierEnabled) + Number(paymobEnabled) + Number(fawaterakEnabled) + Number(manualAvailable);
 
   return (
     <Dialog open={open} onOpenChange={(o) => !submitting && onOpenChange(o)}>
