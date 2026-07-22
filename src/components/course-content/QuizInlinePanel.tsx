@@ -52,6 +52,7 @@ const QuizInlinePanel = ({ quizId, onAttemptCreated }: Props) => {
   const [starting, setStarting] = useState(false);
   const [detailsAttemptId, setDetailsAttemptId] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const [effectiveMax, setEffectiveMax] = useState<number | null>(null);
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 30_000);
