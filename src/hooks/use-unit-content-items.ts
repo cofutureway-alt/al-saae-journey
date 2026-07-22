@@ -18,8 +18,10 @@ export interface ContentItem {
   title: string;
   orderIndex: number;
   isCompleted: boolean;
+  isLocked: boolean;
+  lockReason: "ok" | "drip" | "quiz_gate";
+  gateQuizTitle: string | null;
   routePath: string;
-  // Extras used by the sidebar for type-specific badges/hints.
   extra?: {
     durationMinutes?: number;
     endAt?: string;
