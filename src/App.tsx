@@ -56,6 +56,11 @@ import PaymentKashierReturn from "./pages/PaymentKashierReturn";
 import PaymentPaymobReturn from "./pages/PaymentPaymobReturn";
 import PaymentFawaterakReturn from "./pages/PaymentFawaterakReturn";
 import Bundles from "./pages/Bundles";
+import LeaderboardLayout from "./pages/admin/leaderboard/LeaderboardLayout";
+import LeaderboardTop from "./pages/admin/leaderboard/LeaderboardTop";
+import LeaderboardLevels from "./pages/admin/leaderboard/LeaderboardLevels";
+import LeaderboardSettings from "./pages/admin/leaderboard/LeaderboardSettings";
+import LeaderboardBadgesPlaceholder from "./pages/admin/leaderboard/LeaderboardBadgesPlaceholder";
 
 
 const queryClient = new QueryClient();
@@ -163,6 +168,12 @@ const App = () => (
               <Route path="billing" element={<AdminBilling />} />
               <Route path="cards/:templateId/edit" element={<CardBuilder />} />
               <Route path="account" element={<MyAccount />} />
+              <Route path="leaderboard" element={<LeaderboardLayout />}>
+                <Route index element={<LeaderboardTop />} />
+                <Route path="badges" element={<LeaderboardBadgesPlaceholder />} />
+                <Route path="levels" element={<LeaderboardLevels />} />
+                <Route path="settings" element={<LeaderboardSettings />} />
+              </Route>
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
