@@ -169,6 +169,7 @@ const CourseInfoEditor = () => {
               ? new Date((data as any).discount_expires_at).toISOString().slice(0, 16)
               : "",
             content_drip_enabled: !!(data as any).content_drip_enabled,
+            is_featured: !!(data as any).is_featured,
           });
           setExistingThumb(data.thumbnail_url);
           setLoading(false);
