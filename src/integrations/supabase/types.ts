@@ -259,7 +259,9 @@ export type Database = {
           bundle_id: string
           courses_included: number
           created_at: string
+          discount_amount_piastres: number
           id: string
+          original_price_piastres: number | null
           payment_transaction_id: string | null
           user_id: string
         }
@@ -268,7 +270,9 @@ export type Database = {
           bundle_id: string
           courses_included: number
           created_at?: string
+          discount_amount_piastres?: number
           id?: string
+          original_price_piastres?: number | null
           payment_transaction_id?: string | null
           user_id: string
         }
@@ -277,7 +281,9 @@ export type Database = {
           bundle_id?: string
           courses_included?: number
           created_at?: string
+          discount_amount_piastres?: number
           id?: string
+          original_price_piastres?: number | null
           payment_transaction_id?: string | null
           user_id?: string
         }
@@ -313,7 +319,9 @@ export type Database = {
           description: string | null
           discount_expires_at: string | null
           discount_price_piastres: number | null
+          featured_at: string | null
           id: string
+          is_featured: boolean
           is_paid: boolean
           price_piastres: number | null
           slug: string | null
@@ -330,7 +338,9 @@ export type Database = {
           description?: string | null
           discount_expires_at?: string | null
           discount_price_piastres?: number | null
+          featured_at?: string | null
           id?: string
+          is_featured?: boolean
           is_paid?: boolean
           price_piastres?: number | null
           slug?: string | null
@@ -347,7 +357,9 @@ export type Database = {
           description?: string | null
           discount_expires_at?: string | null
           discount_price_piastres?: number | null
+          featured_at?: string | null
           id?: string
+          is_featured?: boolean
           is_paid?: boolean
           price_piastres?: number | null
           slug?: string | null
@@ -419,7 +431,9 @@ export type Database = {
           description: string | null
           discount_expires_at: string | null
           discount_price_piastres: number | null
+          featured_at: string | null
           id: string
+          is_featured: boolean
           is_paid: boolean
           price_piastres: number | null
           scheduled_publish_at: string | null
@@ -438,7 +452,9 @@ export type Database = {
           description?: string | null
           discount_expires_at?: string | null
           discount_price_piastres?: number | null
+          featured_at?: string | null
           id?: string
+          is_featured?: boolean
           is_paid?: boolean
           price_piastres?: number | null
           scheduled_publish_at?: string | null
@@ -457,7 +473,9 @@ export type Database = {
           description?: string | null
           discount_expires_at?: string | null
           discount_price_piastres?: number | null
+          featured_at?: string | null
           id?: string
+          is_featured?: boolean
           is_paid?: boolean
           price_piastres?: number | null
           scheduled_publish_at?: string | null
@@ -969,10 +987,12 @@ export type Database = {
           bundle_id: string | null
           course_id: string | null
           created_at: string
+          discount_amount_piastres: number
           failure_reason: string | null
           gateway_id: string
           gateway_metadata: Json
           id: string
+          original_price_piastres: number | null
           purpose: string
           reference_number: string
           requires_manual_review: boolean
@@ -989,10 +1009,12 @@ export type Database = {
           bundle_id?: string | null
           course_id?: string | null
           created_at?: string
+          discount_amount_piastres?: number
           failure_reason?: string | null
           gateway_id: string
           gateway_metadata?: Json
           id?: string
+          original_price_piastres?: number | null
           purpose?: string
           reference_number: string
           requires_manual_review?: boolean
@@ -1009,10 +1031,12 @@ export type Database = {
           bundle_id?: string | null
           course_id?: string | null
           created_at?: string
+          discount_amount_piastres?: number
           failure_reason?: string | null
           gateway_id?: string
           gateway_metadata?: Json
           id?: string
+          original_price_piastres?: number | null
           purpose?: string
           reference_number?: string
           requires_manual_review?: boolean
@@ -1860,6 +1884,14 @@ export type Database = {
       }
     }
     Views: {
+      discount_savings_summary: {
+        Row: {
+          created_at: string | null
+          discount_amount_piastres: number | null
+          kind: string | null
+        }
+        Relationships: []
+      }
       lessons_public: {
         Row: {
           id: string | null

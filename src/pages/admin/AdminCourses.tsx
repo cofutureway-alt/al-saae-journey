@@ -17,6 +17,7 @@ import {
   List,
   EyeOff,
   Eye,
+  Star,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -57,6 +58,7 @@ interface CourseRow {
   quizzes_count: number;
   assignments_count: number;
   questions_count: number;
+  is_featured: boolean;
 }
 
 interface StageOpt {
@@ -86,6 +88,7 @@ const AdminCourses = () => {
   const [query, setQuery] = useState("");
   const [stageFilter, setStageFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [featuredFilter, setFeaturedFilter] = useState<"all" | "featured" | "not_featured">("all");
   const [deleting, setDeleting] = useState<CourseRow | null>(null);
   const [deletePending, setDeletePending] = useState(false);
   const [view, setView] = useState<"grid" | "table">("grid");
@@ -98,7 +101,7 @@ const AdminCourses = () => {
       supabase
         .from("courses")
         .select(
-          "id, title, description, thumbnail_url, status, stage_id, created_at, stages(name), units(id, lessons(id))",
+          "id, title, description, thumbnail_url, status, stage_id, is_featured, created_at, stages(name), units(id, lessons(id))",
         )
         .order("created_at", { ascending: false }),
       supabase.from("stages").select("id, name").order("name"),
@@ -167,6 +170,7 @@ const AdminCourses = () => {
         quizzes_count: quizzesByCourse[c.id] ?? 0,
         assignments_count: assignmentsByCourse[c.id] ?? 0,
         questions_count: questionsByCourse[c.id] ?? 0,
+        is_featured: !!c.is_featured,
       })),
     );
   }, []);
@@ -182,9 +186,11 @@ const AdminCourses = () => {
         return false;
       if (stageFilter !== "all" && c.stage_id !== stageFilter) return false;
       if (statusFilter !== "all" && c.status !== statusFilter) return false;
+      if (featuredFilter === "featured" && !c.is_featured) return false;
+      if (featuredFilter === "not_featured" && c.is_featured) return false;
       return true;
     });
-  }, [courses, query, stageFilter, statusFilter]);
+  }, [courses, query, stageFilter, statusFilter, featuredFilter]);
 
   const confirmDelete = async () => {
     if (!deleting) return;
@@ -246,6 +252,20 @@ const AdminCourses = () => {
     }
   };
 
+  const toggleFeatured = async (c: CourseRow) => {
+    const next = !c.is_featured;
+    // optimistic
+    setCourses((prev) => prev ? prev.map((x) => x.id === c.id ? { ...x, is_featured: next } : x) : prev);
+    const { error } = await (supabase as any).from("courses").update({ is_featured: next }).eq("id", c.id);
+    if (error) {
+      setCourses((prev) => prev ? prev.map((x) => x.id === c.id ? { ...x, is_featured: !next } : x) : prev);
+      toast.error(error.message || "تعذّر تحديث حالة الإبراز");
+    } else {
+      toast.success(next ? "تم إبراز الدورة" : "تمّ إلغاء الإبراز");
+    }
+  };
+
+
   return (
     <div className="max-w-7xl mx-auto">
       <motion.div
@@ -293,7 +313,7 @@ const AdminCourses = () => {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05 }}
-        className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6"
+        className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6"
       >
         <div className="relative md:col-span-1">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -327,6 +347,16 @@ const AdminCourses = () => {
             <SelectItem value="coming_soon">قريبًا</SelectItem>
             <SelectItem value="draft">مسودة</SelectItem>
 
+          </SelectContent>
+        </Select>
+        <Select value={featuredFilter} onValueChange={(v) => setFeaturedFilter(v as any)}>
+          <SelectTrigger>
+            <SelectValue placeholder="الإبراز" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">الكل (مميز وغير مميز)</SelectItem>
+            <SelectItem value="featured">المميزة فقط</SelectItem>
+            <SelectItem value="not_featured">غير المميزة</SelectItem>
           </SelectContent>
         </Select>
       </motion.div>
@@ -386,6 +416,7 @@ const AdminCourses = () => {
                   <th className="p-3 font-semibold">العنوان</th>
                   <th className="p-3 font-semibold hidden md:table-cell">المرحلة</th>
                   <th className="p-3 font-semibold">الحالة</th>
+                  <th className="p-3 font-semibold text-center w-16" title="مميّز على الصفحة الرئيسية">مميّز</th>
                   <th className="p-3 font-semibold hidden lg:table-cell">المحتوى</th>
                   <th className="p-3 font-semibold text-left">إجراءات</th>
                 </tr>
@@ -415,6 +446,21 @@ const AdminCourses = () => {
                       >
                         {c.status === "published" ? "منشورة" : c.status === "coming_soon" ? "قريبًا" : "مسودة"}
                       </Badge>
+                    </td>
+
+                    <td className="p-3 text-center">
+                      <button
+                        type="button"
+                        onClick={() => toggleFeatured(c)}
+                        title={c.is_featured ? "إلغاء الإبراز" : "إبراز في الصفحة الرئيسية"}
+                        className={`inline-flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
+                          c.is_featured
+                            ? "text-amber-500 hover:bg-amber-500/10"
+                            : "text-muted-foreground/40 hover:text-amber-500 hover:bg-amber-500/10"
+                        }`}
+                      >
+                        <Star className={`w-4 h-4 ${c.is_featured ? "fill-current" : ""}`} />
+                      </button>
                     </td>
 
                     <td className="p-3 hidden lg:table-cell text-xs text-muted-foreground">
@@ -450,7 +496,21 @@ const AdminCourses = () => {
                 whileHover={{ y: -4 }}
                 className="group rounded-2xl border border-border/60 bg-card overflow-hidden hover:shadow-xl hover:shadow-primary/5 hover:border-primary/40 transition-all"
               >
-                <CourseThumb path={c.thumbnail_url} />
+                <div className="relative">
+                  <CourseThumb path={c.thumbnail_url} />
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); toggleFeatured(c); }}
+                    title={c.is_featured ? "إلغاء الإبراز" : "إبراز في الصفحة الرئيسية"}
+                    className={`absolute top-2 right-2 inline-flex items-center justify-center w-9 h-9 rounded-full backdrop-blur transition-colors shadow ${
+                      c.is_featured
+                        ? "bg-amber-500 text-white"
+                        : "bg-background/80 text-muted-foreground hover:text-amber-500"
+                    }`}
+                  >
+                    <Star className={`w-4 h-4 ${c.is_featured ? "fill-current" : ""}`} />
+                  </button>
+                </div>
                 <div className="p-5">
                   <div className="flex items-center justify-between mb-2">
                     <Badge

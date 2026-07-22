@@ -171,6 +171,7 @@ export default function AdminBilling() {
   const [loading, setLoading] = useState(true);
   const [courses, setCourses] = useState<CourseOpt[]>([]);
   const [totalStudentBalance, setTotalStudentBalance] = useState(0);
+  const [totalDiscountSavings, setTotalDiscountSavings] = useState(0);
   const [fundingBreakdown, setFundingBreakdown] = useState({
     admin: 0,
     cards: 0,
@@ -226,6 +227,16 @@ export default function AdminBilling() {
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
     setTopCardValues(arr);
+
+    // Discount savings — sum from the discount_savings_summary view (course + bundle)
+    const { data: sav } = await (supabase as any)
+      .from("discount_savings_summary")
+      .select("discount_amount_piastres");
+    const totalSav = ((sav ?? []) as { discount_amount_piastres: number }[]).reduce(
+      (s, r) => s + (r.discount_amount_piastres || 0),
+      0,
+    );
+    setTotalDiscountSavings(totalSav);
   }, []);
 
   const loadPayments = useCallback(async () => {
@@ -445,7 +456,7 @@ export default function AdminBilling() {
       </motion.div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         <SummaryCard
           icon={<TrendingUp className="w-5 h-5" />}
           label="إجمالي الأرباح (نطاق الفلتر)"
@@ -481,6 +492,13 @@ export default function AdminBilling() {
           value={formatPiastres(avgCounter)}
           hint="على المعاملات الناجحة داخل الفلتر"
           tone="violet"
+        />
+        <SummaryCard
+          icon={<TrendingUp className="w-5 h-5" />}
+          label="إجمالي وفورات الخصومات"
+          value={formatPiastres(totalDiscountSavings)}
+          hint="مجموع الفرق بين السعر الأصلي والمدفوع (دورات + باقات)"
+          tone="amber"
         />
       </div>
 
@@ -693,13 +711,14 @@ function SummaryCard({
   value: string;
   hint?: string;
   sub?: React.ReactNode;
-  tone: "primary" | "emerald" | "sky" | "violet";
+  tone: "primary" | "emerald" | "sky" | "violet" | "amber";
 }) {
   const toneClasses = {
     primary: "bg-primary/10 text-primary",
     emerald: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
     sky: "bg-sky-500/10 text-sky-600 dark:text-sky-400",
     violet: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
+    amber: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
   }[tone];
   return (
     <motion.div

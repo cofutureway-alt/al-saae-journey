@@ -22,11 +22,13 @@ export interface PublicCourse {
   discount_expires_at: string | null;
   status: "draft" | "coming_soon" | "published";
   scheduled_publish_at: string | null;
+  is_featured: boolean;
 }
 
 
-export function usePublicCourses(limit?: number) {
+export function usePublicCourses(limit?: number, opts?: { featuredOnly?: boolean }) {
   const [courses, setCourses] = useState<PublicCourse[] | null>(null);
+  const featuredOnly = !!opts?.featuredOnly;
 
   useEffect(() => {
     let cancelled = false;
@@ -34,10 +36,14 @@ export function usePublicCourses(limit?: number) {
       let q = (supabase as any)
         .from("courses")
         .select(
-          "id, title, description, thumbnail_url, stage_id, subject_id, created_at, is_paid, price_piastres, discount_price_piastres, discount_expires_at, status, scheduled_publish_at, stages(name), subjects(name), units(id)",
+          "id, title, description, thumbnail_url, stage_id, subject_id, created_at, is_paid, price_piastres, discount_price_piastres, discount_expires_at, status, scheduled_publish_at, is_featured, featured_at, stages(name), subjects(name), units(id)",
         )
-        .in("status", ["published", "coming_soon"])
-        .order("created_at", { ascending: false });
+        .in("status", ["published", "coming_soon"]);
+      if (featuredOnly) {
+        q = q.eq("is_featured", true).order("featured_at", { ascending: false, nullsFirst: false });
+      } else {
+        q = q.order("created_at", { ascending: false });
+      }
       if (limit) q = q.limit(limit);
 
       const { data, error } = await q;
@@ -126,6 +132,7 @@ export function usePublicCourses(limit?: number) {
           discount_expires_at: c.discount_expires_at ?? null,
           status: (c.status ?? "published") as PublicCourse["status"],
           scheduled_publish_at: c.scheduled_publish_at ?? null,
+          is_featured: !!c.is_featured,
         })),
 
       );
@@ -133,7 +140,7 @@ export function usePublicCourses(limit?: number) {
     return () => {
       cancelled = true;
     };
-  }, [limit]);
+  }, [limit, featuredOnly]);
 
   return courses;
 }

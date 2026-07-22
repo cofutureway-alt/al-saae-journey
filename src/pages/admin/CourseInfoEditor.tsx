@@ -44,6 +44,7 @@ const schema = z
     discount_price_egp: z.string().optional(),
     discount_expires_at: z.string().optional(),
     content_drip_enabled: z.boolean().default(false),
+    is_featured: z.boolean().default(false),
   })
   .superRefine((val, ctx) => {
     if (val.is_paid) {
@@ -120,6 +121,7 @@ const CourseInfoEditor = () => {
       discount_price_egp: "",
       discount_expires_at: "",
       content_drip_enabled: false,
+      is_featured: false,
     },
   });
   const stageVal = watch("stage_id");
@@ -128,6 +130,7 @@ const CourseInfoEditor = () => {
   const priceEgp = watch("price_egp");
   const discountEgp = watch("discount_price_egp");
   const dripEnabled = watch("content_drip_enabled");
+  const isFeatured = watch("is_featured");
 
   useEffect(() => {
     supabase
@@ -166,6 +169,7 @@ const CourseInfoEditor = () => {
               ? new Date((data as any).discount_expires_at).toISOString().slice(0, 16)
               : "",
             content_drip_enabled: !!(data as any).content_drip_enabled,
+            is_featured: !!(data as any).is_featured,
           });
           setExistingThumb(data.thumbnail_url);
           setLoading(false);
@@ -226,6 +230,7 @@ const CourseInfoEditor = () => {
         discount_price_piastres: discountPia,
         discount_expires_at: discountExp,
         content_drip_enabled: !!values.content_drip_enabled,
+        is_featured: !!values.is_featured,
       };
 
       if (isEdit) {
@@ -583,6 +588,23 @@ const CourseInfoEditor = () => {
             }
           />
         </div>
+
+        {/* Featured toggle */}
+        <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-4 md:p-5 flex items-start gap-4">
+          <div className="flex-1 min-w-0">
+            <Label className="text-base font-bold flex items-center gap-2">
+              <span className="text-amber-500">★</span> إبراز في الصفحة الرئيسية
+            </Label>
+            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+              عند التفعيل: تظهر الدورة في قسم "الدورات المميزة" على الصفحة الرئيسية (بحدّ أقصى 6 دورات، مرتبة بالأحدث تمييزًا).
+            </p>
+          </div>
+          <Switch
+            checked={!!isFeatured}
+            onCheckedChange={(v) => setValue("is_featured", v, { shouldDirty: true })}
+          />
+        </div>
+
 
         <div className="space-y-2">
           <Label>الصورة المصغّرة</Label>
