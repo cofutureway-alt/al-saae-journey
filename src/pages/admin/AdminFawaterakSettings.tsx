@@ -215,6 +215,10 @@ export default function AdminFawaterakSettings() {
         </div>
       </motion.section>
 
+      <GatewayMethodsPanel gatewayKey="fawaterak" />
+
+
+
       <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="rounded-2xl border border-border bg-card overflow-hidden">
         <div className="p-5 border-b border-border flex items-center gap-3">
           <Info className="w-5 h-5 text-primary" />
