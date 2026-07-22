@@ -496,7 +496,21 @@ const AdminCourses = () => {
                 whileHover={{ y: -4 }}
                 className="group rounded-2xl border border-border/60 bg-card overflow-hidden hover:shadow-xl hover:shadow-primary/5 hover:border-primary/40 transition-all"
               >
-                <CourseThumb path={c.thumbnail_url} />
+                <div className="relative">
+                  <CourseThumb path={c.thumbnail_url} />
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); toggleFeatured(c); }}
+                    title={c.is_featured ? "إلغاء الإبراز" : "إبراز في الصفحة الرئيسية"}
+                    className={`absolute top-2 right-2 inline-flex items-center justify-center w-9 h-9 rounded-full backdrop-blur transition-colors shadow ${
+                      c.is_featured
+                        ? "bg-amber-500 text-white"
+                        : "bg-background/80 text-muted-foreground hover:text-amber-500"
+                    }`}
+                  >
+                    <Star className={`w-4 h-4 ${c.is_featured ? "fill-current" : ""}`} />
+                  </button>
+                </div>
                 <div className="p-5">
                   <div className="flex items-center justify-between mb-2">
                     <Badge
