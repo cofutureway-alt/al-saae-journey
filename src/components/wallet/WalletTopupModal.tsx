@@ -26,6 +26,8 @@ import {
 } from "@/lib/manual-payment-api";
 import { initiateKashierPayment } from "@/lib/kashier-api";
 import { initiatePaymobPayment } from "@/lib/paymob-api";
+import { initiateFawaterakPayment, FawaterakMethod } from "@/lib/fawaterak-api";
+import FawaterakMethodPicker from "@/components/payments/FawaterakMethodPicker";
 
 interface Props {
   open: boolean;
@@ -34,7 +36,7 @@ interface Props {
   onSubmitted?: () => void;
 }
 
-type GatewayKey = "manual" | "kashier" | "paymob";
+type GatewayKey = "manual" | "kashier" | "paymob" | "fawaterak";
 
 export default function WalletTopupModal({ open, onOpenChange, currentBalance, onSubmitted }: Props) {
   const [step, setStep] = useState<"amount" | "gateway" | "pay" | "done">("amount");
@@ -45,11 +47,13 @@ export default function WalletTopupModal({ open, onOpenChange, currentBalance, o
   const [manualEnabled, setManualEnabled] = useState(false);
   const [kashierEnabled, setKashierEnabled] = useState(false);
   const [paymobEnabled, setPaymobEnabled] = useState(false);
+  const [fawaterakEnabled, setFawaterakEnabled] = useState(false);
   const [gateway, setGateway] = useState<GatewayKey | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reference, setReference] = useState<string | null>(null);
+  const [inlineCode, setInlineCode] = useState<{ code: string | null; expire_at: string | null } | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -59,11 +63,12 @@ export default function WalletTopupModal({ open, onOpenChange, currentBalance, o
     setGateway(null);
     setError(null);
     setReference(null);
+    setInlineCode(null);
     setLoading(true);
     (async () => {
       const [{ data: cfg }, { data: gws }, ms] = await Promise.all([
         (supabase as any).from("wallet_gateway_settings").select("max_wallet_balance_piastres").eq("id", 1).maybeSingle(),
-        (supabase as any).from("payment_gateways").select("gateway_key, is_enabled").in("gateway_key", ["manual", "kashier", "paymob"]),
+        (supabase as any).from("payment_gateways").select("gateway_key, is_enabled").in("gateway_key", ["manual", "kashier", "paymob", "fawaterak"]),
         listEnabledManualMethods().catch(() => []),
       ]);
       setMaxBalance(cfg?.max_wallet_balance_piastres ?? 200000);
@@ -71,6 +76,7 @@ export default function WalletTopupModal({ open, onOpenChange, currentBalance, o
       setManualEnabled(!!list.find((g) => g.gateway_key === "manual")?.is_enabled);
       setKashierEnabled(!!list.find((g) => g.gateway_key === "kashier")?.is_enabled);
       setPaymobEnabled(!!list.find((g) => g.gateway_key === "paymob")?.is_enabled);
+      setFawaterakEnabled(!!list.find((g) => g.gateway_key === "fawaterak")?.is_enabled);
       setMethods(ms);
       setLoading(false);
     })();
@@ -91,6 +97,7 @@ export default function WalletTopupModal({ open, onOpenChange, currentBalance, o
       manualAvailable ? "manual" : null,
       kashierEnabled ? "kashier" : null,
       paymobEnabled ? "paymob" : null,
+      fawaterakEnabled ? "fawaterak" : null,
     ].filter(Boolean) as GatewayKey[];
     if (gatewaysAvailable.length === 0) {
       setError("لا توجد بوابة دفع خارجية متاحة حاليًا. جرّب استخدام كارت الشحن.");
@@ -137,7 +144,32 @@ export default function WalletTopupModal({ open, onOpenChange, currentBalance, o
   const handleKashierConfirm = () => handleGatewayConfirm("kashier");
   const handlePaymobConfirm = () => handleGatewayConfirm("paymob");
 
+  const handleFawaterakPick = async (method: FawaterakMethod) => {
+    if (!amountPiastres || submitting) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await initiateFawaterakPayment({
+        purpose: "wallet_topup",
+        topupAmountPiastres: amountPiastres,
+        paymentMethodId: method.payment_id,
+      });
+      if (res.redirect_url) {
+        window.location.assign(res.redirect_url);
+        return;
+      }
+      setReference(res.reference_number);
+      setInlineCode({ code: res.inline?.code ?? null, expire_at: res.inline?.expire_at ?? null });
+      setSubmitting(false);
+    } catch (e: any) {
+      setError(e?.message ?? "تعذّر بدء عملية الدفع");
+      setSubmitting(false);
+    }
+  };
+
   const manualAvailable = manualEnabled && methods.length > 0;
+  const externalGatewayCount =
+    Number(kashierEnabled) + Number(paymobEnabled) + Number(fawaterakEnabled) + Number(manualAvailable);
 
   return (
     <Dialog open={open} onOpenChange={(o) => !submitting && onOpenChange(o)}>
@@ -238,6 +270,22 @@ export default function WalletTopupModal({ open, onOpenChange, currentBalance, o
                       <div className="flex-1">
                         <div className="font-bold">تحويل يدوي (Vodafone Cash / InstaPay)</div>
                         <div className="text-xs text-muted-foreground">تحويل + رفع إثبات، ثم مراجعة إدارية</div>
+                      </div>
+                      <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                  )}
+                  {fawaterakEnabled && (
+                    <button
+                      type="button"
+                      onClick={() => { setGateway("fawaterak"); setStep("pay"); }}
+                      className={cn(
+                        "w-full flex items-center gap-3 rounded-xl border border-border bg-card p-4 text-right hover:border-primary hover:bg-primary/5 transition-colors",
+                      )}
+                    >
+                      <CreditCard className="w-6 h-6 text-primary" />
+                      <div className="flex-1">
+                        <div className="font-bold">الدفع الإلكتروني (فواتيرك)</div>
+                        <div className="text-xs text-muted-foreground">فيزا / فوري / ميزة — عبر Fawaterak</div>
                       </div>
                       <ArrowRight className="w-4 h-4 text-muted-foreground" />
                     </button>
@@ -392,6 +440,50 @@ export default function WalletTopupModal({ open, onOpenChange, currentBalance, o
                   <Button size="lg" className="w-full" onClick={() => onOpenChange(false)}>
                     إغلاق
                   </Button>
+                </motion.div>
+              )}
+
+              {step === "pay" && amountPiastres && gateway === "fawaterak" && (
+                <motion.div key="pay-fawaterak" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-2 text-sm">
+                    <div className="flex items-center gap-2 font-bold">
+                      <CreditCard className="w-4 h-4 text-primary" />
+                      الدفع الإلكتروني عبر فواتيرك
+                    </div>
+                    <div className="pt-2 border-t border-primary/20 flex items-center justify-between">
+                      <span className="text-muted-foreground">المبلغ</span>
+                      <span className="font-bold text-base">{formatPiastres(amountPiastres)}</span>
+                    </div>
+                  </div>
+                  {error && (
+                    <div className="text-sm flex items-center gap-2 text-destructive">
+                      <AlertCircle className="w-4 h-4" /> {error}
+                    </div>
+                  )}
+                  {inlineCode ? (
+                    <div className="rounded-xl border border-primary/30 bg-background p-4 space-y-1 text-center">
+                      <div className="text-xs text-muted-foreground">كود الدفع لدى فواتيرك</div>
+                      <div className="font-mono text-2xl font-extrabold tracking-widest">{inlineCode.code ?? "—"}</div>
+                      {inlineCode.expire_at && (
+                        <div className="text-[11px] text-muted-foreground">
+                          صالح حتى: <span dir="ltr">{String(inlineCode.expire_at)}</span>
+                        </div>
+                      )}
+                      <div className="text-[11px] text-muted-foreground pt-1 leading-relaxed">
+                        استخدم هذا الكود لإتمام الدفع في منفذ فواتيرك. سيُضاف الرصيد تلقائيًا فور استلام التأكيد.
+                      </div>
+                    </div>
+                  ) : (
+                    <FawaterakMethodPicker onPick={handleFawaterakPick} disabled={submitting} />
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setStep(externalGatewayCount > 1 ? "gateway" : "amount")}
+                    className="text-xs text-muted-foreground hover:text-foreground w-full text-center"
+                    disabled={submitting}
+                  >
+                    رجوع
+                  </button>
                 </motion.div>
               )}
             </AnimatePresence>

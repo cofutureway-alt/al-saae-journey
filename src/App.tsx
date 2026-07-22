@@ -47,12 +47,14 @@ import AdminPaymentGateways from "./pages/admin/AdminPaymentGateways";
 import AdminManualPaymentSettings from "./pages/admin/AdminManualPaymentSettings";
 import AdminKashierSettings from "./pages/admin/AdminKashierSettings";
 import AdminPaymobSettings from "./pages/admin/AdminPaymobSettings";
+import AdminFawaterakSettings from "./pages/admin/AdminFawaterakSettings";
 import AdminPaymentRequests from "./pages/admin/AdminPaymentRequests";
 import AdminBilling from "./pages/admin/AdminBilling";
 import CardBuilder from "./pages/admin/CardBuilder";
 import PublicStudentSnapshot from "./pages/PublicStudentSnapshot";
 import PaymentKashierReturn from "./pages/PaymentKashierReturn";
 import PaymentPaymobReturn from "./pages/PaymentPaymobReturn";
+import PaymentFawaterakReturn from "./pages/PaymentFawaterakReturn";
 
 
 const queryClient = new QueryClient();
@@ -74,6 +76,7 @@ const App = () => (
             <Route path="/s/:qrToken" element={<PublicStudentSnapshot />} />
             <Route path="/payment/kashier/return" element={<PaymentKashierReturn />} />
             <Route path="/payment/paymob/return" element={<PaymentPaymobReturn />} />
+            <Route path="/payment/fawaterak/return" element={<PaymentFawaterakReturn />} />
             <Route
               path="/courses/:courseId/learn/:contentType/:contentId"
               element={
@@ -153,6 +156,7 @@ const App = () => (
               <Route path="payment-gateways/manual" element={<AdminManualPaymentSettings />} />
               <Route path="payment-gateways/kashier" element={<AdminKashierSettings />} />
               <Route path="payment-gateways/paymob" element={<AdminPaymobSettings />} />
+              <Route path="payment-gateways/fawaterak" element={<AdminFawaterakSettings />} />
               <Route path="payment-requests" element={<AdminPaymentRequests />} />
               <Route path="billing" element={<AdminBilling />} />
               <Route path="cards/:templateId/edit" element={<CardBuilder />} />
