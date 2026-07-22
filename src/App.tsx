@@ -45,10 +45,12 @@ import AdminCards from "./pages/admin/AdminCards";
 import AdminWallets from "./pages/admin/AdminWallets";
 import AdminPaymentGateways from "./pages/admin/AdminPaymentGateways";
 import AdminManualPaymentSettings from "./pages/admin/AdminManualPaymentSettings";
+import AdminKashierSettings from "./pages/admin/AdminKashierSettings";
 import AdminPaymentRequests from "./pages/admin/AdminPaymentRequests";
 import AdminBilling from "./pages/admin/AdminBilling";
 import CardBuilder from "./pages/admin/CardBuilder";
 import PublicStudentSnapshot from "./pages/PublicStudentSnapshot";
+import PaymentKashierReturn from "./pages/PaymentKashierReturn";
 
 
 const queryClient = new QueryClient();
