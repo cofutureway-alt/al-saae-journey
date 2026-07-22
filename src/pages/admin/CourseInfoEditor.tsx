@@ -568,6 +568,22 @@ const CourseInfoEditor = () => {
         </div>
 
 
+        {/* Content drip toggle */}
+        <div className="rounded-xl border border-border/70 bg-accent/20 p-4 md:p-5 flex items-start gap-4">
+          <div className="flex-1 min-w-0">
+            <Label className="text-base font-bold">التسلسل الإجباري (Content Drip)</Label>
+            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+              عند التفعيل: لن يستطيع الطالب فتح أي درس أو اختبار أو واجب قبل إتمام العنصر الذي يسبقه مباشرةً في المنهج.
+            </p>
+          </div>
+          <Switch
+            checked={!!dripEnabled}
+            onCheckedChange={(v) =>
+              setValue("content_drip_enabled", v, { shouldDirty: true })
+            }
+          />
+        </div>
+
         <div className="space-y-2">
           <Label>الصورة المصغّرة</Label>
           <div
