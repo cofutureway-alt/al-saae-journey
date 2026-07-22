@@ -22,7 +22,12 @@ import {
   Focus,
   Trophy,
   Wallet as WalletIcon,
+  Lock,
+  Unlock,
+  Plus,
+  ListTree,
 } from "lucide-react";
+import { resolveCourseLockState, adminGrantQuizAttempt, effectiveMaxAttempts, type CourseLockRow } from "@/lib/course-lock-api";
 import AdminWalletAdjustPanel from "@/components/admin/AdminWalletAdjustPanel";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
