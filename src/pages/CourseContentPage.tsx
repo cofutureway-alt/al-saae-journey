@@ -230,7 +230,23 @@ const CourseContentPage = () => {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.2 }}
             >
-              {activeItem.type === "lesson" ? (
+              {activeItem.isLocked && !isAdmin ? (
+                <div className="rounded-2xl border-2 border-dashed border-amber-500/40 bg-amber-500/5 p-8 md:p-12 text-center">
+                  <motion.div
+                    animate={{ rotate: [0, -6, 6, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 1 }}
+                    className="w-16 h-16 rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400 mx-auto mb-4 flex items-center justify-center"
+                  >
+                    <Lock className="w-8 h-8" />
+                  </motion.div>
+                  <h2 className="text-xl md:text-2xl font-bold mb-2">هذا العنصر مقفل</h2>
+                  <p className="text-muted-foreground max-w-md mx-auto">
+                    {activeItem.lockReason === "quiz_gate"
+                      ? `يجب اجتياز اختبار "${activeItem.gateQuizTitle ?? "المطلوب"}" أولاً لفتح هذا الدرس.`
+                      : "يجب إكمال العنصر السابق أولاً قبل الوصول إلى هذا العنصر."}
+                  </p>
+                </div>
+              ) : activeItem.type === "lesson" ? (
                 <LessonContentPanel
                   key={activeItem.id}
                   lessonId={activeItem.id}
