@@ -87,18 +87,19 @@ export default function WalletTopupModal({ open, onOpenChange, currentBalance, o
       return;
     }
     const manualAvailable = manualEnabled && methods.length > 0;
-    if (!manualAvailable && !kashierEnabled) {
+    const gatewaysAvailable = [
+      manualAvailable ? "manual" : null,
+      kashierEnabled ? "kashier" : null,
+      paymobEnabled ? "paymob" : null,
+    ].filter(Boolean) as GatewayKey[];
+    if (gatewaysAvailable.length === 0) {
       setError("لا توجد بوابة دفع خارجية متاحة حاليًا. جرّب استخدام كارت الشحن.");
       return;
     }
     setError(null);
     setAmountPiastres(p);
-    // If only one gateway is available, skip the picker.
-    if (manualAvailable && !kashierEnabled) {
-      setGateway("manual");
-      setStep("pay");
-    } else if (!manualAvailable && kashierEnabled) {
-      setGateway("kashier");
+    if (gatewaysAvailable.length === 1) {
+      setGateway(gatewaysAvailable[0]);
       setStep("pay");
     } else {
       setStep("gateway");
