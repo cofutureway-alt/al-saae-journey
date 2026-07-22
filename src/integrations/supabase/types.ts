@@ -674,6 +674,7 @@ export type Database = {
       payment_gateway_methods: {
         Row: {
           created_at: string
+          description: string | null
           display_name: string
           gateway_id: string
           id: string
@@ -685,6 +686,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          description?: string | null
           display_name: string
           gateway_id: string
           id?: string
@@ -696,6 +698,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          description?: string | null
           display_name?: string
           gateway_id?: string
           id?: string
