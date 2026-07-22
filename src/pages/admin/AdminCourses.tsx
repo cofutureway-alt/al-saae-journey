@@ -454,15 +454,17 @@ const AdminCourses = () => {
                 <div className="p-5">
                   <div className="flex items-center justify-between mb-2">
                     <Badge
-                      variant={c.status === "published" ? "default" : "secondary"}
                       className={
                         c.status === "published"
                           ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 border-0"
-                          : "bg-muted text-muted-foreground border-0"
+                          : c.status === "coming_soon"
+                            ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-0"
+                            : "bg-muted text-muted-foreground border-0"
                       }
                     >
-                      {c.status === "published" ? "منشورة" : "مسودة"}
+                      {c.status === "published" ? "منشورة" : c.status === "coming_soon" ? "قريبًا" : "مسودة"}
                     </Badge>
+
                     {c.stage_name && (
                       <span className="text-xs text-muted-foreground">
                         {c.stage_name}
