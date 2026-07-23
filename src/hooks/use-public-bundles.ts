@@ -5,7 +5,7 @@ export interface PublicBundle {
   id: string;
   title: string;
   description: string | null;
-  thumbnail_url: string | null;
+  cover_image_url: string | null;
   is_paid: boolean;
   price_piastres: number | null;
   discount_price_piastres: number | null;
