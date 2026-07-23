@@ -81,6 +81,11 @@
   body {
     @apply bg-background text-foreground font-tajawal;
   }
+  @media (max-width: 767px) {
+    body {
+      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 96px);
+    }
+  }
 }
 
 /* --- Lesson video player: block YouTube/Vimeo branding & pass-through clicks --- */
