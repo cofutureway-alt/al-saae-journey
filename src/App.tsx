@@ -68,6 +68,7 @@ import LeaderboardPage from "./pages/Leaderboard";
 import MyBadges from "./pages/student/MyBadges";
 import MyLevels from "./pages/student/MyLevels";
 import BadgeCelebration from "./components/BadgeCelebration";
+import MobileBottomNav from "./components/MobileBottomNav";
 
 
 const queryClient = new QueryClient();
