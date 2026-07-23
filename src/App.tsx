@@ -19,6 +19,8 @@ import AdminBundles from "./pages/admin/AdminBundles";
 import AdminBundleEditor from "./pages/admin/AdminBundleEditor";
 import AdminStages from "./pages/admin/AdminStages";
 import AdminSubjects from "./pages/admin/AdminSubjects";
+import AdminBooks from "./pages/admin/AdminBooks";
+import AdminBookEditor from "./pages/admin/AdminBookEditor";
 import CourseInfoEditor from "./pages/admin/CourseInfoEditor";
 import CourseBuilder from "./pages/admin/CourseBuilder";
 import Courses from "./pages/Courses";
