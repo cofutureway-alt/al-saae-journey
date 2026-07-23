@@ -57,6 +57,7 @@ const nav: NavEntry[] = [
     children: [
       { to: "/admin/courses", label: "الدورات", icon: BookOpen },
       { to: "/admin/bundles", label: "الباقات", icon: Package },
+      { to: "/admin/books", label: "إدارة الكتب", icon: BookMarked },
       { to: "/admin/stages", label: "المراحل", icon: Layers },
       { to: "/admin/subjects", label: "المواد الدراسية", icon: BookMarked },
     ],
