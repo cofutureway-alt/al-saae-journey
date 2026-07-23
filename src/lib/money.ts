@@ -80,3 +80,35 @@ export function getEffectiveCoursePrice(
   }
   return { amount: price, isFree: price === 0, discountActive: false, originalAmount: null, discountExpiresAt: null };
 }
+
+/**
+ * Generalized effective-price computation used by courses, bundles, and books.
+ * Books are never free, so `isFree` may still be true only if a base price of 0 is passed.
+ */
+export function getEffectivePrice(
+  basePricePiastres: number | null | undefined,
+  discountPricePiastres: number | null | undefined,
+  discountExpiresAt: string | Date | null | undefined,
+  now: Date = new Date(),
+): EffectivePrice {
+  if (basePricePiastres === null || basePricePiastres === undefined) {
+    return { amount: 0, isFree: true, discountActive: false, originalAmount: null, discountExpiresAt: null };
+  }
+  const price = basePricePiastres;
+  if (discountPricePiastres !== null && discountPricePiastres !== undefined) {
+    const expiresAt = discountExpiresAt
+      ? (discountExpiresAt instanceof Date ? discountExpiresAt : new Date(discountExpiresAt))
+      : null;
+    const active = !expiresAt || now.getTime() < expiresAt.getTime();
+    if (active) {
+      return {
+        amount: discountPricePiastres,
+        isFree: discountPricePiastres === 0,
+        discountActive: true,
+        originalAmount: price,
+        discountExpiresAt: expiresAt,
+      };
+    }
+  }
+  return { amount: price, isFree: price === 0, discountActive: false, originalAmount: null, discountExpiresAt: null };
+}
