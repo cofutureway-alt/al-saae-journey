@@ -82,6 +82,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <BadgeCelebration />
+          <MobileBottomNav />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
