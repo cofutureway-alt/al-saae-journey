@@ -25,6 +25,7 @@ import {
   Users,
   Wallet as WalletIcon,
   BadgeDollarSign,
+  Package,
   Trophy,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -55,6 +56,7 @@ const nav: NavEntry[] = [
     icon: GraduationCap,
     children: [
       { to: "/admin/courses", label: "الدورات", icon: BookOpen },
+      { to: "/admin/bundles", label: "الباقات", icon: Package },
       { to: "/admin/stages", label: "المراحل", icon: Layers },
       { to: "/admin/subjects", label: "المواد الدراسية", icon: BookMarked },
     ],
