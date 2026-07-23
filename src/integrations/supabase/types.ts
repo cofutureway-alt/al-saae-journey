@@ -2758,6 +2758,21 @@ export type Database = {
           total_points: number
         }[]
       }
+      leaderboard_top_full: {
+        Args: { p_limit: number; p_offset: number }
+        Returns: {
+          avatar_url: string
+          badge_count: number
+          full_name: string
+          leaderboard_visible: boolean
+          level_icon_url: string
+          level_id: string
+          level_name: string
+          rank: number
+          student_id: string
+          total_points: number
+        }[]
+      }
       list_assignment_submissions:
         | {
             Args: {
