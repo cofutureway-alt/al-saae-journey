@@ -160,6 +160,8 @@ const App = () => (
 
               <Route path="courses" element={<AdminCourses />} />
               <Route path="bundles" element={<AdminBundles />} />
+              <Route path="bundles/new" element={<AdminBundleEditor />} />
+              <Route path="bundles/:id" element={<AdminBundleEditor />} />
               <Route path="courses/new" element={<CourseInfoEditor />} />
               <Route path="courses/:id/edit" element={<CourseInfoEditor />} />
               <Route path="courses/:id/builder" element={<CourseBuilder />} />
