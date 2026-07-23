@@ -158,6 +158,7 @@ const App = () => (
               <Route path="students/:id" element={<AdminStudentDetail />} />
 
               <Route path="courses" element={<AdminCourses />} />
+              <Route path="bundles" element={<AdminBundles />} />
               <Route path="courses/new" element={<CourseInfoEditor />} />
               <Route path="courses/:id/edit" element={<CourseInfoEditor />} />
               <Route path="courses/:id/builder" element={<CourseBuilder />} />
