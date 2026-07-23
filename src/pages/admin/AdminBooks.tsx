@@ -95,7 +95,7 @@ const StatCard = ({
   pending?: boolean;
 }) => {
   const numeric = typeof value === "number" ? value : null;
-  const count = useCountUp(numeric ?? 0, 900);
+  const { count } = useCountUp(numeric ?? 0, 900);
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
