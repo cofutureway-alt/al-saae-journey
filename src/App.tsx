@@ -16,6 +16,7 @@ import NotFound from "./pages/NotFound";
 import AdminStatistics from "./pages/admin/AdminStatistics";
 import AdminCourses from "./pages/admin/AdminCourses";
 import AdminBundles from "./pages/admin/AdminBundles";
+import AdminBundleEditor from "./pages/admin/AdminBundleEditor";
 import AdminStages from "./pages/admin/AdminStages";
 import AdminSubjects from "./pages/admin/AdminSubjects";
 import CourseInfoEditor from "./pages/admin/CourseInfoEditor";
