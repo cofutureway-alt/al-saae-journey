@@ -46,7 +46,7 @@ export function usePublicBundles(limit?: number, opts?: { featuredOnly?: boolean
           id: b.id,
           title: b.title,
           description: b.description ?? null,
-          thumbnail_url: b.thumbnail_url ?? null,
+          cover_image_url: b.cover_image_url ?? null,
           is_paid: !!b.is_paid,
           price_piastres: b.price_piastres ?? null,
           discount_price_piastres: b.discount_price_piastres ?? null,
