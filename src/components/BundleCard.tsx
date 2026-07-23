@@ -13,7 +13,7 @@ interface Props {
 }
 
 export const BundleCard = ({ bundle, index = 0 }: Props) => {
-  const thumb = useSignedThumbnail(bundle.thumbnail_url);
+  const thumb = useSignedThumbnail(bundle.cover_image_url);
   const now = Date.now();
   const discountActive =
     bundle.is_paid &&

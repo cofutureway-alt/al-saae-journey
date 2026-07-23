@@ -16,6 +16,7 @@ import NotFound from "./pages/NotFound";
 import AdminStatistics from "./pages/admin/AdminStatistics";
 import AdminCourses from "./pages/admin/AdminCourses";
 import AdminBundles from "./pages/admin/AdminBundles";
+import AdminBundleEditor from "./pages/admin/AdminBundleEditor";
 import AdminStages from "./pages/admin/AdminStages";
 import AdminSubjects from "./pages/admin/AdminSubjects";
 import CourseInfoEditor from "./pages/admin/CourseInfoEditor";
@@ -159,6 +160,8 @@ const App = () => (
 
               <Route path="courses" element={<AdminCourses />} />
               <Route path="bundles" element={<AdminBundles />} />
+              <Route path="bundles/new" element={<AdminBundleEditor />} />
+              <Route path="bundles/:id" element={<AdminBundleEditor />} />
               <Route path="courses/new" element={<CourseInfoEditor />} />
               <Route path="courses/:id/edit" element={<CourseInfoEditor />} />
               <Route path="courses/:id/builder" element={<CourseBuilder />} />

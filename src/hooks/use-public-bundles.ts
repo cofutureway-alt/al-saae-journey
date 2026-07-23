@@ -5,7 +5,7 @@ export interface PublicBundle {
   id: string;
   title: string;
   description: string | null;
-  thumbnail_url: string | null;
+  cover_image_url: string | null;
   is_paid: boolean;
   price_piastres: number | null;
   discount_price_piastres: number | null;
@@ -25,7 +25,7 @@ export function usePublicBundles(limit?: number, opts?: { featuredOnly?: boolean
       let q = (supabase as any)
         .from("bundles")
         .select(
-          "id, title, description, thumbnail_url, is_paid, price_piastres, discount_price_piastres, discount_expires_at, is_featured, featured_at, created_at, bundle_courses(course_id)",
+          "id, title, description, cover_image_url, is_paid, price_piastres, discount_price_piastres, discount_expires_at, is_featured, featured_at, created_at, bundle_courses(course_id)",
         )
         .eq("status", "published");
       if (featuredOnly) {
@@ -46,7 +46,7 @@ export function usePublicBundles(limit?: number, opts?: { featuredOnly?: boolean
           id: b.id,
           title: b.title,
           description: b.description ?? null,
-          thumbnail_url: b.thumbnail_url ?? null,
+          cover_image_url: b.cover_image_url ?? null,
           is_paid: !!b.is_paid,
           price_piastres: b.price_piastres ?? null,
           discount_price_piastres: b.discount_price_piastres ?? null,
