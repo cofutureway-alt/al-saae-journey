@@ -273,6 +273,92 @@ export type Database = {
           },
         ]
       }
+      badge_conditions: {
+        Row: {
+          badge_id: string
+          condition_type: string
+          created_at: string
+          id: string
+          target_int: number | null
+          target_uuid: string | null
+        }
+        Insert: {
+          badge_id: string
+          condition_type: string
+          created_at?: string
+          id?: string
+          target_int?: number | null
+          target_uuid?: string | null
+        }
+        Update: {
+          badge_id?: string
+          condition_type?: string
+          created_at?: string
+          id?: string
+          target_int?: number | null
+          target_uuid?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "badge_conditions_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      badges: {
+        Row: {
+          created_at: string
+          description: string | null
+          icon_url: string
+          id: string
+          is_active: boolean
+          name: string
+          points_reward: number | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          icon_url: string
+          id?: string
+          is_active?: boolean
+          name: string
+          points_reward?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          icon_url?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          points_reward?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "badges_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "leaderboard_eligible_students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "badges_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bundle_courses: {
         Row: {
           bundle_id: string
@@ -1405,6 +1491,7 @@ export type Database = {
           guardian_phone: string | null
           id: string
           is_banned: boolean
+          leaderboard_visible: boolean
           phone_number: string | null
           qr_token: string
           registration_type: string | null
@@ -1424,6 +1511,7 @@ export type Database = {
           guardian_phone?: string | null
           id: string
           is_banned?: boolean
+          leaderboard_visible?: boolean
           phone_number?: string | null
           qr_token?: string
           registration_type?: string | null
@@ -1443,6 +1531,7 @@ export type Database = {
           guardian_phone?: string | null
           id?: string
           is_banned?: boolean
+          leaderboard_visible?: boolean
           phone_number?: string | null
           qr_token?: string
           registration_type?: string | null
@@ -1878,6 +1967,49 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      student_badges: {
+        Row: {
+          awarded_at: string
+          badge_id: string
+          id: string
+          student_id: string
+        }
+        Insert: {
+          awarded_at?: string
+          badge_id: string
+          id?: string
+          student_id: string
+        }
+        Update: {
+          awarded_at?: string
+          badge_id?: string
+          id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_badges_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard_eligible_students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_badges_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       student_quiz_attempt_grants: {
         Row: {
@@ -2446,6 +2578,14 @@ export type Database = {
         Returns: Json
       }
       effective_bundle_price: { Args: { _bundle_id: string }; Returns: number }
+      evaluate_badge_for_all_students: {
+        Args: { p_badge_id: string }
+        Returns: number
+      }
+      evaluate_badges_for_student: {
+        Args: { p_student: string }
+        Returns: string[]
+      }
       expire_stale_fawaterak_pending: { Args: never; Returns: number }
       finalize_gateway_transaction: {
         Args: {
@@ -2586,6 +2726,27 @@ export type Database = {
         Returns: boolean
       }
       leaderboard_eligible_count: { Args: never; Returns: number }
+      leaderboard_public_top10: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          badge_count: number
+          full_name: string
+          level_icon_url: string
+          level_id: string
+          level_name: string
+          rank: number
+          student_id: string
+          total_points: number
+        }[]
+      }
+      leaderboard_rank_for_student: {
+        Args: { p_student: string }
+        Returns: {
+          rank: number
+          total_students: number
+        }[]
+      }
       leaderboard_top: {
         Args: { p_limit: number; p_offset: number }
         Returns: {
@@ -2818,6 +2979,19 @@ export type Database = {
         Returns: undefined
       }
       start_quiz_attempt: { Args: { _quiz_id: string }; Returns: string }
+      student_condition_progress: {
+        Args: {
+          p_condition_type: string
+          p_student: string
+          p_target_int: number
+          p_target_uuid: string
+        }
+        Returns: {
+          current_value: number
+          satisfied: boolean
+          target_value: number
+        }[]
+      }
       student_current_level: {
         Args: { p_student: string }
         Returns: {
@@ -2836,6 +3010,16 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      student_earned_badges: {
+        Args: { p_student: string }
+        Returns: {
+          awarded_at: string
+          badge_id: string
+          description: string
+          icon_url: string
+          name: string
+        }[]
       }
       student_effective_quiz_max_attempts: {
         Args: { _quiz_id: string; _user_id: string }
