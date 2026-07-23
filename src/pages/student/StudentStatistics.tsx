@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { useCountUp } from "@/hooks/use-count-up";
 import { getResultDisplay } from "@/lib/quiz-result";
 import AttemptDetailsModal from "@/components/quiz/AttemptDetailsModal";
+import AchievementsWidgets from "@/components/student/AchievementsWidgets";
 
 const StudentStatistics = () => {
   const stats = useStudentStats();
@@ -41,6 +42,8 @@ const StudentStatistics = () => {
           تقدّمك عبر الدورات ونسبة إنجازك الفعلية.
         </p>
       </motion.div>
+
+      <AchievementsWidgets />
 
       {!stats ? (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

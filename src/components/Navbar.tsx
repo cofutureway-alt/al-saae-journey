@@ -28,7 +28,7 @@ const Navbar = () => {
     { label: "الرئيسية", href: "/" },
     { label: "المميزات", href: "/#features" },
     { label: "الدورات", href: "/courses" },
-    { label: "المتصدرين", href: "/#leaderboard" },
+    { label: "المتصدرين", href: "/leaderboard" },
   ];
 
   const handleNav = (e: React.MouseEvent, href: string) => {

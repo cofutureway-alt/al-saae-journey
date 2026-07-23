@@ -61,6 +61,11 @@ import LeaderboardTop from "./pages/admin/leaderboard/LeaderboardTop";
 import LeaderboardLevels from "./pages/admin/leaderboard/LeaderboardLevels";
 import LeaderboardSettings from "./pages/admin/leaderboard/LeaderboardSettings";
 import LeaderboardBadgesPlaceholder from "./pages/admin/leaderboard/LeaderboardBadgesPlaceholder";
+import LeaderboardBadges from "./pages/admin/leaderboard/LeaderboardBadges";
+import LeaderboardPage from "./pages/Leaderboard";
+import MyBadges from "./pages/student/MyBadges";
+import MyLevels from "./pages/student/MyLevels";
+import BadgeCelebration from "./components/BadgeCelebration";
 
 
 const queryClient = new QueryClient();
@@ -73,12 +78,14 @@ const App = () => (
       <Sonner position="top-center" richColors closeButton />
       <BrowserRouter>
         <AuthProvider>
+          <BadgeCelebration />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/courses" element={<Courses />} />
             <Route path="/bundles" element={<Bundles />} />
+            <Route path="/leaderboard" element={<LeaderboardPage />} />
             <Route path="/courses/:id" element={<CourseDetails />} />
             <Route path="/s/:qrToken" element={<PublicStudentSnapshot />} />
             <Route path="/payment/kashier/return" element={<PaymentKashierReturn />} />
@@ -131,6 +138,8 @@ const App = () => (
               <Route path="assignment-submissions" element={<MyAssignmentSubmissions />} />
               <Route path="account" element={<MyAccount />} />
               <Route path="wallet" element={<MyWallet />} />
+              <Route path="badges" element={<MyBadges />} />
+              <Route path="levels" element={<MyLevels />} />
             </Route>
             <Route
               path="/admin"
@@ -170,7 +179,7 @@ const App = () => (
               <Route path="account" element={<MyAccount />} />
               <Route path="leaderboard" element={<LeaderboardLayout />}>
                 <Route index element={<LeaderboardTop />} />
-                <Route path="badges" element={<LeaderboardBadgesPlaceholder />} />
+                <Route path="badges" element={<LeaderboardBadges />} />
                 <Route path="levels" element={<LeaderboardLevels />} />
                 <Route path="settings" element={<LeaderboardSettings />} />
               </Route>
