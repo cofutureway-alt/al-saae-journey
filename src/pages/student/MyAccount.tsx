@@ -265,6 +265,35 @@ const MyAccount = () => {
           </div>
         )}
       </motion.section>
+
+      <motion.section
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
+        className="rounded-3xl border border-amber-500/30 bg-amber-500/5 p-6"
+      >
+        <div className="flex items-start gap-4">
+          <div className="w-11 h-11 rounded-2xl bg-amber-500/15 border border-amber-500/40 flex items-center justify-center shrink-0">
+            <Trophy className="w-5 h-5 text-amber-500" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="font-black text-lg">الظهور في لوحة المتصدرين</h2>
+              <Switch
+                checked={leaderboardVisible}
+                onCheckedChange={handleToggleVisibility}
+                disabled={savingVisibility}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1.5">
+              {leaderboardVisible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+              {leaderboardVisible
+                ? "اسمك وصورتك يظهران على صفحة المتصدرين العامة عند وجودك ضمن الأوائل."
+                : "أنت مخفي من صفحة المتصدرين العامة (لا تزال تظهر في لوحة الإدارة)."}
+            </p>
+          </div>
+        </div>
+      </motion.section>
     </div>
   );
 };
