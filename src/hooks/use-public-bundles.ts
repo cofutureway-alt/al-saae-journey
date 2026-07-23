@@ -25,7 +25,7 @@ export function usePublicBundles(limit?: number, opts?: { featuredOnly?: boolean
       let q = (supabase as any)
         .from("bundles")
         .select(
-          "id, title, description, thumbnail_url, is_paid, price_piastres, discount_price_piastres, discount_expires_at, is_featured, featured_at, created_at, bundle_courses(course_id)",
+          "id, title, description, cover_image_url, is_paid, price_piastres, discount_price_piastres, discount_expires_at, is_featured, featured_at, created_at, bundle_courses(course_id)",
         )
         .eq("status", "published");
       if (featuredOnly) {
