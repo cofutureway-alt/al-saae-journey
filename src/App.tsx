@@ -19,6 +19,8 @@ import AdminBundles from "./pages/admin/AdminBundles";
 import AdminBundleEditor from "./pages/admin/AdminBundleEditor";
 import AdminStages from "./pages/admin/AdminStages";
 import AdminSubjects from "./pages/admin/AdminSubjects";
+import AdminBooks from "./pages/admin/AdminBooks";
+import AdminBookEditor from "./pages/admin/AdminBookEditor";
 import CourseInfoEditor from "./pages/admin/CourseInfoEditor";
 import CourseBuilder from "./pages/admin/CourseBuilder";
 import Courses from "./pages/Courses";
@@ -169,6 +171,9 @@ const App = () => (
               <Route path="courses/:id/builder" element={<CourseBuilder />} />
               <Route path="stages" element={<AdminStages />} />
               <Route path="subjects" element={<AdminSubjects />} />
+              <Route path="books" element={<AdminBooks />} />
+              <Route path="books/new" element={<AdminBookEditor />} />
+              <Route path="books/:id" element={<AdminBookEditor />} />
               <Route path="settings" element={<AdminSettings />} />
               <Route path="settings/video-player" element={<AdminVideoPlayerSettings />} />
               <Route path="settings/registration-form" element={<AdminRegistrationForm />} />

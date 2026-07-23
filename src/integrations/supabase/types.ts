@@ -359,6 +359,146 @@ export type Database = {
           },
         ]
       }
+      book_images: {
+        Row: {
+          book_id: string
+          created_at: string
+          id: string
+          image_url: string
+          order_index: number
+        }
+        Insert: {
+          book_id: string
+          created_at?: string
+          id?: string
+          image_url: string
+          order_index?: number
+        }
+        Update: {
+          book_id?: string
+          created_at?: string
+          id?: string
+          image_url?: string
+          order_index?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_images_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      books: {
+        Row: {
+          author: string | null
+          book_type: string
+          cover_image_url: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          digital_file_url: string | null
+          discount_expires_at: string | null
+          discount_price_piastres: number | null
+          download_limit: number | null
+          height_cm: number | null
+          id: string
+          is_drm_protected: boolean
+          isbn: string | null
+          language: string
+          length_cm: number | null
+          price_piastres: number
+          publication_year: number | null
+          publisher: string | null
+          stage_id: string | null
+          status: string
+          stock_quantity: number | null
+          subject_id: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+          weight_grams: number | null
+          width_cm: number | null
+        }
+        Insert: {
+          author?: string | null
+          book_type: string
+          cover_image_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          digital_file_url?: string | null
+          discount_expires_at?: string | null
+          discount_price_piastres?: number | null
+          download_limit?: number | null
+          height_cm?: number | null
+          id?: string
+          is_drm_protected?: boolean
+          isbn?: string | null
+          language?: string
+          length_cm?: number | null
+          price_piastres: number
+          publication_year?: number | null
+          publisher?: string | null
+          stage_id?: string | null
+          status?: string
+          stock_quantity?: number | null
+          subject_id?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          weight_grams?: number | null
+          width_cm?: number | null
+        }
+        Update: {
+          author?: string | null
+          book_type?: string
+          cover_image_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          digital_file_url?: string | null
+          discount_expires_at?: string | null
+          discount_price_piastres?: number | null
+          download_limit?: number | null
+          height_cm?: number | null
+          id?: string
+          is_drm_protected?: boolean
+          isbn?: string | null
+          language?: string
+          length_cm?: number | null
+          price_piastres?: number
+          publication_year?: number | null
+          publisher?: string | null
+          stage_id?: string | null
+          status?: string
+          stock_quantity?: number | null
+          subject_id?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          weight_grams?: number | null
+          width_cm?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "books_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "stages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "books_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bundle_courses: {
         Row: {
           bundle_id: string
