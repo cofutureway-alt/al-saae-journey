@@ -33,6 +33,9 @@ export function usePublicCourses(limit?: number, opts?: { featuredOnly?: boolean
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      // Lazy safety-net: flip any coming_soon courses whose scheduled_publish_at has passed.
+      // Complements the pg_cron job so the transition still works if cron is paused.
+      (supabase as any).rpc("auto_publish_scheduled_courses").then(() => {}, () => {});
       let q = (supabase as any)
         .from("courses")
         .select(
