@@ -1239,7 +1239,7 @@ function TransactionsTable({
             <thead className="bg-accent/40 text-xs">
               <tr>
                 <th className="text-right p-3 font-semibold">الطالب</th>
-                <th className="text-right p-3 font-semibold">الدورة</th>
+                <th className="text-right p-3 font-semibold">المنتج / نوع العملية</th>
                 <th className="text-right p-3 font-semibold">المبلغ</th>
                 <th className="text-right p-3 font-semibold">الحالة</th>
                 <th className="text-right p-3 font-semibold">المرجع</th>
