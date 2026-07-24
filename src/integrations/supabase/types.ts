@@ -359,6 +359,52 @@ export type Database = {
           },
         ]
       }
+      book_cart_items: {
+        Row: {
+          added_at: string
+          book_id: string
+          id: string
+          quantity: number
+          user_id: string
+        }
+        Insert: {
+          added_at?: string
+          book_id: string
+          id?: string
+          quantity?: number
+          user_id: string
+        }
+        Update: {
+          added_at?: string
+          book_id?: string
+          id?: string
+          quantity?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_cart_items_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "book_cart_items_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard_eligible_students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "book_cart_items_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       book_images: {
         Row: {
           book_id: string
@@ -2077,6 +2123,51 @@ export type Database = {
           label?: string
           options?: Json | null
           order_index?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      shipping_settings: {
+        Row: {
+          default_shipping_price_piastres: number
+          id: number
+          updated_at: string
+        }
+        Insert: {
+          default_shipping_price_piastres?: number
+          id: number
+          updated_at?: string
+        }
+        Update: {
+          default_shipping_price_piastres?: number
+          id?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      shipping_zones: {
+        Row: {
+          created_at: string
+          id: string
+          is_governorate: boolean
+          name: string
+          shipping_price_piastres: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_governorate?: boolean
+          name: string
+          shipping_price_piastres?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_governorate?: boolean
+          name?: string
+          shipping_price_piastres?: number | null
           updated_at?: string
         }
         Relationships: []
