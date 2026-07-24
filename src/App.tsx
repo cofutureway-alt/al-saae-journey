@@ -179,6 +179,7 @@ const App = () => (
               <Route path="books" element={<AdminBooks />} />
               <Route path="books/new" element={<AdminBookEditor />} />
               <Route path="books/:id" element={<AdminBookEditor />} />
+              <Route path="shipping-zones" element={<AdminShippingZones />} />
               <Route path="settings" element={<AdminSettings />} />
               <Route path="settings/video-player" element={<AdminVideoPlayerSettings />} />
               <Route path="settings/registration-form" element={<AdminRegistrationForm />} />
