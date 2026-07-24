@@ -55,6 +55,12 @@ export const STATUS_TONE: Record<
     ring: "ring-rose-500/25",
     dot: "bg-rose-500",
   },
+  delivery_failed: {
+    bg: "bg-orange-500/10",
+    text: "text-orange-600 dark:text-orange-300",
+    ring: "ring-orange-500/25",
+    dot: "bg-orange-500",
+  },
   refund_requested: {
     bg: "bg-violet-500/10",
     text: "text-violet-600 dark:text-violet-300",
