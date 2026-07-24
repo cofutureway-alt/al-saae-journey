@@ -485,6 +485,133 @@ export type Database = {
           },
         ]
       }
+      book_order_refund_requests: {
+        Row: {
+          id: string
+          order_id: string
+          reason: string
+          requested_at: string
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          order_id: string
+          reason: string
+          requested_at?: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          order_id?: string
+          reason?: string
+          requested_at?: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_order_refund_requests_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "book_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "book_order_refund_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "leaderboard_eligible_students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "book_order_refund_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "book_order_refund_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard_eligible_students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "book_order_refund_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      book_order_status_history: {
+        Row: {
+          changed_by: string | null
+          created_at: string
+          from_status: string | null
+          id: string
+          notes: string | null
+          notify_student: boolean
+          order_id: string
+          to_status: string
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          notes?: string | null
+          notify_student?: boolean
+          order_id: string
+          to_status: string
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          notes?: string | null
+          notify_student?: boolean
+          order_id?: string
+          to_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_order_status_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "leaderboard_eligible_students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "book_order_status_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "book_order_status_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "book_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       book_orders: {
         Row: {
           cancelled_at: string | null
@@ -2820,6 +2947,17 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_list_book_orders: {
+        Args: {
+          p_from?: string
+          p_gateway_key?: string
+          p_search?: string
+          p_shipping_zone_id?: string
+          p_status?: string
+          p_to?: string
+        }
+        Returns: Json
+      }
       admin_list_bundles: {
         Args: never
         Returns: {
@@ -2958,6 +3096,15 @@ export type Database = {
         Args: { p_delta: number; p_notes: string; p_student: string }
         Returns: string
       }
+      change_book_order_status: {
+        Args: {
+          p_new_status: string
+          p_notes?: string
+          p_notify_student?: boolean
+          p_order_id: string
+        }
+        Returns: Json
+      }
       create_book_order: {
         Args: {
           p_gateway_key: string
@@ -3000,6 +3147,7 @@ export type Database = {
       get_attempt_details: { Args: { _attempt_id: string }; Returns: Json }
       get_attempt_questions: { Args: { _attempt_id: string }; Returns: Json }
       get_book_order_detail: { Args: { p_order_id: string }; Returns: Json }
+      get_book_order_full: { Args: { p_order_id: string }; Returns: Json }
       get_lessons_public: {
         Args: never
         Returns: {
@@ -3255,6 +3403,7 @@ export type Database = {
               user_id: string
             }[]
           }
+      list_my_book_orders: { Args: never; Returns: Json }
       list_my_quiz_attempts: {
         Args: { _quiz_id: string }
         Returns: {
@@ -3364,6 +3513,10 @@ export type Database = {
       purchase_bundle: { Args: { p_bundle_id: string }; Returns: Json }
       purchase_course: { Args: { p_course_id: string }; Returns: Json }
       redeem_top_up_card: { Args: { p_code: string }; Returns: Json }
+      request_book_order_refund: {
+        Args: { p_order_id: string; p_reason: string }
+        Returns: Json
+      }
       reset_leaderboard: { Args: never; Returns: number }
       resolve_course_lock_state: {
         Args: { _course_id: string; _user_id: string }
