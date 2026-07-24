@@ -1329,3 +1329,84 @@ function TransactionsTable({
     </section>
   );
 }
+
+function TopProductsSection({
+  title,
+  totalLabel,
+  totalRevenue,
+  rows,
+  icon,
+  emptyText,
+}: {
+  title: string;
+  totalLabel: string;
+  totalRevenue: number;
+  rows: Array<{
+    key: string;
+    title: string;
+    count: number;
+    revenue: number;
+    countLabel: string;
+  }>;
+  icon: React.ReactNode;
+  emptyText: string;
+}) {
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="rounded-2xl border border-border bg-card overflow-hidden"
+    >
+      <div className="p-4 sm:p-5 border-b border-border flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          {icon}
+          <h2 className="font-bold">{title}</h2>
+        </div>
+        <div className="text-xs text-muted-foreground">
+          {totalLabel}:{" "}
+          <span className="font-bold text-emerald-600 dark:text-emerald-400">
+            {formatPiastres(totalRevenue)}
+          </span>
+        </div>
+      </div>
+      {rows.length === 0 ? (
+        <div className="p-8 text-sm text-muted-foreground text-center">
+          {emptyText}
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-accent/40 text-xs">
+              <tr>
+                <th className="text-right p-3 font-semibold w-10">#</th>
+                <th className="text-right p-3 font-semibold">العنوان</th>
+                <th className="text-right p-3 font-semibold">
+                  {rows[0]?.countLabel ?? "العدد"}
+                </th>
+                <th className="text-right p-3 font-semibold">الإيرادات</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r, i) => (
+                <motion.tr
+                  key={r.key}
+                  initial={{ opacity: 0, x: 8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.03 }}
+                  className="border-t border-border"
+                >
+                  <td className="p-3 text-muted-foreground">{i + 1}</td>
+                  <td className="p-3 font-medium">{r.title}</td>
+                  <td className="p-3">{r.count}</td>
+                  <td className="p-3 font-bold text-emerald-600 dark:text-emerald-400">
+                    {formatPiastres(r.revenue)}
+                  </td>
+                </motion.tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </motion.section>
+  );
+}
