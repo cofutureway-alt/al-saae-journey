@@ -123,6 +123,10 @@ const Login = () => {
           <Link to="/signup" className="text-primary font-bold hover:underline">
             أنشئ حساباً جديداً
           </Link>
+          {" · "}
+          <Link to="/parent-signup" className="text-primary font-bold hover:underline">
+            تسجيل ولي أمر
+          </Link>
         </>
       }
     >
