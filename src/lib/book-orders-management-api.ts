@@ -82,7 +82,7 @@ export function nextAdminTransitions(current: BookOrderStatus): BookOrderStatus[
     case "confirmed":
       return ["shipped", "cancelled"];
     case "shipped":
-      return ["delivered"];
+      return ["delivered", "delivery_failed", "cancelled"];
     default:
       return [];
   }
