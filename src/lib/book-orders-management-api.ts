@@ -6,6 +6,7 @@ export type BookOrderStatus =
   | "shipped"
   | "delivered"
   | "cancelled"
+  | "delivery_failed"
   | "refund_requested"
   | "refunded";
 
@@ -15,6 +16,7 @@ export const STATUS_LABEL: Record<BookOrderStatus, string> = {
   shipped: "قيد الشحن",
   delivered: "تم التسليم",
   cancelled: "ملغي",
+  delivery_failed: "فشل التسليم",
   refund_requested: "طلب استرجاع",
   refunded: "تم الاسترجاع",
 };
@@ -53,6 +55,12 @@ export const STATUS_TONE: Record<
     ring: "ring-rose-500/25",
     dot: "bg-rose-500",
   },
+  delivery_failed: {
+    bg: "bg-orange-500/10",
+    text: "text-orange-600 dark:text-orange-300",
+    ring: "ring-orange-500/25",
+    dot: "bg-orange-500",
+  },
   refund_requested: {
     bg: "bg-violet-500/10",
     text: "text-violet-600 dark:text-violet-300",
@@ -74,7 +82,7 @@ export function nextAdminTransitions(current: BookOrderStatus): BookOrderStatus[
     case "confirmed":
       return ["shipped", "cancelled"];
     case "shipped":
-      return ["delivered"];
+      return ["delivered", "delivery_failed", "cancelled"];
     default:
       return [];
   }
@@ -91,6 +99,7 @@ export interface AdminBookOrderRow {
   shipped_at: string | null;
   delivered_at: string | null;
   cancelled_at: string | null;
+  delivery_failed_at?: string | null;
   user_id: string;
   student_name: string | null;
   student_phone: string | null;
@@ -154,6 +163,7 @@ export interface BookOrderFull {
   shipped_at: string | null;
   delivered_at: string | null;
   cancelled_at: string | null;
+  delivery_failed_at?: string | null;
   items: Array<{
     id: string;
     book_id: string;
@@ -203,12 +213,14 @@ export async function changeBookOrderStatus(args: {
   newStatus: BookOrderStatus;
   notes?: string | null;
   notifyStudent?: boolean;
+  cashCollected?: boolean;
 }) {
   const { data, error } = await (supabase as any).rpc("change_book_order_status", {
     p_order_id: args.orderId,
     p_new_status: args.newStatus,
     p_notes: args.notes ?? null,
     p_notify_student: args.notifyStudent ?? true,
+    p_cash_collected: args.cashCollected ?? false,
   });
   if (error) throw error;
   return data;

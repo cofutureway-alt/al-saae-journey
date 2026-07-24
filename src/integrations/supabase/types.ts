@@ -630,6 +630,7 @@ export type Database = {
           confirmed_at: string | null
           created_at: string
           delivered_at: string | null
+          delivery_failed_at: string | null
           has_physical_items: boolean
           id: string
           items_subtotal_piastres: number
@@ -649,6 +650,7 @@ export type Database = {
           confirmed_at?: string | null
           created_at?: string
           delivered_at?: string | null
+          delivery_failed_at?: string | null
           has_physical_items: boolean
           id?: string
           items_subtotal_piastres: number
@@ -668,6 +670,7 @@ export type Database = {
           confirmed_at?: string | null
           created_at?: string
           delivered_at?: string | null
+          delivery_failed_at?: string | null
           has_physical_items?: boolean
           id?: string
           items_subtotal_piastres?: number
@@ -3207,15 +3210,26 @@ export type Database = {
         Args: { p_delta: number; p_notes: string; p_student: string }
         Returns: string
       }
-      change_book_order_status: {
-        Args: {
-          p_new_status: string
-          p_notes?: string
-          p_notify_student?: boolean
-          p_order_id: string
-        }
-        Returns: Json
-      }
+      change_book_order_status:
+        | {
+            Args: {
+              p_new_status: string
+              p_notes?: string
+              p_notify_student?: boolean
+              p_order_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_cash_collected?: boolean
+              p_new_status: string
+              p_notes?: string
+              p_notify_student?: boolean
+              p_order_id: string
+            }
+            Returns: Json
+          }
       create_book_order: {
         Args: {
           p_gateway_key: string

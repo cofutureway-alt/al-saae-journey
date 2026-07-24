@@ -31,13 +31,14 @@ export default function BookOrderStatusDialog({
   onClose,
   onChanged,
 }: {
-  order: { id: string; number: string; current: BookOrderStatus } | null;
+  order: { id: string; number: string; current: BookOrderStatus; gatewayKey?: string | null } | null;
   onClose: () => void;
   onChanged: () => void;
 }) {
   const [target, setTarget] = useState<BookOrderStatus | "">("");
   const [notes, setNotes] = useState("");
   const [notify, setNotify] = useState(true);
+  const [cashCollected, setCashCollected] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -46,14 +47,31 @@ export default function BookOrderStatusDialog({
       setTarget(opts[0] ?? "");
       setNotes("");
       setNotify(true);
+      setCashCollected(false);
     }
   }, [order]);
 
   if (!order) return null;
   const options = nextAdminTransitions(order.current);
+  const isCod = order.gatewayKey === "cod";
+  const showCashConfirm = isCod && target === "delivered";
+  const isDeliveryFailed = target === "delivery_failed";
+  const notesRequired = isDeliveryFailed;
+  const blocked =
+    !target ||
+    (showCashConfirm && !cashCollected) ||
+    (notesRequired && !notes.trim());
 
   const submit = async () => {
     if (!target) return;
+    if (showCashConfirm && !cashCollected) {
+      toast({ title: "يجب تأكيد تحصيل المبلغ نقداً", variant: "destructive" });
+      return;
+    }
+    if (notesRequired && !notes.trim()) {
+      toast({ title: "يجب إدخال سبب فشل التسليم", variant: "destructive" });
+      return;
+    }
     setSaving(true);
     try {
       await changeBookOrderStatus({
@@ -61,6 +79,7 @@ export default function BookOrderStatusDialog({
         newStatus: target as BookOrderStatus,
         notes: notes.trim() || null,
         notifyStudent: notify,
+        cashCollected: showCashConfirm ? cashCollected : false,
       });
       toast({ title: "تم تحديث حالة الطلب" });
       onChanged();
@@ -95,13 +114,32 @@ export default function BookOrderStatusDialog({
             </Select>
           </div>
 
+          {showCashConfirm && (
+            <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 space-y-2">
+              <p className="text-xs text-emerald-700 dark:text-emerald-300">
+                هذا طلب دفع عند الاستلام. يجب تأكيد استلام المبلغ نقداً قبل تحديد الطلب كمُسلَّم.
+              </p>
+              <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+                <Checkbox
+                  checked={cashCollected}
+                  onCheckedChange={(v) => setCashCollected(!!v)}
+                />
+                <span>تم تحصيل المبلغ نقداً بالكامل</span>
+              </label>
+            </div>
+          )}
+
           <div>
             <label className="text-sm font-medium mb-1.5 block">
-              ملاحظات (اختياري)
+              {notesRequired ? "سبب فشل التسليم (مطلوب)" : "ملاحظات (اختياري)"}
             </label>
             <Textarea
               rows={3}
-              placeholder="مثال: تم تسليم الشحنة لشركة الشحن..."
+              placeholder={
+                notesRequired
+                  ? "مثال: العميل لم يستجب / عنوان خاطئ / رفض الاستلام..."
+                  : "مثال: تم تسليم الشحنة لشركة الشحن..."
+              }
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
             />
@@ -118,7 +156,7 @@ export default function BookOrderStatusDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={saving}>إلغاء</Button>
-          <Button onClick={submit} disabled={saving || !target}>
+          <Button onClick={submit} disabled={saving || blocked}>
             {saving && <Loader2 className="h-4 w-4 ml-2 animate-spin" />}
             تأكيد
           </Button>
