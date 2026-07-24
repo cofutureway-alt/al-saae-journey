@@ -136,13 +136,6 @@ const HeroSection = () => {
                   alt="المعلم عبدالرحمن علي"
                   className="w-full h-full object-cover object-top"
                 />
-                {/* Bottom overlay with name */}
-                <div className="absolute bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-sm border-t border-primary/10">
-                  <div className="text-center">
-                    <p className="font-bold text-foreground text-sm">الأستاذ عبدالرحمن علي</p>
-                    <p className="text-[11px] text-muted-foreground">معلم العلوم الشرعية</p>
-                  </div>
-                </div>
               </div>
             </div>
           </div>

@@ -1,8 +1,8 @@
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
 import FeaturesSection from "@/components/FeaturesSection";
+import StagesSection from "@/components/StagesSection";
 import FeaturedCoursesSection from "@/components/FeaturedCoursesSection";
-import CoursesSection from "@/components/CoursesSection";
 import BundlesSection from "@/components/BundlesSection";
 import LeaderboardSection from "@/components/LeaderboardSection";
 import StatsSection from "@/components/StatsSection";
@@ -14,8 +14,8 @@ const Index = () => {
       <Navbar />
       <HeroSection />
       <FeaturesSection />
+      <StagesSection />
       <FeaturedCoursesSection />
-      <CoursesSection />
       <BundlesSection />
       <LeaderboardSection />
       <StatsSection />
@@ -25,3 +25,4 @@ const Index = () => {
 };
 
 export default Index;
+

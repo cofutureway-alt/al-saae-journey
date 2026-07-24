@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowLeft, Sparkles, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useScrollAnimation } from "@/hooks/use-scroll-animation";
 import { EightPointStar, IslamicDivider } from "@/components/IslamicPatterns";
@@ -22,27 +22,33 @@ const FeaturedCoursesSection = () => {
 
       <div className="container mx-auto px-4 relative z-10" ref={ref}>
         <IslamicDivider className="mb-8" />
+
+        {/* Header row */}
         <div
-          className={`flex items-center justify-center gap-2 mb-3 transition-all duration-700 ${
+          className={`flex flex-col items-center gap-3 mb-4 transition-all duration-700 ${
             isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
           }`}
         >
-          <Sparkles className="w-5 h-5 text-primary" />
-          <span className="text-sm font-bold text-primary uppercase tracking-wider">مختارة بعناية</span>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
+            <Star className="w-4 h-4 text-primary animate-pulse-soft" fill="currentColor" />
+            <span className="text-xs font-bold text-primary">مختارة بعناية لك</span>
+            <Sparkles className="w-4 h-4 text-primary animate-float" />
+          </div>
         </div>
+
         <h2
-          className={`text-3xl md:text-4xl font-bold text-center mb-4 transition-all duration-700 delay-75 ${
+          className={`text-3xl md:text-5xl font-extrabold text-center mb-3 transition-all duration-700 delay-75 ${
             isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
           }`}
         >
           الدورات المميزة
         </h2>
         <p
-          className={`text-muted-foreground text-center mb-16 max-w-lg mx-auto transition-all duration-700 delay-100 ${
+          className={`text-muted-foreground text-center mb-14 max-w-xl mx-auto transition-all duration-700 delay-100 ${
             isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
           }`}
         >
-          أفضل الدورات على المنصة، مختارة خصيصًا لك
+          نخبة من أفضل الدورات على المنصة، اخترناها لتناسب رحلتك التعليمية وتساعدك على التميّز
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
