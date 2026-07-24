@@ -12,7 +12,6 @@ import StudentLayout from "@/components/student/StudentLayout";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
-import ParentSignup from "./pages/ParentSignup";
 import ParentLayout from "@/components/parent/ParentLayout";
 import ParentDashboard from "./pages/parent/ParentDashboard";
 import ParentLinkStudent from "./pages/parent/ParentLinkStudent";
@@ -104,7 +103,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
-            <Route path="/parent-signup" element={<ParentSignup />} />
+            <Route path="/parent-signup" element={<Signup />} />
             <Route path="/courses" element={<Courses />} />
             <Route path="/bundles" element={<Bundles />} />
             <Route path="/leaderboard" element={<LeaderboardPage />} />
