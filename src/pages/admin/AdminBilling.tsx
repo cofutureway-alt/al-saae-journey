@@ -75,7 +75,9 @@ interface PaymentRow {
   gateway_id: string;
   courses: { title: string | null } | null;
   bundles: { title: string | null } | null;
-  book_orders: { order_number: string | null; item_count: number | null } | null;
+  book_orders:
+    | { order_number: string | null; book_order_items: { count: number }[] | null }
+    | null;
   profiles: {
     full_name: string | null;
     student_id: string | null;
