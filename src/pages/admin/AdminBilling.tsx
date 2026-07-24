@@ -814,11 +814,44 @@ export default function AdminBilling() {
       {/* Top selling courses */}
       <TopCoursesSection rows={topCourses} />
 
+      {/* Books & Bundles revenue breakdowns */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <TopProductsSection
+          title="أعلى الكتب مبيعًا"
+          totalLabel="إجمالي إيرادات الكتب"
+          totalRevenue={booksTotalRevenue}
+          rows={topBooks.map((b) => ({
+            key: b.book_id,
+            title: b.title,
+            count: b.count,
+            revenue: b.revenue,
+            countLabel: "نسخ مباعة",
+          }))}
+          icon={<BookOpen className="w-4 h-4 text-primary" />}
+          emptyText="لا توجد مبيعات كتب في هذا النطاق."
+        />
+        <TopProductsSection
+          title="أعلى الباقات مبيعًا"
+          totalLabel="إجمالي إيرادات الباقات"
+          totalRevenue={bundlesTotalRevenue}
+          rows={topBundles.map((b) => ({
+            key: b.bundle_id,
+            title: b.title,
+            count: b.count,
+            revenue: b.revenue,
+            countLabel: "عدد المبيعات",
+          }))}
+          icon={<Package className="w-4 h-4 text-primary" />}
+          emptyText="لا توجد مبيعات باقات في هذا النطاق."
+        />
+      </div>
+
       {/* Transactions table */}
       <TransactionsTable
         rows={rows}
         loading={loading}
         onPrintInvoice={printInvoice}
+        productLabel={productLabel}
         invoicingId={invoicingId}
       />
     </div>
