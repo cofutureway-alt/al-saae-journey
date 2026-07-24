@@ -3,10 +3,6 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 // Kashier webhook: verifies HMAC-SHA256 of the signatureKeys payload using the
 // Payment API Key, then finalizes the transaction via the SECURITY DEFINER RPC.
-// Per Kashier docs:
-//   1. Sort data.signatureKeys alphabetically.
-//   2. Build "k1=v1&k2=v2&..." using those keys in sorted order.
-//   3. hmac_sha256(paymentApiKey, payload) hex must equal x-kashier-signature header.
 
 function hex(buf: ArrayBuffer): string {
   const bytes = new Uint8Array(buf);
@@ -37,24 +33,16 @@ function timingSafeEqual(a: string, b: string): boolean {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method !== "POST") {
-    return json({ error: "Method not allowed" }, 405);
-  }
+  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
   try {
     const rawBody = await req.text();
     let payload: any;
-    try {
-      payload = JSON.parse(rawBody);
-    } catch {
-      return json({ error: "Invalid JSON" }, 400);
-    }
+    try { payload = JSON.parse(rawBody); } catch { return json({ error: "Invalid JSON" }, 400); }
 
     const data = payload?.data ?? {};
     const signatureKeys: string[] = Array.isArray(data?.signatureKeys) ? data.signatureKeys : [];
-    if (signatureKeys.length === 0) {
-      return json({ error: "Missing signatureKeys" }, 400);
-    }
+    if (signatureKeys.length === 0) return json({ error: "Missing signatureKeys" }, 400);
 
     const sortedKeys = [...signatureKeys].sort();
     const queryPayload = sortedKeys
@@ -65,18 +53,12 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const service = createClient(supabaseUrl, serviceKey);
 
-    const { data: gw } = await service
-      .from("payment_gateways")
-      .select("id")
-      .eq("gateway_key", "kashier")
-      .maybeSingle();
+    const { data: gw } = await service.from("payment_gateways").select("id")
+      .eq("gateway_key", "kashier").maybeSingle();
     if (!gw) return json({ error: "Gateway not configured" }, 500);
 
-    const { data: sec } = await service
-      .from("payment_gateway_secrets")
-      .select("config")
-      .eq("gateway_id", gw.id)
-      .maybeSingle();
+    const { data: sec } = await service.from("payment_gateway_secrets").select("config")
+      .eq("gateway_id", gw.id).maybeSingle();
     if (!sec?.config) return json({ error: "Gateway config missing" }, 500);
 
     const apiKey = String((sec.config as any).api_key || "").trim();
@@ -84,19 +66,9 @@ Deno.serve(async (req) => {
 
     const expected = await hmacSha256Hex(apiKey, queryPayload);
     const provided = String(
-      req.headers.get("x-kashier-signature") ??
-        req.headers.get("X-Kashier-Signature") ??
-        "",
-    )
-      .trim()
-      .toLowerCase();
-
+      req.headers.get("x-kashier-signature") ?? req.headers.get("X-Kashier-Signature") ?? "",
+    ).trim().toLowerCase();
     if (!provided || !timingSafeEqual(expected.toLowerCase(), provided)) {
-      console.warn("Kashier webhook signature mismatch", {
-        expected_prefix: expected.slice(0, 6),
-        provided_prefix: provided.slice(0, 6),
-        keys: sortedKeys,
-      });
       return json({ error: "Invalid signature" }, 401);
     }
 
@@ -105,17 +77,31 @@ Deno.serve(async (req) => {
     if (!merchantOrderId) return json({ error: "Missing merchantOrderId" }, 400);
 
     const success = status === "SUCCESS" || status === "SUCCESSFUL" || status === "CAPTURED";
-    const failureReason = success
-      ? null
+    const failureReason = success ? null
       : `Kashier status: ${status}${data.reason ? ` — ${data.reason}` : ""}`;
+
+    // Persist identifiers we need for refunds later (best-effort).
+    const kashierOrderId = String(data.kashierOrderId || data.orderId || "").trim();
+    const transactionId = String(data.transactionId || data.transaction_id || "").trim();
+    try {
+      const { data: txn } = await service.from("payment_transactions")
+        .select("gateway_metadata").eq("reference_number", merchantOrderId).maybeSingle();
+      const mergedMeta = {
+        ...((txn?.gateway_metadata as any) ?? {}),
+        kashier_order_id: kashierOrderId || (txn?.gateway_metadata as any)?.kashier_order_id || null,
+        kashier_transaction_id: transactionId || (txn?.gateway_metadata as any)?.kashier_transaction_id || null,
+        kashier_merchant_order_id: merchantOrderId,
+      };
+      await service.from("payment_transactions")
+        .update({ gateway_metadata: mergedMeta })
+        .eq("reference_number", merchantOrderId);
+    } catch (e) {
+      console.warn("kashier-webhook: failed to persist gateway_metadata", e);
+    }
 
     const { data: finalizeResult, error: finalizeErr } = await service.rpc(
       "finalize_gateway_transaction",
-      {
-        p_reference: merchantOrderId,
-        p_success: success,
-        p_failure_reason: failureReason,
-      },
+      { p_reference: merchantOrderId, p_success: success, p_failure_reason: failureReason },
     );
     if (finalizeErr) {
       console.error("finalize_gateway_transaction error", finalizeErr);
@@ -131,7 +117,6 @@ Deno.serve(async (req) => {
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    status, headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 }

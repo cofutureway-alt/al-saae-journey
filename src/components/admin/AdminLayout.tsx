@@ -84,6 +84,7 @@ const nav: NavEntry[] = [
       { to: "/admin/payment-gateways", label: "بوابات الدفع", icon: Landmark },
       { to: "/admin/payment-requests", label: "طلبات الدفع", icon: Inbox },
       { to: "/admin/book-orders", label: "طلبات الكتب", icon: Package },
+      { to: "/admin/refund-requests", label: "طلبات الاسترجاع", icon: Inbox },
       { to: "/admin/billing", label: "الفوترة والمدفوعات", icon: Receipt },
     ],
   },

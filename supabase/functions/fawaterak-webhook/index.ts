@@ -127,6 +127,43 @@ Deno.serve(async (req) => {
       return json({ error: "Transaction not found" }, 404);
     }
 
+    // Refund events: Fawaterak fires this webhook when a merchant-initiated
+    // refund settles on their dashboard. We accept any invoice_status starting
+    // with "refund" and any explicit refund payload markers.
+    const isRefundEvent =
+      invoiceStatus.startsWith("refund") ||
+      payload?.event_type === "refund" ||
+      payload?.RefundStatus !== undefined;
+
+    if (isRefundEvent) {
+      const { data: txnFull } = await service
+        .from("payment_transactions")
+        .select("id, book_order_id")
+        .eq("reference_number", txn.reference_number)
+        .maybeSingle();
+      if (!txnFull?.book_order_id) {
+        return json({ ok: true, note: "Refund event without book order" });
+      }
+      const { data: pendingReq } = await service
+        .from("book_order_refund_requests")
+        .select("id")
+        .eq("order_id", txnFull.book_order_id)
+        .in("status", ["processing", "approved"])
+        .order("requested_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!pendingReq) {
+        return json({ ok: true, note: "No pending refund request" });
+      }
+      const { error: completeErr } = await service.rpc("admin_complete_refund_request", {
+        p_request_id: pendingReq.id,
+        p_gateway_reference: `fawaterak:${invoiceId}`,
+        p_notes: "تأكيد الاسترجاع تلقائيًا من Fawaterak",
+      });
+      if (completeErr) return json({ error: completeErr.message }, 500);
+      return json({ ok: true, refund_completed: true });
+    }
+
     const success = invoiceStatus === "paid";
     const failureReason = success ? null : `Fawaterak status: ${invoiceStatus || "unknown"}`;
 

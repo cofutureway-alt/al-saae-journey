@@ -10,6 +10,11 @@ export interface PaymobConfig {
   secret_key: string;
   public_key: string;
   hmac_secret: string;
+  /**
+   * PayMob classic (Accept) API key. Required for refund processing because
+   * the refund endpoint authenticates via /api/auth/tokens with this key.
+   */
+  classic_api_key?: string;
 }
 
 export function paymobReturnUrl(): string {
@@ -53,6 +58,7 @@ export async function adminGetPaymobConfig(): Promise<PaymobConfig | null> {
     secret_key: cfg.secret_key ?? "",
     public_key: cfg.public_key ?? "",
     hmac_secret: cfg.hmac_secret ?? "",
+    classic_api_key: cfg.classic_api_key ?? "",
   };
 }
 

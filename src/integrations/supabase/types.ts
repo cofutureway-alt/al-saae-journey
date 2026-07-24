@@ -487,9 +487,13 @@ export type Database = {
       }
       book_order_refund_requests: {
         Row: {
+          gateway_refund_reference: string | null
           id: string
           order_id: string
+          processed_at: string | null
+          processing_error: string | null
           reason: string
+          refund_method: string | null
           requested_at: string
           review_notes: string | null
           reviewed_at: string | null
@@ -498,9 +502,13 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          gateway_refund_reference?: string | null
           id?: string
           order_id: string
+          processed_at?: string | null
+          processing_error?: string | null
           reason: string
+          refund_method?: string | null
           requested_at?: string
           review_notes?: string | null
           reviewed_at?: string | null
@@ -509,9 +517,13 @@ export type Database = {
           user_id: string
         }
         Update: {
+          gateway_refund_reference?: string | null
           id?: string
           order_id?: string
+          processed_at?: string | null
+          processing_error?: string | null
           reason?: string
+          refund_method?: string | null
           requested_at?: string
           review_notes?: string | null
           reviewed_at?: string | null
@@ -2921,8 +2933,20 @@ export type Database = {
         Args: { p_transaction_id: string }
         Returns: Json
       }
+      admin_approve_refund_request: {
+        Args: { p_request_id: string }
+        Returns: Json
+      }
       admin_bulk_adjust_wallets: {
         Args: { p_amount_piastres: number; p_type: string }
+        Returns: Json
+      }
+      admin_complete_refund_request: {
+        Args: {
+          p_gateway_reference?: string
+          p_notes?: string
+          p_request_id: string
+        }
         Returns: Json
       }
       admin_finalize_not_submitted: {
@@ -2935,6 +2959,10 @@ export type Database = {
           p_quantity: number
           p_value_piastres: number
         }
+        Returns: Json
+      }
+      admin_get_refund_processing_context: {
+        Args: { p_request_id: string }
         Returns: Json
       }
       admin_get_student: { Args: { _uid: string }; Returns: Json }
@@ -3010,6 +3038,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_list_refund_requests: {
+        Args: { p_search?: string; p_status?: string }
+        Returns: Json
+      }
       admin_list_students: {
         Args: {
           _custom_filters?: Json
@@ -3063,9 +3095,17 @@ export type Database = {
           wallet_id: string
         }[]
       }
+      admin_mark_refund_error: {
+        Args: { p_error: string; p_request_id: string }
+        Returns: Json
+      }
       admin_regenerate_qr_token: { Args: { _uid: string }; Returns: string }
       admin_reject_payment_request: {
         Args: { p_reason: string; p_transaction_id: string }
+        Returns: Json
+      }
+      admin_reject_refund_request: {
+        Args: { p_notes: string; p_request_id: string }
         Returns: Json
       }
       admin_reset_all_wallets: { Args: never; Returns: Json }
