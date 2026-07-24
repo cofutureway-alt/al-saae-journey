@@ -22,13 +22,69 @@ export interface CartItem {
   };
 }
 
+type CartRealtimeEntry = {
+  channel: ReturnType<typeof supabase.channel>;
+  listeners: Set<() => void>;
+};
+
+const cartRealtimeSubscriptions = new Map<string, CartRealtimeEntry>();
+
+const createCartChannelTopic = (userId: string) => {
+  const randomId = typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+  return `book-cart-${userId}-${randomId}`;
+};
+
+const subscribeToCartRealtime = (userId: string, listener: () => void) => {
+  const existing = cartRealtimeSubscriptions.get(userId);
+
+  if (existing) {
+    existing.listeners.add(listener);
+    return () => {
+      existing.listeners.delete(listener);
+      if (existing.listeners.size === 0) {
+        cartRealtimeSubscriptions.delete(userId);
+        void supabase.removeChannel(existing.channel);
+      }
+    };
+  }
+
+  const listeners = new Set<() => void>([listener]);
+  const channel = supabase
+    .channel(createCartChannelTopic(userId))
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "book_cart_items", filter: `user_id=eq.${userId}` },
+      () => {
+        listeners.forEach((callback) => callback());
+      }
+    )
+    .subscribe();
+
+  cartRealtimeSubscriptions.set(userId, { channel, listeners });
+
+  return () => {
+    const current = cartRealtimeSubscriptions.get(userId);
+    if (!current) return;
+
+    current.listeners.delete(listener);
+    if (current.listeners.size === 0) {
+      cartRealtimeSubscriptions.delete(userId);
+      void supabase.removeChannel(current.channel);
+    }
+  };
+};
+
 export function useCart() {
   const { user } = useAuth();
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    if (!user) {
+    const userId = user?.id;
+    if (!userId) {
       setItems([]);
       setLoading(false);
       return;
@@ -39,31 +95,20 @@ export function useCart() {
       .select(
         "id,book_id,quantity,added_at,book:books(id,title,author,cover_image_url,book_type,price_piastres,discount_price_piastres,discount_expires_at,stock_quantity,status)"
       )
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .order("added_at", { ascending: false });
     if (!error) setItems((data ?? []) as CartItem[]);
     setLoading(false);
-  }, [user]);
+  }, [user?.id]);
 
   useEffect(() => {
     load();
   }, [load]);
 
   useEffect(() => {
-    if (!user) return;
-    const channel = (supabase as any)
-      .channel(`cart-${user.id}-${Math.random().toString(36).slice(2)}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "book_cart_items", filter: `user_id=eq.${user.id}` },
-        () => load()
-      )
-      .subscribe();
-    return () => {
-      (supabase as any).removeChannel(channel);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+    if (!user?.id) return;
+    return subscribeToCartRealtime(user.id, load);
+  }, [user?.id, load]);
 
   const addToCart = useCallback(
     async (bookId: string, bookType: "digital" | "physical") => {
