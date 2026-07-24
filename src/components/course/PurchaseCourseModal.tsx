@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { listMyChildren, ParentChild } from "@/lib/parent-api";
 import { formatPiastres } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import ManualPaymentForm from "@/components/payments/ManualPaymentForm";
@@ -57,7 +58,10 @@ export default function PurchaseCourseModal({
   onPurchased,
 }: Props) {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const isParent = profile?.role === "parent";
+  const [children, setChildren] = useState<ParentChild[]>([]);
+  const [selectedChild, setSelectedChild] = useState<string | null>(null);
 
   const [gateways, setGateways] = useState<Gateway[] | null>(null);
   const [manualMethods, setManualMethods] = useState<ManualPaymentMethod[]>([]);
@@ -113,7 +117,13 @@ export default function PurchaseCourseModal({
       if (list.length === 1) setSelected(list[0].id);
       setLoading(false);
     })();
-  }, [open, user, courseId]);
+    if (isParent) {
+      listMyChildren().then((c) => {
+        setChildren(c);
+        if (c.length === 1) setSelectedChild(c[0].student_user_id);
+      }).catch(() => {});
+    }
+  }, [open, user, courseId, isParent]);
 
   const selectedGateway = gateways?.find((g) => g.id === selected) ?? null;
   const isWallet = selectedGateway?.gateway_key === "wallet";
@@ -128,7 +138,10 @@ export default function PurchaseCourseModal({
     if (!selectedGateway || submitting) return;
     setSubmitting(true);
     try {
-      const { data, error } = await (supabase as any).rpc("purchase_course", { p_course_id: courseId });
+      const { data, error } = await (supabase as any).rpc("purchase_course", {
+        p_course_id: courseId,
+        p_on_behalf_of: isParent ? selectedChild : null,
+      });
       if (error) throw error;
       if (data?.success) {
         onPurchased?.({
@@ -318,6 +331,24 @@ export default function PurchaseCourseModal({
               </motion.div>
             ) : (
               <motion.div key="pick" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+                {isParent && (
+                  <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 space-y-2">
+                    <div className="text-sm font-bold">الشراء لصالح</div>
+                    {children.length === 0 ? (
+                      <div className="text-xs text-muted-foreground">لا يوجد أبناء مرتبطون بحسابك بعد. اذهب إلى «ربط طالب» أولاً.</div>
+                    ) : (
+                      <select value={selectedChild ?? ""} onChange={(e) => setSelectedChild(e.target.value || null)}
+                        className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm">
+                        <option value="">— اختر الطالب —</option>
+                        {children.map((c) => (
+                          <option key={c.student_user_id} value={c.student_user_id}>
+                            {c.full_name} ({c.student_id})
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                )}
                 <div className="space-y-2">
                   {gateways!.map((g) => {
                     const Icon = gatewayIconFor(g.gateway_key);
@@ -486,7 +517,7 @@ export default function PurchaseCourseModal({
                     <Button
                       size="lg"
                       className="w-full font-bold shadow-lg shadow-primary/20"
-                      disabled={!selected || submitting || insufficient}
+                      disabled={!selected || submitting || insufficient || (isParent && !selectedChild)}
                       onClick={handleWalletConfirm}
                     >
                       {submitting ? (

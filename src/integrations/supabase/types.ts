@@ -1573,6 +1573,48 @@ export type Database = {
           },
         ]
       }
+      parent_student_links: {
+        Row: {
+          admin_note: string | null
+          created_at: string
+          id: string
+          parent_user_id: string
+          relationship: string | null
+          request_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          student_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          admin_note?: string | null
+          created_at?: string
+          id?: string
+          parent_user_id: string
+          relationship?: string | null
+          request_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          student_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          admin_note?: string | null
+          created_at?: string
+          id?: string
+          parent_user_id?: string
+          relationship?: string | null
+          request_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          student_user_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payment_gateway_methods: {
         Row: {
           created_at: string
@@ -1697,6 +1739,7 @@ export type Database = {
           gateway_id: string
           gateway_metadata: Json
           id: string
+          on_behalf_of_user_id: string | null
           original_price_piastres: number | null
           purpose: string
           reference_number: string
@@ -1720,6 +1763,7 @@ export type Database = {
           gateway_id: string
           gateway_metadata?: Json
           id?: string
+          on_behalf_of_user_id?: string | null
           original_price_piastres?: number | null
           purpose?: string
           reference_number: string
@@ -1743,6 +1787,7 @@ export type Database = {
           gateway_id?: string
           gateway_metadata?: Json
           id?: string
+          on_behalf_of_user_id?: string | null
           original_price_piastres?: number | null
           purpose?: string
           reference_number?: string
@@ -3004,6 +3049,26 @@ export type Database = {
           title: string
         }[]
       }
+      admin_list_parent_link_requests: {
+        Args: { p_status?: string }
+        Returns: {
+          admin_note: string
+          created_at: string
+          id: string
+          parent_name: string
+          parent_phone: string
+          parent_user_id: string
+          relationship: string
+          request_note: string
+          reviewed_at: string
+          reviewed_by: string
+          status: string
+          student_code: string
+          student_name: string
+          student_user_id: string
+          updated_at: string
+        }[]
+      }
       admin_list_payment_requests: {
         Args: {
           _limit?: number
@@ -3109,6 +3174,10 @@ export type Database = {
         Returns: Json
       }
       admin_reset_all_wallets: { Args: never; Returns: Json }
+      admin_review_parent_link: {
+        Args: { p_action: string; p_link_id: string; p_note?: string }
+        Returns: Json
+      }
       admin_save_feedback: {
         Args: { _attempt_id: string; _feedback: string }
         Returns: Json
@@ -3188,6 +3257,7 @@ export type Database = {
       get_attempt_questions: { Args: { _attempt_id: string }; Returns: Json }
       get_book_order_detail: { Args: { p_order_id: string }; Returns: Json }
       get_book_order_full: { Args: { p_order_id: string }; Returns: Json }
+      get_child_snapshot: { Args: { _student_id: string }; Returns: Json }
       get_lessons_public: {
         Args: never
         Returns: {
@@ -3309,6 +3379,10 @@ export type Database = {
       increment_file_download: {
         Args: { p_lesson_file_id: string }
         Returns: number
+      }
+      is_active_parent_of: {
+        Args: { _parent: string; _student: string }
+        Returns: boolean
       }
       is_current_user_banned: { Args: never; Returns: boolean }
       is_enrolled_in_lesson_course: {
@@ -3550,8 +3624,45 @@ export type Database = {
             }[]
           }
       next_unit_order_index: { Args: { _unit_id: string }; Returns: number }
+      parent_list_children: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          full_name: string
+          linked_at: string
+          stage_name: string
+          student_id: string
+          student_user_id: string
+        }[]
+      }
+      parent_list_my_link_requests: {
+        Args: never
+        Returns: {
+          admin_note: string
+          created_at: string
+          id: string
+          relationship: string
+          request_note: string
+          reviewed_at: string
+          status: string
+          student_code: string
+          student_name: string
+          student_user_id: string
+        }[]
+      }
+      parent_request_student_link: {
+        Args: {
+          p_note?: string
+          p_relationship?: string
+          p_student_code: string
+        }
+        Returns: Json
+      }
       purchase_bundle: { Args: { p_bundle_id: string }; Returns: Json }
-      purchase_course: { Args: { p_course_id: string }; Returns: Json }
+      purchase_course: {
+        Args: { p_course_id: string; p_on_behalf_of?: string }
+        Returns: Json
+      }
       redeem_top_up_card: { Args: { p_code: string }; Returns: Json }
       request_book_order_refund: {
         Args: { p_order_id: string; p_reason: string }
@@ -3708,7 +3819,7 @@ export type Database = {
       submit_quiz_attempt: { Args: { _attempt_id: string }; Returns: undefined }
     }
     Enums: {
-      app_role: "admin" | "student"
+      app_role: "admin" | "student" | "parent"
       video_provider: "youtube" | "bunny" | "vimeo"
     }
     CompositeTypes: {
@@ -3837,7 +3948,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "student"],
+      app_role: ["admin", "student", "parent"],
       video_provider: ["youtube", "bunny", "vimeo"],
     },
   },

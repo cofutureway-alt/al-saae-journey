@@ -101,7 +101,12 @@ const Login = () => {
         .select("role")
         .eq("id", data.user!.id)
         .maybeSingle();
-      destination = prof?.role === "admin" ? "/admin" : "/dashboard";
+      destination =
+        prof?.role === "admin"
+          ? "/admin"
+          : prof?.role === "parent"
+            ? "/parent"
+            : "/dashboard";
     }
     navigate(destination, { replace: true });
   };
@@ -117,6 +122,10 @@ const Login = () => {
           ليس لديك حساب؟{" "}
           <Link to="/signup" className="text-primary font-bold hover:underline">
             أنشئ حساباً جديداً
+          </Link>
+          {" · "}
+          <Link to="/parent-signup" className="text-primary font-bold hover:underline">
+            تسجيل ولي أمر
           </Link>
         </>
       }

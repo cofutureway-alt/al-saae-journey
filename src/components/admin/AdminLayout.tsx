@@ -70,6 +70,7 @@ const nav: NavEntry[] = [
     icon: Users,
     children: [
       { to: "/admin/students", label: "إدارة الطلاب", icon: Users },
+      { to: "/admin/parent-link-requests", label: "طلبات أولياء الأمور", icon: Users },
       { to: "/admin/quiz-attempts", label: "محاولات الاختبارات", icon: ClipboardCheck },
       { to: "/admin/assignment-submissions", label: "تسليمات الواجبات", icon: ClipboardEdit },
       { to: "/admin/cards", label: "كروت الطلاب", icon: CreditCard },

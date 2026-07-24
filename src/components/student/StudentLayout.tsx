@@ -109,6 +109,9 @@ const StudentLayout = () => {
   if (profile?.role === "admin") {
     return <Navigate to="/admin" replace />;
   }
+  if (profile?.role === "parent") {
+    return <Navigate to="/parent" replace />;
+  }
 
   const initials =
     profile?.full_name
