@@ -167,12 +167,14 @@ const Navbar = () => {
           <ThemeToggle />
           {user && profile?.role !== "admin" && <WalletWidget to="/dashboard/wallet" />}
           {user && profile?.role === "admin" && <WalletWidget to="/admin/wallets" />}
+          <CartWidget />
           <AuthArea />
         </div>
 
         <div className="md:hidden flex items-center gap-2">
           <ThemeToggle />
           {user && <WalletWidget to={profile?.role === "admin" ? "/admin/wallets" : "/dashboard/wallet"} />}
+          <CartWidget />
 
           {user && (
             <Avatar className="w-8 h-8 border border-border">
