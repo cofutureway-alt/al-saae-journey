@@ -99,6 +99,7 @@ export interface AdminBookOrderRow {
   shipped_at: string | null;
   delivered_at: string | null;
   cancelled_at: string | null;
+  delivery_failed_at?: string | null;
   user_id: string;
   student_name: string | null;
   student_phone: string | null;
