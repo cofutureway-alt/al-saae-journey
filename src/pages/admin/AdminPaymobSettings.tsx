@@ -34,6 +34,7 @@ export default function AdminPaymobSettings() {
     secret_key: "",
     public_key: "",
     hmac_secret: "",
+    classic_api_key: "",
   });
   const [gatewayEnabled, setGatewayEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -76,6 +77,7 @@ export default function AdminPaymobSettings() {
         secret_key: cfg.secret_key.trim(),
         public_key: cfg.public_key.trim(),
         hmac_secret: cfg.hmac_secret.trim(),
+        classic_api_key: cfg.classic_api_key?.trim() || undefined,
       });
       toast.success("تم حفظ إعدادات PayMob");
     } catch (e: any) {
@@ -224,6 +226,21 @@ export default function AdminPaymobSettings() {
             </div>
             <p className="text-xs text-muted-foreground">
               من لوحة PayMob → Profile. يُستخدم فقط للتحقق من توقيع الـ Webhook (HMAC-SHA512).
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Classic API Key (اختياري — للاسترجاع)</Label>
+            <Input
+              dir="ltr"
+              type="password"
+              className="font-mono"
+              value={cfg.classic_api_key ?? ""}
+              onChange={(e) => setCfg((c) => ({ ...c, classic_api_key: e.target.value }))}
+              placeholder="ZXlKMGVYQWlPaUpLVjFRaUxDSmhiR2NpT2lKSVV6VXhNaUo5..."
+            />
+            <p className="text-xs text-muted-foreground">
+              مطلوب فقط لتفعيل الاسترجاع التلقائي عبر واجهة PayMob (Accept API classic key).
             </p>
           </div>
 

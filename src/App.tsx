@@ -53,6 +53,7 @@ import AdminKashierSettings from "./pages/admin/AdminKashierSettings";
 import AdminPaymobSettings from "./pages/admin/AdminPaymobSettings";
 import AdminFawaterakSettings from "./pages/admin/AdminFawaterakSettings";
 import AdminPaymentRequests from "./pages/admin/AdminPaymentRequests";
+import AdminRefundRequests from "./pages/admin/AdminRefundRequests";
 import AdminBilling from "./pages/admin/AdminBilling";
 import CardBuilder from "./pages/admin/CardBuilder";
 import PublicStudentSnapshot from "./pages/PublicStudentSnapshot";
@@ -202,6 +203,7 @@ const App = () => (
               <Route path="payment-gateways/paymob" element={<AdminPaymobSettings />} />
               <Route path="payment-gateways/fawaterak" element={<AdminFawaterakSettings />} />
               <Route path="payment-requests" element={<AdminPaymentRequests />} />
+              <Route path="refund-requests" element={<AdminRefundRequests />} />
               <Route path="billing" element={<AdminBilling />} />
               <Route path="cards/:templateId/edit" element={<CardBuilder />} />
               <Route path="account" element={<MyAccount />} />
