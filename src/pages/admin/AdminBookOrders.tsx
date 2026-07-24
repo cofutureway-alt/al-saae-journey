@@ -196,7 +196,7 @@ export default function AdminBookOrders() {
   }, [search]);
 
   const handleTransition = async (order: AdminBookOrderRow) => {
-    setDialogOrder({ id: order.id, number: order.order_number, current: order.status });
+    setDialogOrder({ id: order.id, number: order.order_number, current: order.status, gatewayKey: order.gateway_key });
   };
 
   const handlePrint = async (orderId: string) => {
