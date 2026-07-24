@@ -220,6 +220,7 @@ const App = () => (
               <Route path="cards/:templateId/edit" element={<CardBuilder />} />
               <Route path="account" element={<MyAccount />} />
               <Route path="parent-link-requests" element={<AdminParentLinkRequests />} />
+              <Route path="parents" element={<AdminParents />} />
               <Route path="leaderboard" element={<LeaderboardLayout />}>
                 <Route index element={<LeaderboardTop />} />
                 <Route path="badges" element={<LeaderboardBadges />} />
