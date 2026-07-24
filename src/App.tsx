@@ -73,6 +73,8 @@ import BadgeCelebration from "./components/BadgeCelebration";
 import MobileBottomNav from "./components/MobileBottomNav";
 import Books from "./pages/Books";
 import Cart from "./pages/Cart";
+import Checkout from "./pages/Checkout";
+import OrderConfirmation from "./pages/OrderConfirmation";
 import AdminShippingZones from "./pages/admin/AdminShippingZones";
 
 
