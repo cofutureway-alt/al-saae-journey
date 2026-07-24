@@ -12,6 +12,11 @@ import StudentLayout from "@/components/student/StudentLayout";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import ParentSignup from "./pages/ParentSignup";
+import ParentLayout from "@/components/parent/ParentLayout";
+import ParentDashboard from "./pages/parent/ParentDashboard";
+import ParentLinkStudent from "./pages/parent/ParentLinkStudent";
+import AdminParentLinkRequests from "./pages/admin/AdminParentLinkRequests";
 import NotFound from "./pages/NotFound";
 import AdminStatistics from "./pages/admin/AdminStatistics";
 import AdminCourses from "./pages/admin/AdminCourses";
@@ -98,6 +103,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/parent-signup" element={<ParentSignup />} />
             <Route path="/courses" element={<Courses />} />
             <Route path="/bundles" element={<Bundles />} />
             <Route path="/leaderboard" element={<LeaderboardPage />} />
@@ -161,6 +167,11 @@ const App = () => (
               <Route path="levels" element={<MyLevels />} />
               <Route path="book-orders" element={<MyBookOrders />} />
             </Route>
+            <Route path="/parent" element={<ParentLayout />}>
+              <Route index element={<ParentDashboard />} />
+              <Route path="link" element={<ParentLinkStudent />} />
+              <Route path="account" element={<MyAccount />} />
+            </Route>
             <Route
               path="/admin"
               element={
@@ -207,6 +218,7 @@ const App = () => (
               <Route path="billing" element={<AdminBilling />} />
               <Route path="cards/:templateId/edit" element={<CardBuilder />} />
               <Route path="account" element={<MyAccount />} />
+              <Route path="parent-link-requests" element={<AdminParentLinkRequests />} />
               <Route path="leaderboard" element={<LeaderboardLayout />}>
                 <Route index element={<LeaderboardTop />} />
                 <Route path="badges" element={<LeaderboardBadges />} />

@@ -101,7 +101,12 @@ const Login = () => {
         .select("role")
         .eq("id", data.user!.id)
         .maybeSingle();
-      destination = prof?.role === "admin" ? "/admin" : "/dashboard";
+      destination =
+        prof?.role === "admin"
+          ? "/admin"
+          : prof?.role === "parent"
+            ? "/parent"
+            : "/dashboard";
     }
     navigate(destination, { replace: true });
   };
