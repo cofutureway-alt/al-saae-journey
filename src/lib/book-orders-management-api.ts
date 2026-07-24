@@ -6,6 +6,7 @@ export type BookOrderStatus =
   | "shipped"
   | "delivered"
   | "cancelled"
+  | "delivery_failed"
   | "refund_requested"
   | "refunded";
 
@@ -15,6 +16,7 @@ export const STATUS_LABEL: Record<BookOrderStatus, string> = {
   shipped: "قيد الشحن",
   delivered: "تم التسليم",
   cancelled: "ملغي",
+  delivery_failed: "فشل التسليم",
   refund_requested: "طلب استرجاع",
   refunded: "تم الاسترجاع",
 };
