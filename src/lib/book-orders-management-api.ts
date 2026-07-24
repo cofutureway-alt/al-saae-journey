@@ -163,6 +163,7 @@ export interface BookOrderFull {
   shipped_at: string | null;
   delivered_at: string | null;
   cancelled_at: string | null;
+  delivery_failed_at?: string | null;
   items: Array<{
     id: string;
     book_id: string;
