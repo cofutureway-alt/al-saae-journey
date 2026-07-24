@@ -517,7 +517,7 @@ export default function PurchaseCourseModal({
                     <Button
                       size="lg"
                       className="w-full font-bold shadow-lg shadow-primary/20"
-                      disabled={!selected || submitting || insufficient}
+                      disabled={!selected || submitting || insufficient || (isParent && !selectedChild)}
                       onClick={handleWalletConfirm}
                     >
                       {submitting ? (
