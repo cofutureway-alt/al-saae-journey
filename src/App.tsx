@@ -76,6 +76,9 @@ import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import OrderConfirmation from "./pages/OrderConfirmation";
 import AdminShippingZones from "./pages/admin/AdminShippingZones";
+import AdminBookOrders from "./pages/admin/AdminBookOrders";
+import AdminBookOrderDetail from "./pages/admin/AdminBookOrderDetail";
+import MyBookOrders from "./pages/student/MyBookOrders";
 
 
 const queryClient = new QueryClient();
@@ -155,6 +158,7 @@ const App = () => (
               <Route path="wallet" element={<MyWallet />} />
               <Route path="badges" element={<MyBadges />} />
               <Route path="levels" element={<MyLevels />} />
+              <Route path="book-orders" element={<MyBookOrders />} />
             </Route>
             <Route
               path="/admin"
@@ -184,6 +188,8 @@ const App = () => (
               <Route path="books/new" element={<AdminBookEditor />} />
               <Route path="books/:id" element={<AdminBookEditor />} />
               <Route path="shipping-zones" element={<AdminShippingZones />} />
+              <Route path="book-orders" element={<AdminBookOrders />} />
+              <Route path="book-orders/:id" element={<AdminBookOrderDetail />} />
               <Route path="settings" element={<AdminSettings />} />
               <Route path="settings/video-player" element={<AdminVideoPlayerSettings />} />
               <Route path="settings/registration-form" element={<AdminRegistrationForm />} />
