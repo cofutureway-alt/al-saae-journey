@@ -83,6 +83,7 @@ const nav: NavEntry[] = [
       { to: "/admin/wallets", label: "المحافظ والكروت", icon: WalletIcon },
       { to: "/admin/payment-gateways", label: "بوابات الدفع", icon: Landmark },
       { to: "/admin/payment-requests", label: "طلبات الدفع", icon: Inbox },
+      { to: "/admin/book-orders", label: "طلبات الكتب", icon: Package },
       { to: "/admin/billing", label: "الفوترة والمدفوعات", icon: Receipt },
     ],
   },
