@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart3,
+  BookOpen,
+  Package,
   Calendar as CalendarIcon,
   CheckCircle2,
   CreditCard,
