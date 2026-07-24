@@ -207,7 +207,7 @@ export default function AdminStudents() {
         .filter(
           (f) =>
             !KNOWN_PROFILE_COLUMNS.has(f.field_key) &&
-            !PASSWORD_KEYS_LOCAL.has(f.field_key),
+            !PASSWORD_KEYS.has(f.field_key),
         )
         .map((f) => ({ key: f.field_key, label: f.label }));
 
