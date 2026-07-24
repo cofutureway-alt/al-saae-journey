@@ -32,22 +32,24 @@ const WalletWidget = ({ to = "/dashboard/wallet" }: { to?: string }) => {
     // Realtime updates when balance changes
     let channel: any = null;
     if (user) {
-      channel = (supabase as any).channel(`wallet-widget-${user.id}-${Date.now()}`);
-      channel.on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "wallets", filter: `user_id=eq.${user.id}` },
-        (payload: any) => {
-          const next = payload?.new?.balance_piastres;
-          if (typeof next === "number") setBalance(next);
-        },
-      );
-      channel.subscribe();
+      channel = (supabase as any)
+        .channel(`wallet-widget-${user.id}-${Date.now()}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "wallets", filter: `user_id=eq.${user.id}` },
+          (payload: any) => {
+            const next = payload?.new?.balance_piastres;
+            if (typeof next === "number") setBalance(next);
+          },
+        )
+        .subscribe();
     }
 
     return () => {
       active = false;
       if (channel) (supabase as any).removeChannel(channel);
     };
+
   }, [user?.id]);
 
   if (!user) return null;
