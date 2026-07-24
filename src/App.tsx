@@ -71,6 +71,9 @@ import MyBadges from "./pages/student/MyBadges";
 import MyLevels from "./pages/student/MyLevels";
 import BadgeCelebration from "./components/BadgeCelebration";
 import MobileBottomNav from "./components/MobileBottomNav";
+import Books from "./pages/Books";
+import Cart from "./pages/Cart";
+import AdminShippingZones from "./pages/admin/AdminShippingZones";
 
 
 const queryClient = new QueryClient();
@@ -93,6 +96,8 @@ const App = () => (
             <Route path="/bundles" element={<Bundles />} />
             <Route path="/leaderboard" element={<LeaderboardPage />} />
             <Route path="/courses/:id" element={<CourseDetails />} />
+            <Route path="/books" element={<Books />} />
+            <Route path="/cart" element={<RequireAuth><Cart /></RequireAuth>} />
             <Route path="/s/:qrToken" element={<PublicStudentSnapshot />} />
             <Route path="/payment/kashier/return" element={<PaymentKashierReturn />} />
             <Route path="/payment/paymob/return" element={<PaymentPaymobReturn />} />
@@ -174,6 +179,7 @@ const App = () => (
               <Route path="books" element={<AdminBooks />} />
               <Route path="books/new" element={<AdminBookEditor />} />
               <Route path="books/:id" element={<AdminBookEditor />} />
+              <Route path="shipping-zones" element={<AdminShippingZones />} />
               <Route path="settings" element={<AdminSettings />} />
               <Route path="settings/video-player" element={<AdminVideoPlayerSettings />} />
               <Route path="settings/registration-form" element={<AdminRegistrationForm />} />

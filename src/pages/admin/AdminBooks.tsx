@@ -265,17 +265,10 @@ export default function AdminBooks() {
               </TooltipTrigger>
               <TooltipContent>متاح قريباً</TooltipContent>
             </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span>
-                  <Button variant="outline" disabled>
-                    <Truck className="w-4 h-4 ml-2" />
-                    إدارة مناطق الشحن
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>متاح قريباً</TooltipContent>
-            </Tooltip>
+            <Button variant="outline" onClick={() => navigate("/admin/shipping-zones")}>
+              <Truck className="w-4 h-4 ml-2" />
+              إدارة مناطق الشحن
+            </Button>
           </TooltipProvider>
         </div>
       </motion.div>
