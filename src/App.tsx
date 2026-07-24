@@ -73,6 +73,8 @@ import BadgeCelebration from "./components/BadgeCelebration";
 import MobileBottomNav from "./components/MobileBottomNav";
 import Books from "./pages/Books";
 import Cart from "./pages/Cart";
+import Checkout from "./pages/Checkout";
+import OrderConfirmation from "./pages/OrderConfirmation";
 import AdminShippingZones from "./pages/admin/AdminShippingZones";
 
 
@@ -98,6 +100,8 @@ const App = () => (
             <Route path="/courses/:id" element={<CourseDetails />} />
             <Route path="/books" element={<Books />} />
             <Route path="/cart" element={<RequireAuth><Cart /></RequireAuth>} />
+            <Route path="/checkout" element={<RequireAuth><Checkout /></RequireAuth>} />
+            <Route path="/order-confirmation/:id" element={<RequireAuth><OrderConfirmation /></RequireAuth>} />
             <Route path="/s/:qrToken" element={<PublicStudentSnapshot />} />
             <Route path="/payment/kashier/return" element={<PaymentKashierReturn />} />
             <Route path="/payment/paymob/return" element={<PaymentPaymobReturn />} />
