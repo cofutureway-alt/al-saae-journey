@@ -3118,6 +3118,7 @@ export type Database = {
         Returns: {
           auth_email: string
           avatar_url: string
+          completed_courses_count: number
           created_at: string
           custom_fields: Json
           email: string
@@ -3133,6 +3134,7 @@ export type Database = {
           stage_name: string
           student_id: string
           total_count: number
+          wallet_balance_piastres: number
         }[]
       }
       admin_list_wallet_transactions: {
