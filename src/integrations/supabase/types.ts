@@ -437,6 +437,143 @@ export type Database = {
           },
         ]
       }
+      book_order_items: {
+        Row: {
+          book_id: string
+          book_type: string
+          created_at: string
+          digital_downloads_used: number
+          id: string
+          order_id: string
+          quantity: number
+          unit_price_piastres: number
+        }
+        Insert: {
+          book_id: string
+          book_type: string
+          created_at?: string
+          digital_downloads_used?: number
+          id?: string
+          order_id: string
+          quantity: number
+          unit_price_piastres: number
+        }
+        Update: {
+          book_id?: string
+          book_type?: string
+          created_at?: string
+          digital_downloads_used?: number
+          id?: string
+          order_id?: string
+          quantity?: number
+          unit_price_piastres?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_order_items_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "book_order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "book_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      book_orders: {
+        Row: {
+          cancelled_at: string | null
+          confirmed_at: string | null
+          created_at: string
+          delivered_at: string | null
+          has_physical_items: boolean
+          id: string
+          items_subtotal_piastres: number
+          order_number: string
+          payment_gateway_id: string
+          shipped_at: string | null
+          shipping_address: Json | null
+          shipping_cost_piastres: number
+          shipping_zone_id: string | null
+          status: string
+          total_piastres: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cancelled_at?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          has_physical_items: boolean
+          id?: string
+          items_subtotal_piastres: number
+          order_number: string
+          payment_gateway_id: string
+          shipped_at?: string | null
+          shipping_address?: Json | null
+          shipping_cost_piastres?: number
+          shipping_zone_id?: string | null
+          status?: string
+          total_piastres: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cancelled_at?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          has_physical_items?: boolean
+          id?: string
+          items_subtotal_piastres?: number
+          order_number?: string
+          payment_gateway_id?: string
+          shipped_at?: string | null
+          shipping_address?: Json | null
+          shipping_cost_piastres?: number
+          shipping_zone_id?: string | null
+          status?: string
+          total_piastres?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_orders_payment_gateway_id_fkey"
+            columns: ["payment_gateway_id"]
+            isOneToOne: false
+            referencedRelation: "payment_gateways"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "book_orders_shipping_zone_id_fkey"
+            columns: ["shipping_zone_id"]
+            isOneToOne: false
+            referencedRelation: "shipping_zones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "book_orders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard_eligible_students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "book_orders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       books: {
         Row: {
           author: string | null
@@ -1383,6 +1520,7 @@ export type Database = {
           gateway_key: string
           id: string
           is_enabled: boolean
+          scope: string
           type: string
           updated_at: string
         }
@@ -1392,6 +1530,7 @@ export type Database = {
           gateway_key: string
           id?: string
           is_enabled?: boolean
+          scope?: string
           type?: string
           updated_at?: string
         }
@@ -1401,6 +1540,7 @@ export type Database = {
           gateway_key?: string
           id?: string
           is_enabled?: boolean
+          scope?: string
           type?: string
           updated_at?: string
         }
@@ -1409,6 +1549,7 @@ export type Database = {
       payment_transactions: {
         Row: {
           amount_piastres: number
+          book_order_id: string | null
           bundle_id: string | null
           course_id: string | null
           created_at: string
@@ -1431,6 +1572,7 @@ export type Database = {
         }
         Insert: {
           amount_piastres: number
+          book_order_id?: string | null
           bundle_id?: string | null
           course_id?: string | null
           created_at?: string
@@ -1453,6 +1595,7 @@ export type Database = {
         }
         Update: {
           amount_piastres?: number
+          book_order_id?: string | null
           bundle_id?: string | null
           course_id?: string | null
           created_at?: string
@@ -1474,6 +1617,13 @@ export type Database = {
           wallet_transaction_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "payment_transactions_book_order_id_fkey"
+            columns: ["book_order_id"]
+            isOneToOne: false
+            referencedRelation: "book_orders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "payment_transactions_bundle_id_fkey"
             columns: ["bundle_id"]
@@ -2614,11 +2764,20 @@ export type Database = {
         }
         Returns: undefined
       }
+      _book_effective_price: {
+        Args: { p_book: Database["public"]["Tables"]["books"]["Row"] }
+        Returns: number
+      }
+      _effective_shipping_price: {
+        Args: { p_zone_id: string }
+        Returns: number
+      }
       _enroll_user_in_bundle: {
         Args: { _bundle_id: string; _user_id: string }
         Returns: number
       }
       _finalize_attempt: { Args: { _attempt_id: string }; Returns: undefined }
+      _gen_book_order_number: { Args: never; Returns: string }
       _gen_payment_reference: { Args: never; Returns: string }
       _gen_txn_reference: { Args: never; Returns: string }
       _grade_answer: { Args: { _answer_id: string }; Returns: undefined }
@@ -2799,6 +2958,17 @@ export type Database = {
         Args: { p_delta: number; p_notes: string; p_student: string }
         Returns: string
       }
+      create_book_order: {
+        Args: {
+          p_gateway_key: string
+          p_manual_method_id?: string
+          p_manual_proof_path?: string
+          p_manual_sender_number?: string
+          p_shipping_address?: Json
+          p_shipping_zone_id?: string
+        }
+        Returns: Json
+      }
       create_pending_gateway_transaction: {
         Args: {
           p_course_id?: string
@@ -2829,6 +2999,7 @@ export type Database = {
       get_assignment_platform_metrics: { Args: never; Returns: Json }
       get_attempt_details: { Args: { _attempt_id: string }; Returns: Json }
       get_attempt_questions: { Args: { _attempt_id: string }; Returns: Json }
+      get_book_order_detail: { Args: { p_order_id: string }; Returns: Json }
       get_lessons_public: {
         Args: never
         Returns: {
