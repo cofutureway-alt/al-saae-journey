@@ -36,7 +36,7 @@ import {
   listStudents, setStudentBanned, adminDeleteStudent, type AdminStudentRow,
 } from "@/lib/admin-students-api";
 import StudentFormModal from "@/components/admin/students/StudentFormModal";
-import { KNOWN_PROFILE_COLUMNS } from "@/lib/registration-fields";
+import { KNOWN_PROFILE_COLUMNS, PASSWORD_KEYS } from "@/lib/registration-fields";
 
 const PAGE_SIZE = 50;
 const ALL = "__all__";
