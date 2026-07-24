@@ -209,16 +209,9 @@ export default function Cart() {
                   <span className="text-2xl font-bold text-primary">{formatPiastres(subtotal)}</span>
                 </div>
 
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="block w-full">
-                        <Button disabled className="w-full">إتمام الشراء</Button>
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent>قريباً</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <Link to="/checkout" className="block w-full">
+                  <Button className="w-full" size="lg">إتمام الشراء</Button>
+                </Link>
 
                 <Link to="/books" className="block text-center text-xs text-muted-foreground hover:text-foreground">
                   متابعة التصفّح
