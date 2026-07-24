@@ -213,12 +213,14 @@ export async function changeBookOrderStatus(args: {
   newStatus: BookOrderStatus;
   notes?: string | null;
   notifyStudent?: boolean;
+  cashCollected?: boolean;
 }) {
   const { data, error } = await (supabase as any).rpc("change_book_order_status", {
     p_order_id: args.orderId,
     p_new_status: args.newStatus,
     p_notes: args.notes ?? null,
     p_notify_student: args.notifyStudent ?? true,
+    p_cash_collected: args.cashCollected ?? false,
   });
   if (error) throw error;
   return data;
