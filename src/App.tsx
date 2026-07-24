@@ -96,6 +96,8 @@ const App = () => (
             <Route path="/bundles" element={<Bundles />} />
             <Route path="/leaderboard" element={<LeaderboardPage />} />
             <Route path="/courses/:id" element={<CourseDetails />} />
+            <Route path="/books" element={<Books />} />
+            <Route path="/cart" element={<RequireAuth><Cart /></RequireAuth>} />
             <Route path="/s/:qrToken" element={<PublicStudentSnapshot />} />
             <Route path="/payment/kashier/return" element={<PaymentKashierReturn />} />
             <Route path="/payment/paymob/return" element={<PaymentPaymobReturn />} />
