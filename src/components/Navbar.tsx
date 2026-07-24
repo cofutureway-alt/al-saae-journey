@@ -29,6 +29,7 @@ const Navbar = () => {
     { label: "الرئيسية", href: "/" },
     { label: "المميزات", href: "/#features" },
     { label: "الدورات", href: "/courses" },
+    { label: "الكتب", href: "/books" },
     { label: "المتصدرين", href: "/leaderboard" },
   ];
 
