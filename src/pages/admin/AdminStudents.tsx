@@ -13,6 +13,7 @@ import {
   X,
   SlidersHorizontal,
   Loader2,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -35,7 +36,7 @@ import {
   listStudents, setStudentBanned, adminDeleteStudent, type AdminStudentRow,
 } from "@/lib/admin-students-api";
 import StudentFormModal from "@/components/admin/students/StudentFormModal";
-import { KNOWN_PROFILE_COLUMNS } from "@/lib/registration-fields";
+import { KNOWN_PROFILE_COLUMNS, PASSWORD_KEYS } from "@/lib/registration-fields";
 
 const PAGE_SIZE = 50;
 const ALL = "__all__";
@@ -63,6 +64,7 @@ export default function AdminStudents() {
   const [bulkConfirm, setBulkConfirm] = useState<null | "delete" | "ban" | "unban">(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const toggleOne = (id: string) =>
     setSelectedIds((p) => {
@@ -182,6 +184,105 @@ export default function AdminStudents() {
     } finally { setBusy(false); setConfirm(null); }
   };
 
+  const exportCsv = async () => {
+    setExporting(true);
+    try {
+      const known: Record<string, string> = {};
+      const custom: Record<string, string> = {};
+      for (const [k, v] of Object.entries(filterValues)) {
+        if (!v || v === ALL) continue;
+        if (KNOWN_PROFILE_COLUMNS.has(k)) known[k] = v;
+        else custom[k] = v;
+      }
+      const all = await listStudents({
+        search: debouncedSearch || undefined,
+        knownFilters: known,
+        customFilters: custom,
+        limit: 100000,
+        offset: 0,
+      });
+
+      // Determine dynamic custom columns from the registration form
+      const customCols = fields
+        .filter(
+          (f) =>
+            !KNOWN_PROFILE_COLUMNS.has(f.field_key) &&
+            !PASSWORD_KEYS.has(f.field_key),
+        )
+        .map((f) => ({ key: f.field_key, label: f.label }));
+
+      const header = [
+        "رقم الطالب",
+        "الاسم الكامل",
+        "رقم الهاتف",
+        "البريد الإلكتروني",
+        "المرحلة",
+        "المحافظة",
+        "نوع التسجيل",
+        "النوع",
+        "تاريخ التسجيل",
+        "عدد الكورسات",
+        "الكورسات المكتملة",
+        "رصيد المحفظة (ج.م)",
+        "حالة الحساب",
+        ...customCols.map((c) => c.label),
+      ];
+
+      const escape = (v: any) => {
+        const s =
+          v === null || v === undefined
+            ? ""
+            : typeof v === "object"
+              ? JSON.stringify(v)
+              : String(v);
+        return `"${s.replace(/"/g, '""')}"`;
+      };
+
+      const lines = all.map((r) => {
+        const cf = (r.custom_fields ?? {}) as Record<string, any>;
+        return [
+          r.student_id ?? "",
+          r.full_name ?? "",
+          r.phone_number ?? "",
+          r.email ?? "",
+          r.stage_name ?? "",
+          r.governorate ?? "",
+          r.registration_type ?? "",
+          r.gender ?? "",
+          r.created_at ? new Date(r.created_at).toISOString() : "",
+          r.enrollments_count ?? 0,
+          r.completed_courses_count ?? 0,
+          ((r.wallet_balance_piastres ?? 0) / 100).toFixed(2),
+          r.is_banned ? "محظور" : "نشط",
+          ...customCols.map((c) => {
+            const v = cf[c.key];
+            if (Array.isArray(v)) return v.join(" | ");
+            return v ?? "";
+          }),
+        ]
+          .map(escape)
+          .join(",");
+      });
+
+      const csv = "\uFEFF" + [header.join(","), ...lines].join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const stamp = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = `students-export-${stamp}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`تم تصدير ${all.length} طالب`);
+    } catch (e: any) {
+      toast.error(e?.message ?? "تعذّر التصدير");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+
+
   const filtersUI = (
     <div className="space-y-4">
       <div className="relative">
@@ -261,6 +362,20 @@ export default function AdminStudents() {
               <div className="mt-6">{filtersUI}</div>
             </SheetContent>
           </Sheet>
+          <Button
+            variant="outline"
+            onClick={exportCsv}
+            disabled={exporting || loading}
+            className="gap-2"
+            title="تصدير النتائج الحالية إلى CSV"
+          >
+            {exporting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
+            تصدير CSV
+          </Button>
           <Button onClick={() => { setSelected(null); setModalMode("create"); }} className="gap-2">
             <UserPlus className="w-4 h-4" /> إضافة طالب
           </Button>

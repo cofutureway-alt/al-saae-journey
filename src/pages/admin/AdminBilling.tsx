@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart3,
+  BookOpen,
+  Package,
   Calendar as CalendarIcon,
   CheckCircle2,
   CreditCard,
@@ -64,13 +66,20 @@ interface PaymentRow {
   id: string;
   reference_number: string;
   user_id: string;
-  course_id: string;
+  course_id: string | null;
+  bundle_id: string | null;
+  book_order_id: string | null;
+  purpose: "course_purchase" | "bundle_purchase" | "book_order" | "wallet_topup";
   amount_piastres: number;
   status: "success" | "failed";
   failure_reason: string | null;
   created_at: string;
   gateway_id: string;
   courses: { title: string | null } | null;
+  bundles: { title: string | null } | null;
+  book_orders:
+    | { order_number: string | null; book_order_items: { count: number }[] | null }
+    | null;
   profiles: {
     full_name: string | null;
     student_id: string | null;
@@ -85,6 +94,13 @@ interface CourseOpt {
 }
 
 type RangePreset = "30d" | "3m" | "1y" | "custom";
+
+const PURPOSE_LABEL: Record<PaymentRow["purpose"], string> = {
+  course_purchase: "شراء دورة",
+  bundle_purchase: "شراء باقة",
+  book_order: "طلب كتب",
+  wallet_topup: "شحن محفظة",
+};
 
 // ==================================================================
 // Range utilities
@@ -244,14 +260,17 @@ export default function AdminBilling() {
     let q = (supabase as any)
       .from("payment_transactions")
       .select(
-        `id, reference_number, user_id, course_id, amount_piastres, status,
-         failure_reason, created_at, gateway_id,
+        `id, reference_number, user_id, course_id, bundle_id, book_order_id, purpose,
+         amount_piastres, status, failure_reason, created_at, gateway_id,
          courses:course_id (title),
+         bundles:bundle_id (title),
+         book_orders:book_order_id (order_number, book_order_items(count)),
          profiles:user_id (full_name, student_id, phone_number),
          gateway:gateway_id (display_name)`,
       )
       .gte("created_at", range.from.toISOString())
       .lte("created_at", range.to.toISOString())
+      .neq("purpose", "wallet_topup")
       .order("created_at", { ascending: false })
       .limit(1000);
 
@@ -337,13 +356,38 @@ export default function AdminBilling() {
     }));
   }, [successRows, range.from, range.to]);
 
-  // Top-selling courses within the current filter, ranked by successful revenue
+  // Book order item count helper (embedded aggregate returns [{count: N}])
+  const bookItemCount = (r: PaymentRow) =>
+    r.book_orders?.book_order_items?.[0]?.count ?? 0;
+
+  // Product label for the transactions table (per-purpose)
+  const productLabel = (r: PaymentRow): string => {
+    switch (r.purpose) {
+      case "course_purchase":
+        return r.courses?.title ?? "دورة محذوفة";
+      case "bundle_purchase":
+        return r.bundles?.title
+          ? `باقة: ${r.bundles.title}`
+          : "باقة محذوفة";
+      case "book_order": {
+        const n = bookItemCount(r);
+        return `طلب كتب (${n} عناصر)${r.book_orders?.order_number ? ` — ${r.book_orders.order_number}` : ""}`;
+      }
+      case "wallet_topup":
+        return "شحن محفظة";
+      default:
+        return "—";
+    }
+  };
+
+  // Top-selling courses (course_purchase only) — sorted by successful revenue
   const topCourses = useMemo(() => {
     const map = new Map<
       string,
       { course_id: string; title: string; count: number; revenue: number }
     >();
     for (const r of successRows) {
+      if (r.purpose !== "course_purchase" || !r.course_id) continue;
       const cur = map.get(r.course_id) ?? {
         course_id: r.course_id,
         title: r.courses?.title ?? "دورة محذوفة",
@@ -359,6 +403,92 @@ export default function AdminBilling() {
       .slice(0, 10);
   }, [successRows]);
 
+  // Top-selling bundles
+  const topBundles = useMemo(() => {
+    const map = new Map<
+      string,
+      { bundle_id: string; title: string; count: number; revenue: number }
+    >();
+    for (const r of successRows) {
+      if (r.purpose !== "bundle_purchase" || !r.bundle_id) continue;
+      const cur = map.get(r.bundle_id) ?? {
+        bundle_id: r.bundle_id,
+        title: r.bundles?.title ?? "باقة محذوفة",
+        count: 0,
+        revenue: 0,
+      };
+      cur.count += 1;
+      cur.revenue += r.amount_piastres || 0;
+      map.set(r.bundle_id, cur);
+    }
+    return Array.from(map.values())
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 10);
+  }, [successRows]);
+
+  // Book-orders revenue breakdown — need per-book aggregation. Fetch book_order_items
+  // for successful book_order rows in the current filter.
+  const [topBooks, setTopBooks] = useState<
+    Array<{ book_id: string; title: string; count: number; revenue: number }>
+  >([]);
+  const [booksTotalRevenue, setBooksTotalRevenue] = useState(0);
+  const [bundlesTotalRevenue, setBundlesTotalRevenue] = useState(0);
+
+  useEffect(() => {
+    const bundleSum = successRows
+      .filter((r) => r.purpose === "bundle_purchase")
+      .reduce((s, r) => s + (r.amount_piastres || 0), 0);
+    setBundlesTotalRevenue(bundleSum);
+
+    const bookRows = successRows.filter(
+      (r) => r.purpose === "book_order" && r.book_order_id,
+    );
+    const booksSum = bookRows.reduce((s, r) => s + (r.amount_piastres || 0), 0);
+    setBooksTotalRevenue(booksSum);
+
+    if (bookRows.length === 0) {
+      setTopBooks([]);
+      return;
+    }
+    const orderIds = bookRows.map((r) => r.book_order_id!) as string[];
+    let cancelled = false;
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("book_order_items")
+        .select("book_id, quantity, unit_price_piastres, books:book_id(title)")
+        .in("order_id", orderIds);
+      if (cancelled) return;
+      const map = new Map<
+        string,
+        { book_id: string; title: string; count: number; revenue: number }
+      >();
+      for (const it of (data ?? []) as Array<{
+        book_id: string;
+        quantity: number;
+        unit_price_piastres: number;
+        books: { title: string | null } | null;
+      }>) {
+        const cur = map.get(it.book_id) ?? {
+          book_id: it.book_id,
+          title: it.books?.title ?? "كتاب محذوف",
+          count: 0,
+          revenue: 0,
+        };
+        cur.count += it.quantity || 0;
+        cur.revenue += (it.unit_price_piastres || 0) * (it.quantity || 0);
+        map.set(it.book_id, cur);
+      }
+      setTopBooks(
+        Array.from(map.values())
+          .sort((a, b) => b.revenue - a.revenue)
+          .slice(0, 10),
+      );
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [successRows]);
+
   // Count-up values
   const revenueCounter = useCountUp(totalRevenue);
   const balanceCounter = useCountUp(totalStudentBalance);
@@ -371,10 +501,11 @@ export default function AdminBilling() {
   const exportCsv = () => {
     const header = [
       "reference_number",
+      "purpose",
       "student_name",
       "student_id",
       "student_phone",
-      "course",
+      "product",
       "amount_egp",
       "status",
       "failure_reason",
@@ -383,10 +514,11 @@ export default function AdminBilling() {
     const lines = rows.map((r) =>
       [
         r.reference_number,
+        PURPOSE_LABEL[r.purpose] ?? r.purpose,
         r.profiles?.full_name ?? "",
         r.profiles?.student_id ?? "",
         r.profiles?.phone_number ?? "",
-        r.courses?.title ?? "",
+        productLabel(r),
         (r.amount_piastres / 100).toFixed(2),
         r.status,
         r.failure_reason ?? "",
@@ -415,7 +547,7 @@ export default function AdminBilling() {
         studentName: r.profiles?.full_name ?? "—",
         studentIdCode: r.profiles?.student_id,
         studentPhone: r.profiles?.phone_number,
-        courseTitle: r.courses?.title ?? "—",
+        courseTitle: productLabel(r),
         amountPiastres: r.amount_piastres,
         status: r.status,
         gatewayName: r.gateway?.display_name,
@@ -684,11 +816,44 @@ export default function AdminBilling() {
       {/* Top selling courses */}
       <TopCoursesSection rows={topCourses} />
 
+      {/* Books & Bundles revenue breakdowns */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <TopProductsSection
+          title="أعلى الكتب مبيعًا"
+          totalLabel="إجمالي إيرادات الكتب"
+          totalRevenue={booksTotalRevenue}
+          rows={topBooks.map((b) => ({
+            key: b.book_id,
+            title: b.title,
+            count: b.count,
+            revenue: b.revenue,
+            countLabel: "نسخ مباعة",
+          }))}
+          icon={<BookOpen className="w-4 h-4 text-primary" />}
+          emptyText="لا توجد مبيعات كتب في هذا النطاق."
+        />
+        <TopProductsSection
+          title="أعلى الباقات مبيعًا"
+          totalLabel="إجمالي إيرادات الباقات"
+          totalRevenue={bundlesTotalRevenue}
+          rows={topBundles.map((b) => ({
+            key: b.bundle_id,
+            title: b.title,
+            count: b.count,
+            revenue: b.revenue,
+            countLabel: "عدد المبيعات",
+          }))}
+          icon={<Package className="w-4 h-4 text-primary" />}
+          emptyText="لا توجد مبيعات باقات في هذا النطاق."
+        />
+      </div>
+
       {/* Transactions table */}
       <TransactionsTable
         rows={rows}
         loading={loading}
         onPrintInvoice={printInvoice}
+        productLabel={productLabel}
         invoicingId={invoicingId}
       />
     </div>
@@ -1037,11 +1202,13 @@ function TransactionsTable({
   rows,
   loading,
   onPrintInvoice,
+  productLabel,
   invoicingId,
 }: {
   rows: PaymentRow[];
   loading: boolean;
   onPrintInvoice: (r: PaymentRow) => void;
+  productLabel: (r: PaymentRow) => string;
   invoicingId: string | null;
 }) {
   return (
@@ -1072,7 +1239,7 @@ function TransactionsTable({
             <thead className="bg-accent/40 text-xs">
               <tr>
                 <th className="text-right p-3 font-semibold">الطالب</th>
-                <th className="text-right p-3 font-semibold">الدورة</th>
+                <th className="text-right p-3 font-semibold">المنتج / نوع العملية</th>
                 <th className="text-right p-3 font-semibold">المبلغ</th>
                 <th className="text-right p-3 font-semibold">الحالة</th>
                 <th className="text-right p-3 font-semibold">المرجع</th>
@@ -1099,7 +1266,12 @@ function TransactionsTable({
                         {r.profiles?.student_id ?? ""}
                       </div>
                     </td>
-                    <td className="p-3">{r.courses?.title ?? "—"}</td>
+                    <td className="p-3">
+                      <div>{productLabel(r)}</div>
+                      <div className="text-[11px] text-muted-foreground mt-0.5">
+                        {PURPOSE_LABEL[r.purpose] ?? r.purpose}
+                      </div>
+                    </td>
                     <td className="p-3 font-bold">{formatPiastres(r.amount_piastres)}</td>
                     <td className="p-3">
                       {r.status === "success" ? (
@@ -1155,5 +1327,86 @@ function TransactionsTable({
         </div>
       )}
     </section>
+  );
+}
+
+function TopProductsSection({
+  title,
+  totalLabel,
+  totalRevenue,
+  rows,
+  icon,
+  emptyText,
+}: {
+  title: string;
+  totalLabel: string;
+  totalRevenue: number;
+  rows: Array<{
+    key: string;
+    title: string;
+    count: number;
+    revenue: number;
+    countLabel: string;
+  }>;
+  icon: React.ReactNode;
+  emptyText: string;
+}) {
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="rounded-2xl border border-border bg-card overflow-hidden"
+    >
+      <div className="p-4 sm:p-5 border-b border-border flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          {icon}
+          <h2 className="font-bold">{title}</h2>
+        </div>
+        <div className="text-xs text-muted-foreground">
+          {totalLabel}:{" "}
+          <span className="font-bold text-emerald-600 dark:text-emerald-400">
+            {formatPiastres(totalRevenue)}
+          </span>
+        </div>
+      </div>
+      {rows.length === 0 ? (
+        <div className="p-8 text-sm text-muted-foreground text-center">
+          {emptyText}
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-accent/40 text-xs">
+              <tr>
+                <th className="text-right p-3 font-semibold w-10">#</th>
+                <th className="text-right p-3 font-semibold">العنوان</th>
+                <th className="text-right p-3 font-semibold">
+                  {rows[0]?.countLabel ?? "العدد"}
+                </th>
+                <th className="text-right p-3 font-semibold">الإيرادات</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r, i) => (
+                <motion.tr
+                  key={r.key}
+                  initial={{ opacity: 0, x: 8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.03 }}
+                  className="border-t border-border"
+                >
+                  <td className="p-3 text-muted-foreground">{i + 1}</td>
+                  <td className="p-3 font-medium">{r.title}</td>
+                  <td className="p-3">{r.count}</td>
+                  <td className="p-3 font-bold text-emerald-600 dark:text-emerald-400">
+                    {formatPiastres(r.revenue)}
+                  </td>
+                </motion.tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </motion.section>
   );
 }
