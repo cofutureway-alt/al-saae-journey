@@ -1202,11 +1202,13 @@ function TransactionsTable({
   rows,
   loading,
   onPrintInvoice,
+  productLabel,
   invoicingId,
 }: {
   rows: PaymentRow[];
   loading: boolean;
   onPrintInvoice: (r: PaymentRow) => void;
+  productLabel: (r: PaymentRow) => string;
   invoicingId: string | null;
 }) {
   return (
