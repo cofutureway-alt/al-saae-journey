@@ -279,6 +279,9 @@ export default function AdminStudents() {
     } finally {
       setExporting(false);
     }
+  };
+
+
 
   const filtersUI = (
     <div className="space-y-4">
