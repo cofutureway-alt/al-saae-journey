@@ -331,6 +331,24 @@ export default function PurchaseCourseModal({
               </motion.div>
             ) : (
               <motion.div key="pick" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+                {isParent && (
+                  <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 space-y-2">
+                    <div className="text-sm font-bold">الشراء لصالح</div>
+                    {children.length === 0 ? (
+                      <div className="text-xs text-muted-foreground">لا يوجد أبناء مرتبطون بحسابك بعد. اذهب إلى «ربط طالب» أولاً.</div>
+                    ) : (
+                      <select value={selectedChild ?? ""} onChange={(e) => setSelectedChild(e.target.value || null)}
+                        className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm">
+                        <option value="">— اختر الطالب —</option>
+                        {children.map((c) => (
+                          <option key={c.student_user_id} value={c.student_user_id}>
+                            {c.full_name} ({c.student_id})
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                )}
                 <div className="space-y-2">
                   {gateways!.map((g) => {
                     const Icon = gatewayIconFor(g.gateway_key);
