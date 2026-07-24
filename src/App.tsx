@@ -17,6 +17,7 @@ import ParentLayout from "@/components/parent/ParentLayout";
 import ParentDashboard from "./pages/parent/ParentDashboard";
 import ParentLinkStudent from "./pages/parent/ParentLinkStudent";
 import AdminParentLinkRequests from "./pages/admin/AdminParentLinkRequests";
+import AdminParents from "./pages/admin/AdminParents";
 import NotFound from "./pages/NotFound";
 import AdminStatistics from "./pages/admin/AdminStatistics";
 import AdminCourses from "./pages/admin/AdminCourses";
