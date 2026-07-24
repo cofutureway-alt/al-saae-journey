@@ -9,48 +9,50 @@ import { cn } from "@/lib/utils";
 
 const WalletWidget = ({ to = "/dashboard/wallet" }: { to?: string }) => {
   const { user } = useAuth();
+  const userId = user?.id;
   const navigate = useNavigate();
   const [balance, setBalance] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let active = true;
-    const load = async () => {
-      if (!user) return;
-      setLoading(true);
+    let cancelled = false;
+    const load = async (showLoader = true) => {
+      if (!userId) {
+        setBalance(null);
+        setLoading(false);
+        return;
+      }
+
+      if (showLoader) setLoading(true);
       const { data } = await (supabase as any)
         .from("wallets")
         .select("balance_piastres")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .maybeSingle();
-      if (!active) return;
+
+      if (cancelled) return;
       setBalance(data?.balance_piastres ?? 0);
       setLoading(false);
     };
-    load();
 
-    // Realtime updates when balance changes
-    let channel: any = null;
-    if (user) {
-      channel = (supabase as any)
-        .channel(`wallet-widget-${user.id}-${Date.now()}`)
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "wallets", filter: `user_id=eq.${user.id}` },
-          (payload: any) => {
-            const next = payload?.new?.balance_piastres;
-            if (typeof next === "number") setBalance(next);
-          },
-        )
-        .subscribe();
-    }
+    void load();
 
-    return () => {
-      active = false;
-      if (channel) (supabase as any).removeChannel(channel);
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") void load(false);
     };
 
-  }, [user?.id]);
+    window.addEventListener("focus", refreshWhenVisible);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    const refreshTimer = window.setInterval(refreshWhenVisible, 30_000);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener("focus", refreshWhenVisible);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+      window.clearInterval(refreshTimer);
+    };
+
+  }, [userId]);
 
   if (!user) return null;
 
