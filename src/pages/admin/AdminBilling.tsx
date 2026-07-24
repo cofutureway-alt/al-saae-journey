@@ -545,7 +545,7 @@ export default function AdminBilling() {
         studentName: r.profiles?.full_name ?? "—",
         studentIdCode: r.profiles?.student_id,
         studentPhone: r.profiles?.phone_number,
-        courseTitle: r.courses?.title ?? "—",
+        courseTitle: productLabel(r),
         amountPiastres: r.amount_piastres,
         status: r.status,
         gatewayName: r.gateway?.display_name,
