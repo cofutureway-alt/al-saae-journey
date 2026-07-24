@@ -52,7 +52,7 @@ export function useCart() {
   useEffect(() => {
     if (!user) return;
     const channel = (supabase as any)
-      .channel(`cart-${user.id}`)
+      .channel(`cart-${user.id}-${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "book_cart_items", filter: `user_id=eq.${user.id}` },
@@ -62,7 +62,8 @@ export function useCart() {
     return () => {
       (supabase as any).removeChannel(channel);
     };
-  }, [user, load]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const addToCart = useCallback(
     async (bookId: string, bookType: "digital" | "physical") => {
