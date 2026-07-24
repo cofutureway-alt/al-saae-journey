@@ -13,6 +13,7 @@ import {
   X,
   SlidersHorizontal,
   Loader2,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
