@@ -1266,7 +1266,12 @@ function TransactionsTable({
                         {r.profiles?.student_id ?? ""}
                       </div>
                     </td>
-                    <td className="p-3">{r.courses?.title ?? "—"}</td>
+                    <td className="p-3">
+                      <div>{productLabel(r)}</div>
+                      <div className="text-[11px] text-muted-foreground mt-0.5">
+                        {PURPOSE_LABEL[r.purpose] ?? r.purpose}
+                      </div>
+                    </td>
                     <td className="p-3 font-bold">{formatPiastres(r.amount_piastres)}</td>
                     <td className="p-3">
                       {r.status === "success" ? (
