@@ -298,7 +298,7 @@ export default function AdminBookOrderDetail() {
       </div>
 
       <StatusChangeDialog
-        order={dialogOpen ? { id: order.id, number: order.order_number, current: order.status } : null}
+        order={dialogOpen ? { id: order.id, number: order.order_number, current: order.status, gatewayKey: order.gateway_key } : null}
         onClose={() => setDialogOpen(false)}
         onChanged={() => {
           setDialogOpen(false);
