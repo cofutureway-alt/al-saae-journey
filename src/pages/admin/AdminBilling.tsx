@@ -64,13 +64,18 @@ interface PaymentRow {
   id: string;
   reference_number: string;
   user_id: string;
-  course_id: string;
+  course_id: string | null;
+  bundle_id: string | null;
+  book_order_id: string | null;
+  purpose: "course_purchase" | "bundle_purchase" | "book_order" | "wallet_topup";
   amount_piastres: number;
   status: "success" | "failed";
   failure_reason: string | null;
   created_at: string;
   gateway_id: string;
   courses: { title: string | null } | null;
+  bundles: { title: string | null } | null;
+  book_orders: { order_number: string | null; item_count: number | null } | null;
   profiles: {
     full_name: string | null;
     student_id: string | null;
@@ -85,6 +90,13 @@ interface CourseOpt {
 }
 
 type RangePreset = "30d" | "3m" | "1y" | "custom";
+
+const PURPOSE_LABEL: Record<PaymentRow["purpose"], string> = {
+  course_purchase: "شراء دورة",
+  bundle_purchase: "شراء باقة",
+  book_order: "طلب كتب",
+  wallet_topup: "شحن محفظة",
+};
 
 // ==================================================================
 // Range utilities
