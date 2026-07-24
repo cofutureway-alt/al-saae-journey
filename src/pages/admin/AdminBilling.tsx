@@ -499,10 +499,11 @@ export default function AdminBilling() {
   const exportCsv = () => {
     const header = [
       "reference_number",
+      "purpose",
       "student_name",
       "student_id",
       "student_phone",
-      "course",
+      "product",
       "amount_egp",
       "status",
       "failure_reason",
@@ -511,10 +512,11 @@ export default function AdminBilling() {
     const lines = rows.map((r) =>
       [
         r.reference_number,
+        PURPOSE_LABEL[r.purpose] ?? r.purpose,
         r.profiles?.full_name ?? "",
         r.profiles?.student_id ?? "",
         r.profiles?.phone_number ?? "",
-        r.courses?.title ?? "",
+        productLabel(r),
         (r.amount_piastres / 100).toFixed(2),
         r.status,
         r.failure_reason ?? "",
