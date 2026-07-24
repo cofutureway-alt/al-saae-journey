@@ -3009,6 +3009,24 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_get_parent_links: {
+        Args: { _parent_id: string }
+        Returns: {
+          admin_note: string
+          created_at: string
+          id: string
+          relationship: string
+          request_note: string
+          reviewed_at: string
+          reviewed_by: string
+          status: string
+          student_code: string
+          student_name: string
+          student_phone: string
+          student_user_id: string
+          updated_at: string
+        }[]
+      }
       admin_get_refund_processing_context: {
         Args: { p_request_id: string }
         Returns: Json
@@ -3070,6 +3088,21 @@ export type Database = {
           student_name: string
           student_user_id: string
           updated_at: string
+        }[]
+      }
+      admin_list_parents: {
+        Args: { _search?: string }
+        Returns: {
+          approved_children_count: number
+          avatar_url: string
+          created_at: string
+          email: string
+          full_name: string
+          is_banned: boolean
+          parent_user_id: string
+          pending_requests_count: number
+          phone_number: string
+          total_requests_count: number
         }[]
       }
       admin_list_payment_requests: {

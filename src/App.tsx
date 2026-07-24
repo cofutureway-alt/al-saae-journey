@@ -17,6 +17,7 @@ import ParentLayout from "@/components/parent/ParentLayout";
 import ParentDashboard from "./pages/parent/ParentDashboard";
 import ParentLinkStudent from "./pages/parent/ParentLinkStudent";
 import AdminParentLinkRequests from "./pages/admin/AdminParentLinkRequests";
+import AdminParents from "./pages/admin/AdminParents";
 import NotFound from "./pages/NotFound";
 import AdminStatistics from "./pages/admin/AdminStatistics";
 import AdminCourses from "./pages/admin/AdminCourses";
@@ -219,6 +220,7 @@ const App = () => (
               <Route path="cards/:templateId/edit" element={<CardBuilder />} />
               <Route path="account" element={<MyAccount />} />
               <Route path="parent-link-requests" element={<AdminParentLinkRequests />} />
+              <Route path="parents" element={<AdminParents />} />
               <Route path="leaderboard" element={<LeaderboardLayout />}>
                 <Route index element={<LeaderboardTop />} />
                 <Route path="badges" element={<LeaderboardBadges />} />
