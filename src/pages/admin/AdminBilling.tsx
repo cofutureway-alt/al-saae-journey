@@ -258,14 +258,17 @@ export default function AdminBilling() {
     let q = (supabase as any)
       .from("payment_transactions")
       .select(
-        `id, reference_number, user_id, course_id, amount_piastres, status,
-         failure_reason, created_at, gateway_id,
+        `id, reference_number, user_id, course_id, bundle_id, book_order_id, purpose,
+         amount_piastres, status, failure_reason, created_at, gateway_id,
          courses:course_id (title),
+         bundles:bundle_id (title),
+         book_orders:book_order_id (order_number, book_order_items(count)),
          profiles:user_id (full_name, student_id, phone_number),
          gateway:gateway_id (display_name)`,
       )
       .gte("created_at", range.from.toISOString())
       .lte("created_at", range.to.toISOString())
+      .neq("purpose", "wallet_topup")
       .order("created_at", { ascending: false })
       .limit(1000);
 
