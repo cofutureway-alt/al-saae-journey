@@ -64,6 +64,7 @@ export default function AdminStudents() {
   const [bulkConfirm, setBulkConfirm] = useState<null | "delete" | "ban" | "unban">(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const toggleOne = (id: string) =>
     setSelectedIds((p) => {
