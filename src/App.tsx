@@ -71,6 +71,9 @@ import MyBadges from "./pages/student/MyBadges";
 import MyLevels from "./pages/student/MyLevels";
 import BadgeCelebration from "./components/BadgeCelebration";
 import MobileBottomNav from "./components/MobileBottomNav";
+import Books from "./pages/Books";
+import Cart from "./pages/Cart";
+import AdminShippingZones from "./pages/admin/AdminShippingZones";
 
 
 const queryClient = new QueryClient();
