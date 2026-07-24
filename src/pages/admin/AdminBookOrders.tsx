@@ -152,7 +152,7 @@ export default function AdminBookOrders() {
   const [gateways, setGateways] = useState<GatewayOpt[]>([]);
   const [zones, setZones] = useState<ZoneOpt[]>([]);
 
-  const [dialogOrder, setDialogOrder] = useState<{ id: string; number: string; current: BookOrderStatus } | null>(null);
+  const [dialogOrder, setDialogOrder] = useState<{ id: string; number: string; current: BookOrderStatus; gatewayKey?: string | null } | null>(null);
 
   const load = async () => {
     setLoading(true);
