@@ -354,13 +354,38 @@ export default function AdminBilling() {
     }));
   }, [successRows, range.from, range.to]);
 
-  // Top-selling courses within the current filter, ranked by successful revenue
+  // Book order item count helper (embedded aggregate returns [{count: N}])
+  const bookItemCount = (r: PaymentRow) =>
+    r.book_orders?.book_order_items?.[0]?.count ?? 0;
+
+  // Product label for the transactions table (per-purpose)
+  const productLabel = (r: PaymentRow): string => {
+    switch (r.purpose) {
+      case "course_purchase":
+        return r.courses?.title ?? "دورة محذوفة";
+      case "bundle_purchase":
+        return r.bundles?.title
+          ? `باقة: ${r.bundles.title}`
+          : "باقة محذوفة";
+      case "book_order": {
+        const n = bookItemCount(r);
+        return `طلب كتب (${n} عناصر)${r.book_orders?.order_number ? ` — ${r.book_orders.order_number}` : ""}`;
+      }
+      case "wallet_topup":
+        return "شحن محفظة";
+      default:
+        return "—";
+    }
+  };
+
+  // Top-selling courses (course_purchase only) — sorted by successful revenue
   const topCourses = useMemo(() => {
     const map = new Map<
       string,
       { course_id: string; title: string; count: number; revenue: number }
     >();
     for (const r of successRows) {
+      if (r.purpose !== "course_purchase" || !r.course_id) continue;
       const cur = map.get(r.course_id) ?? {
         course_id: r.course_id,
         title: r.courses?.title ?? "دورة محذوفة",
@@ -374,6 +399,92 @@ export default function AdminBilling() {
     return Array.from(map.values())
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 10);
+  }, [successRows]);
+
+  // Top-selling bundles
+  const topBundles = useMemo(() => {
+    const map = new Map<
+      string,
+      { bundle_id: string; title: string; count: number; revenue: number }
+    >();
+    for (const r of successRows) {
+      if (r.purpose !== "bundle_purchase" || !r.bundle_id) continue;
+      const cur = map.get(r.bundle_id) ?? {
+        bundle_id: r.bundle_id,
+        title: r.bundles?.title ?? "باقة محذوفة",
+        count: 0,
+        revenue: 0,
+      };
+      cur.count += 1;
+      cur.revenue += r.amount_piastres || 0;
+      map.set(r.bundle_id, cur);
+    }
+    return Array.from(map.values())
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 10);
+  }, [successRows]);
+
+  // Book-orders revenue breakdown — need per-book aggregation. Fetch book_order_items
+  // for successful book_order rows in the current filter.
+  const [topBooks, setTopBooks] = useState<
+    Array<{ book_id: string; title: string; count: number; revenue: number }>
+  >([]);
+  const [booksTotalRevenue, setBooksTotalRevenue] = useState(0);
+  const [bundlesTotalRevenue, setBundlesTotalRevenue] = useState(0);
+
+  useEffect(() => {
+    const bundleSum = successRows
+      .filter((r) => r.purpose === "bundle_purchase")
+      .reduce((s, r) => s + (r.amount_piastres || 0), 0);
+    setBundlesTotalRevenue(bundleSum);
+
+    const bookRows = successRows.filter(
+      (r) => r.purpose === "book_order" && r.book_order_id,
+    );
+    const booksSum = bookRows.reduce((s, r) => s + (r.amount_piastres || 0), 0);
+    setBooksTotalRevenue(booksSum);
+
+    if (bookRows.length === 0) {
+      setTopBooks([]);
+      return;
+    }
+    const orderIds = bookRows.map((r) => r.book_order_id!) as string[];
+    let cancelled = false;
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("book_order_items")
+        .select("book_id, quantity, unit_price_piastres, books:book_id(title)")
+        .in("order_id", orderIds);
+      if (cancelled) return;
+      const map = new Map<
+        string,
+        { book_id: string; title: string; count: number; revenue: number }
+      >();
+      for (const it of (data ?? []) as Array<{
+        book_id: string;
+        quantity: number;
+        unit_price_piastres: number;
+        books: { title: string | null } | null;
+      }>) {
+        const cur = map.get(it.book_id) ?? {
+          book_id: it.book_id,
+          title: it.books?.title ?? "كتاب محذوف",
+          count: 0,
+          revenue: 0,
+        };
+        cur.count += it.quantity || 0;
+        cur.revenue += (it.unit_price_piastres || 0) * (it.quantity || 0);
+        map.set(it.book_id, cur);
+      }
+      setTopBooks(
+        Array.from(map.values())
+          .sort((a, b) => b.revenue - a.revenue)
+          .slice(0, 10),
+      );
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [successRows]);
 
   // Count-up values
