@@ -362,6 +362,20 @@ export default function AdminStudents() {
               <div className="mt-6">{filtersUI}</div>
             </SheetContent>
           </Sheet>
+          <Button
+            variant="outline"
+            onClick={exportCsv}
+            disabled={exporting || loading}
+            className="gap-2"
+            title="تصدير النتائج الحالية إلى CSV"
+          >
+            {exporting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
+            تصدير CSV
+          </Button>
           <Button onClick={() => { setSelected(null); setModalMode("create"); }} className="gap-2">
             <UserPlus className="w-4 h-4" /> إضافة طالب
           </Button>
