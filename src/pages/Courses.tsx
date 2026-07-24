@@ -1,10 +1,27 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, BookOpen } from "lucide-react";
+import { Search, BookOpen, SlidersHorizontal, X } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { CourseCard } from "@/components/CourseCard";
 import { usePublicCourses } from "@/hooks/use-public-courses";
 import { useMyProgressMap } from "@/hooks/use-my-progress";
@@ -21,9 +38,14 @@ const Courses = () => {
   const progressMap = useMyProgressMap();
   const [stages, setStages] = useState<Named[]>([]);
   const [subjects, setSubjects] = useState<Named[]>([]);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [query, setQuery] = useState("");
-  const [stageId, setStageId] = useState<string | "all">("all");
-  const [subjectId, setSubjectId] = useState<string | "all">("all");
+  const [stageId, setStageId] = useState<string | "all">(
+    searchParams.get("stage") ?? "all",
+  );
+  const [subjectId, setSubjectId] = useState<string | "all">(
+    searchParams.get("subject") ?? "all",
+  );
 
   useEffect(() => {
     supabase
@@ -38,6 +60,15 @@ const Courses = () => {
       .then(({ data }: any) => setSubjects((data as Named[]) ?? []));
   }, []);
 
+  // Sync selected filters -> URL for shareable state
+  useEffect(() => {
+    const p = new URLSearchParams(searchParams);
+    stageId === "all" ? p.delete("stage") : p.set("stage", stageId);
+    subjectId === "all" ? p.delete("subject") : p.set("subject", subjectId);
+    setSearchParams(p, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stageId, subjectId]);
+
   const filtered = useMemo(() => {
     if (!courses) return null;
     return courses.filter((c) => {
@@ -48,6 +79,20 @@ const Courses = () => {
       return true;
     });
   }, [courses, query, stageId, subjectId]);
+
+  const activeCount =
+    (stageId !== "all" ? 1 : 0) +
+    (subjectId !== "all" ? 1 : 0) +
+    (query.trim() ? 1 : 0);
+
+  const resetAll = () => {
+    setStageId("all");
+    setSubjectId("all");
+    setQuery("");
+  };
+
+  const stageName = stages.find((s) => s.id === stageId)?.name;
+  const subjectName = subjects.find((s) => s.id === subjectId)?.name;
 
   return (
     <div className="min-h-screen bg-background">
@@ -73,72 +118,151 @@ const Courses = () => {
               كل الدورات
             </h1>
             <p className="text-muted-foreground mt-2 max-w-xl">
-              استكشف جميع الدورات المنشورة على المنصة وابدأ رحلتك التعليمية مجانًا.
+              استكشف جميع الدورات المنشورة على المنصة وابدأ رحلتك التعليمية.
             </p>
           </motion.div>
 
+          {/* Filter Toolbar */}
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
-            className="mb-8 space-y-4"
+            className="mb-6 rounded-2xl border border-border bg-card p-3 md:p-4 shadow-sm"
           >
-            <div className="relative max-w-md">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="ابحث عن دورة..."
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                className="pr-10 h-11"
-              />
+            <div className="flex flex-col md:flex-row md:items-center gap-3">
+              {/* Search */}
+              <div className="relative flex-1 min-w-0">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="ابحث عن دورة..."
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  className="pr-10 h-11 bg-background"
+                />
+              </div>
+
+              {/* Desktop selects */}
+              <div className="hidden md:flex items-center gap-2">
+                <Select value={stageId} onValueChange={(v) => setStageId(v)}>
+                  <SelectTrigger className="h-11 min-w-[180px] bg-background">
+                    <SelectValue placeholder="المرحلة" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    <SelectItem value="all">جميع المراحل</SelectItem>
+                    {stages.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={subjectId} onValueChange={(v) => setSubjectId(v)}>
+                  <SelectTrigger className="h-11 min-w-[180px] bg-background">
+                    <SelectValue placeholder="المادة" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    <SelectItem value="all">جميع المواد</SelectItem>
+                    {subjects.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {activeCount > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={resetAll}
+                    className="h-11 gap-1 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="w-4 h-4" />
+                    مسح
+                  </Button>
+                )}
+              </div>
+
+              {/* Mobile filter sheet */}
+              <div className="md:hidden">
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button variant="outline" className="w-full h-11 gap-2 justify-between">
+                      <span className="flex items-center gap-2">
+                        <SlidersHorizontal className="w-4 h-4" />
+                        الفلاتر
+                      </span>
+                      {activeCount > 0 && (
+                        <Badge className="bg-primary text-primary-foreground rounded-full h-6 min-w-6 px-2">
+                          {activeCount}
+                        </Badge>
+                      )}
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="bottom" className="rounded-t-3xl">
+                    <SheetHeader>
+                      <SheetTitle>تصفية الدورات</SheetTitle>
+                    </SheetHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <div className="text-xs font-bold text-muted-foreground">المرحلة</div>
+                        <Select value={stageId} onValueChange={setStageId}>
+                          <SelectTrigger className="h-11"><SelectValue placeholder="المرحلة" /></SelectTrigger>
+                          <SelectContent className="max-h-72">
+                            <SelectItem value="all">جميع المراحل</SelectItem>
+                            {stages.map((s) => (
+                              <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="text-xs font-bold text-muted-foreground">المادة</div>
+                        <Select value={subjectId} onValueChange={setSubjectId}>
+                          <SelectTrigger className="h-11"><SelectValue placeholder="المادة" /></SelectTrigger>
+                          <SelectContent className="max-h-72">
+                            <SelectItem value="all">جميع المواد</SelectItem>
+                            {subjects.map((s) => (
+                              <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {activeCount > 0 && (
+                        <Button variant="outline" className="w-full gap-2" onClick={resetAll}>
+                          <X className="w-4 h-4" /> مسح الفلاتر
+                        </Button>
+                      )}
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              </div>
             </div>
 
-            {stages.length > 0 && (
-              <div>
-                <div className="text-xs font-semibold text-muted-foreground mb-2">المراحل</div>
-                <div className="flex flex-wrap gap-2">
-                  <Chip
-                    layoutId="stage-chip-active"
-                    active={stageId === "all"}
-                    onClick={() => setStageId("all")}
-                    label="جميع المراحل"
-                  />
-                  {stages.map((s) => (
-                    <Chip
-                      key={s.id}
-                      layoutId="stage-chip-active"
-                      active={stageId === s.id}
-                      onClick={() => setStageId(s.id)}
-                      label={s.name}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {subjects.length > 0 && (
-              <div>
-                <div className="text-xs font-semibold text-muted-foreground mb-2">المواد الدراسية</div>
-                <div className="flex flex-wrap gap-2">
-                  <Chip
-                    layoutId="subject-chip-active"
-                    active={subjectId === "all"}
-                    onClick={() => setSubjectId("all")}
-                    label="جميع المواد"
-                  />
-                  {subjects.map((s) => (
-                    <Chip
-                      key={s.id}
-                      layoutId="subject-chip-active"
-                      active={subjectId === s.id}
-                      onClick={() => setSubjectId(s.id)}
-                      label={s.name}
-                    />
-                  ))}
-                </div>
+            {/* Active filter chips */}
+            {activeCount > 0 && (
+              <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-border">
+                <span className="text-xs text-muted-foreground">مطبّق:</span>
+                {stageName && (
+                  <FilterChip label={stageName} onRemove={() => setStageId("all")} />
+                )}
+                {subjectName && (
+                  <FilterChip label={subjectName} onRemove={() => setSubjectId("all")} />
+                )}
+                {query.trim() && (
+                  <FilterChip label={`"${query}"`} onRemove={() => setQuery("")} />
+                )}
               </div>
             )}
           </motion.div>
+
+          {/* Results count */}
+          {courses && (
+            <div className="text-sm text-muted-foreground mb-4">
+              {filtered?.length ?? 0} من {courses.length} دورة
+            </div>
+          )}
 
           {courses === null ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -173,11 +297,16 @@ const Courses = () => {
                   ? "لا توجد دورات منشورة بعد"
                   : "لا توجد نتائج مطابقة"}
               </h2>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground mb-4">
                 {courses.length === 0
                   ? "سنضيف الدورات قريبًا. تابعنا للاطلاع على الجديد."
-                  : "جرّب كلمات بحث أخرى أو غيّر المرحلة أو المادة."}
+                  : "جرّب كلمات بحث أخرى أو غيّر الفلاتر."}
               </p>
+              {activeCount > 0 && (
+                <Button variant="outline" onClick={resetAll} className="gap-2">
+                  <X className="w-4 h-4" /> مسح الفلاتر
+                </Button>
+              )}
             </div>
           )}
         </div>
@@ -188,33 +317,19 @@ const Courses = () => {
   );
 };
 
-const Chip = ({
-  active,
-  onClick,
+const FilterChip = ({
   label,
-  layoutId,
+  onRemove,
 }: {
-  active: boolean;
-  onClick: () => void;
   label: string;
-  layoutId: string;
+  onRemove: () => void;
 }) => (
   <button
-    onClick={onClick}
-    className={`relative px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
-      active
-        ? "text-primary-foreground"
-        : "text-foreground hover:bg-accent border border-border"
-    }`}
+    onClick={onRemove}
+    className="inline-flex items-center gap-1.5 pr-3 pl-2 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold hover:bg-primary/15 transition-colors"
   >
-    {active && (
-      <motion.span
-        layoutId={layoutId}
-        className="absolute inset-0 rounded-full bg-primary -z-10"
-        transition={{ type: "spring", stiffness: 380, damping: 30 }}
-      />
-    )}
     {label}
+    <X className="w-3.5 h-3.5" />
   </button>
 );
 
