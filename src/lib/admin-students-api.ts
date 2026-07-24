@@ -17,6 +17,8 @@ export interface AdminStudentRow {
   stage_name: string | null;
   custom_fields: Record<string, any> | null;
   enrollments_count: number;
+  completed_courses_count: number;
+  wallet_balance_piastres: number;
   total_count: number;
   qr_token?: string | null;
 }
