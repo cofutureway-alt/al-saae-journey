@@ -77,38 +77,75 @@ const StagesSection = () => {
                 onSelect={() => navigate(`/courses?stage=${s.id}`)}
               />
             ))}
-                  {/* Arch mask overlay */}
-                  <svg
-                    className="absolute inset-x-0 bottom-0 w-full text-card"
-                    viewBox="0 0 200 40"
-                    preserveAspectRatio="none"
-                  >
-                    <path d="M0 40 L0 20 Q100 -10 200 20 L200 40 Z" fill="currentColor" />
-                  </svg>
-                  <EightPointStar
-                    size={18}
-                    className="absolute top-3 right-3 text-primary-foreground/70 drop-shadow"
-                  />
-                </div>
-
-                <div className="p-4 pt-2">
-                  <h3 className="text-base md:text-lg font-extrabold text-foreground mb-2 group-hover:text-primary transition-colors line-clamp-1">
-                    {s.name}
-                  </h3>
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>استعرض الكورسات</span>
-                    <ArrowLeft
-                      size={16}
-                      className="text-primary transition-transform group-hover:-translate-x-1"
-                    />
-                  </div>
-                </div>
-              </motion.button>
-            ))}
           </div>
         )}
       </div>
     </section>
+  );
+};
+
+interface StageCardProps {
+  stage: Stage;
+  index: number;
+  isVisible: boolean;
+  onSelect: () => void;
+}
+
+const StageCard = ({ stage, index, isVisible, onSelect }: StageCardProps) => {
+  const signed = useSignedThumbnail(stage.thumbnail_url);
+  const [errored, setErrored] = useState(false);
+  const showImage = !!signed && !errored;
+
+  return (
+    <motion.button
+      initial={{ opacity: 0, y: 24 }}
+      animate={isVisible ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.5, delay: 0.1 + index * 0.07 }}
+      whileHover={{ y: -6 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={onSelect}
+      className="group relative text-right rounded-3xl border-2 border-border bg-card overflow-hidden transition-colors hover:border-primary focus:outline-none focus:ring-2 focus:ring-primary"
+    >
+      <div className="relative h-40 overflow-hidden bg-secondary">
+        {showImage ? (
+          <img
+            src={signed!}
+            alt={stage.name}
+            loading="lazy"
+            onError={() => setErrored(true)}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-primary/5">
+            <GraduationCap className="w-14 h-14 text-primary/40" />
+          </div>
+        )}
+        <svg
+          className="absolute inset-x-0 bottom-0 w-full text-card"
+          viewBox="0 0 200 40"
+          preserveAspectRatio="none"
+        >
+          <path d="M0 40 L0 20 Q100 -10 200 20 L200 40 Z" fill="currentColor" />
+        </svg>
+        <EightPointStar
+          size={18}
+          className="absolute top-3 right-3 text-primary-foreground/70 drop-shadow"
+        />
+      </div>
+
+      <div className="p-4 pt-2">
+        <h3 className="text-base md:text-lg font-extrabold text-foreground mb-2 group-hover:text-primary transition-colors line-clamp-1">
+          {stage.name}
+        </h3>
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>استعرض الكورسات</span>
+          <ArrowLeft
+            size={16}
+            className="text-primary transition-transform group-hover:-translate-x-1"
+          />
+        </div>
+      </div>
+    </motion.button>
   );
 };
 
