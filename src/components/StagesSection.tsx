@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { GraduationCap, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useScrollAnimation } from "@/hooks/use-scroll-animation";
+import { useSignedThumbnail } from "@/hooks/use-signed-thumbnail";
 import { EightPointStar, IslamicDivider } from "@/components/IslamicPatterns";
 import { Skeleton } from "@/components/ui/skeleton";
 
