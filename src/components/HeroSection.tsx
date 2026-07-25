@@ -120,7 +120,7 @@ const HeroSection = () => {
                   alt="منصة الساعي - المعلّم"
                   className="w-full h-full object-contain bg-background"
                   loading="eager"
-                  fetchPriority="high"
+                  {...({ fetchpriority: "high" } as any)}
                 />
               </div>
             </motion.div>
