@@ -69,30 +69,14 @@ const StagesSection = () => {
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
             {stages.map((s, i) => (
-              <motion.button
+              <StageCard
                 key={s.id}
-                initial={{ opacity: 0, y: 24 }}
-                animate={isVisible ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.5, delay: 0.1 + i * 0.07 }}
-                whileHover={{ y: -6 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => navigate(`/courses?stage=${s.id}`)}
-                className="group relative text-right rounded-3xl border-2 border-border bg-card overflow-hidden transition-colors hover:border-primary focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                {/* Islamic arch image frame */}
-                <div className="relative h-40 overflow-hidden bg-secondary">
-                  {s.thumbnail_url ? (
-                    <img
-                      src={s.thumbnail_url}
-                      alt={s.name}
-                      loading="lazy"
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-primary/5">
-                      <GraduationCap className="w-14 h-14 text-primary/40" />
-                    </div>
-                  )}
+                stage={s}
+                index={i}
+                isVisible={isVisible}
+                onSelect={() => navigate(`/courses?stage=${s.id}`)}
+              />
+            ))}
                   {/* Arch mask overlay */}
                   <svg
                     className="absolute inset-x-0 bottom-0 w-full text-card"
