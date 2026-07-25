@@ -107,7 +107,7 @@ const HeroSection = () => {
               className="relative w-full max-w-[420px] lg:max-w-[520px] aspect-square"
               initial={{ opacity: 0, scale: prefersReduced ? 1 : 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] as const }}
               style={{ y: imageY, scale: imageScale }}
             >
               {/* Decorative frame accent using platform primary */}
