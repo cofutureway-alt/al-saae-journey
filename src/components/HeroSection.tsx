@@ -19,7 +19,7 @@ const HeroSection = () => {
   const imageY = useTransform(scrollYProgress, [0, 1], ["0%", prefersReduced ? "0%" : "12%"]);
   const imageScale = useTransform(scrollYProgress, [0, 1], [1, prefersReduced ? 1 : 1.05]);
 
-  const container = {
+  const container: Variants = {
     hidden: {},
     show: {
       transition: { staggerChildren: prefersReduced ? 0 : 0.12, delayChildren: 0.05 },
