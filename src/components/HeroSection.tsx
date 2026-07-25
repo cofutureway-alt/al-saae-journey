@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import type { Variants } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ArrowLeft, GraduationCap } from "lucide-react";
 import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
